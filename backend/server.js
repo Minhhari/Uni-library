@@ -1,14 +1,16 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
+const connectDB = require("./src/config/db");
 
 const app = express();
 
-app.use(cors());
 app.use(express.json());
 
+// connect database
+connectDB();
+
 app.get("/", (req, res) => {
-  res.send("ULMS API Running 🚀");
+  res.send("Library API running");
 });
 
 const PORT = process.env.PORT || 5000;
