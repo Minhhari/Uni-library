@@ -3,9 +3,11 @@ const express = require("express");
 const connectDB = require("./src/config/db");
 
 const app = express();
+const borrowRoutes = require("./src/routes/borrowRoutes");
+
 
 app.use(express.json());
-
+app.use("/borrow", borrowRoutes);
 // connect database
 connectDB();
 
