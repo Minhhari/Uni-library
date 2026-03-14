@@ -45,8 +45,9 @@ const register = async (req, res) => {
 
     const { name, email, password, role } = req.body;
 
-    // Kiểm tra email đã tồn tại chưa
+    // kiểm tra email tồn tại
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -54,17 +55,29 @@ const register = async (req, res) => {
       });
     }
 
-    // Chỉ cho phép student / lecturer tự đăng ký
+    // chỉ cho phép student / lecturer tự đăng ký
     const allowedRoles = ['student', 'lecturer'];
     const assignedRole = allowedRoles.includes(role) ? role : 'student';
 
-    const user = new User({ name, email, password, role: assignedRole });
+    const user = new User({
+      name,
+      email,
+      password,
+      role: assignedRole,
+    });
+
     await user.save();
 
-    // Tự động login ngay sau khi đăng ký
-    return await sendTokenResponse(user, 201, res, 'Registration successful.');
+    // KHÔNG login sau khi register
+    return res.status(201).json({
+      success: true,
+      message: 'Registration successful. Please login to continue.',
+      user: user.toPublicJSON(),
+    });
+
   } catch (error) {
     console.error('Register error:', error);
+
     return res.status(500).json({
       success: false,
       message: 'Server error during registration.',
