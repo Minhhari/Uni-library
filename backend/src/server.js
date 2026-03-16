@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const borrowRoutes = require('./routes/borrowRoutes');
+const reservationRoutes = require('./routes/reservationRoutes');
 
 // Connect to MongoDB
 connectDB();
@@ -56,6 +57,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/borrow', borrowRoutes);
+app.use('/api/reservation', reservationRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────
 app.use('*', (req, res) => {
