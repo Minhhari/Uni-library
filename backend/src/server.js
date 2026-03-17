@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const bookRoutes = require('./routes/bookRoutes');
 const borrowRoutes = require('./routes/borrowRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 
@@ -56,6 +57,7 @@ app.get('/api/health', (req, res) => {
 // ─── API Routes ────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/books', bookRoutes);
 app.use('/api/borrow', borrowRoutes);
 app.use('/api/reservation', reservationRoutes);
 
