@@ -1,102 +1,94 @@
 const { validationResult } = require('express-validator');
 const recommendationService = require('../services/recommendationService');
 
-// @desc    Get recommendations based on category
-// @route   GET /api/recommendations/category/:categoryId
-// @access  Public
-exports.getCategoryRecommendations = async (req, res) => {
+// @desc    Get semester-based recommendations
+// @route   GET /api/recommendations/semester
+// @access  Private
+exports.getSemesterRecommendations = async (req, res) => {
   try {
-    const { categoryId } = req.params;
+    const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
-
-    const recommendations = await recommendationService.getCategoryBasedRecommendations(categoryId, limit);
+    
+    const recommendations = await recommendationService.getSemesterBasedRecommendations(userId, limit);
 
     res.status(200).json({
       success: true,
-      message: 'Category-based recommendations retrieved successfully',
+      message: 'Semester-based recommendations retrieved successfully',
       data: recommendations
     });
   } catch (error) {
-    console.error('Error getting category recommendations:', error);
+    console.error('Error getting semester recommendations:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while getting category recommendations'
+      message: 'Server error while getting semester recommendations'
     });
   }
 };
 
-// @desc    Get trending books in category
-// @route   GET /api/recommendations/category/:categoryId/trending
-// @access  Public
-exports.getTrendingByCategory = async (req, res) => {
+// @desc    Get academic progress recommendations
+// @route   GET /api/recommendations/academic
+// @access  Private
+exports.getAcademicRecommendations = async (req, res) => {
   try {
-    const { categoryId } = req.params;
+    const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
-
-    const trendingBooks = await recommendationService.getTrendingBooksByCategory(categoryId, limit);
+    
+    const recommendations = await recommendationService.getAcademicProgressRecommendations(userId, limit);
 
     res.status(200).json({
       success: true,
-      message: 'Trending books in category retrieved successfully',
+      message: 'Academic progress recommendations retrieved successfully',
+      data: recommendations
+    });
+  } catch (error) {
+    console.error('Error getting academic recommendations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while getting academic recommendations'
+    });
+  }
+};
+
+// @desc    Get semester trending books
+// @route   GET /api/recommendations/semester/trending
+// @access  Public
+exports.getSemesterTrending = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const trendingBooks = await recommendationService.getSemesterTrendingBooks(limit);
+
+    res.status(200).json({
+      success: true,
+      message: 'Semester trending books retrieved successfully',
       data: trendingBooks
     });
   } catch (error) {
-    console.error('Error getting trending books by category:', error);
+    console.error('Error getting semester trending books:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while getting trending books by category'
+      message: 'Server error while getting semester trending books'
     });
   }
 };
 
-// @desc    Get recommendations for multiple categories
-// @route   POST /api/recommendations/categories
-// @access  Private
-exports.getMultiCategoryRecommendations = async (req, res) => {
-  try {
-    const { categoryIds } = req.body;
-    const limit = parseInt(req.query.limit) || 5;
-
-    if (!categoryIds || !Array.isArray(categoryIds)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category IDs array is required'
-      });
-    }
-
-    const recommendations = await recommendationService.getMultiCategoryRecommendations(categoryIds, limit);
-
-    res.status(200).json({
-      success: true,
-      message: 'Multi-category recommendations retrieved successfully',
-      data: recommendations
-    });
-  } catch (error) {
-    console.error('Error getting multi-category recommendations:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while getting multi-category recommendations'
-    });
-  }
-};
-
-// @desc    Get available categories for filtering
-// @route   GET /api/recommendations/filters/categories
+// @desc    Get current semester information
+// @route   GET /api/recommendations/semester/info
 // @access  Public
-exports.getAvailableCategories = async (req, res) => {
+exports.getSemesterInfo = async (req, res) => {
   try {
-    const categories = await recommendationService.getAvailableCategories();
+    const semesterInfo = recommendationService.getCurrentSemester();
 
     res.status(200).json({
       success: true,
-      message: 'Available categories retrieved successfully',
-      data: categories
+      message: 'Current semester information retrieved successfully',
+      data: semesterInfo
     });
   } catch (error) {
-    console.error('Error getting available categories:', error);
+    console.error('Error getting semester info:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while getting available categories'
+      message: 'Server error while getting semester info'
     });
   }
 };

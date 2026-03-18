@@ -1,31 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getCategoryRecommendations,
-  getTrendingByCategory,
-  getMultiCategoryRecommendations,
-  getAvailableCategories
+  getSemesterRecommendations,
+  getAcademicRecommendations,
+  getSemesterTrending,
+  getSemesterInfo
 } = require('../controllers/recommendationController');
 const { protect } = require('../middleware/auth');
 
-// @route   GET /api/recommendations/category/:categoryId
-// @desc    Get recommendations based on category
-// @access  Public
-router.get('/category/:categoryId', getCategoryRecommendations);
-
-// @route   GET /api/recommendations/category/:categoryId/trending
-// @desc    Get trending books in category
-// @access  Public
-router.get('/category/:categoryId/trending', getTrendingByCategory);
-
-// @route   POST /api/recommendations/categories
-// @desc    Get recommendations for multiple categories
+// @route   GET /api/recommendations/semester
+// @desc    Get semester-based recommendations
 // @access  Private
-router.post('/categories', protect, getMultiCategoryRecommendations);
+router.get('/semester', protect, getSemesterRecommendations);
 
-// @route   GET /api/recommendations/filters/categories
-// @desc    Get available categories for filtering
+// @route   GET /api/recommendations/academic
+// @desc    Get academic progress recommendations
+// @access  Private
+router.get('/academic', protect, getAcademicRecommendations);
+
+// @route   GET /api/recommendations/semester/trending
+// @desc    Get semester trending books
 // @access  Public
-router.get('/filters/categories', getAvailableCategories);
+router.get('/semester/trending', getSemesterTrending);
+
+// @route   GET /api/recommendations/semester/info
+// @desc    Get current semester information
+// @access  Public
+router.get('/semester/info', getSemesterInfo);
 
 module.exports = router;
