@@ -9,7 +9,7 @@ const {
   getAcademicRecommendations,
   getSemesterInfo
 } = require('../controllers/recommendationController');
-const { protect } = require('../middleware/auth');
+const { protect } = require('../middleware/authMiddleware');
 
 // @route   GET /api/recommendations
 // @desc    Get comprehensive recommendations combining all strategies

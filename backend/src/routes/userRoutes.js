@@ -9,6 +9,8 @@ const {
   updateUserRole,
   toggleUserStatus,
   deleteUser,
+  createLibrarian,
+  editUser,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -74,6 +76,35 @@ router.get('/', authorize('admin', 'librarian'), getAllUsers);
  * Lấy thông tin user theo ID
  */
 router.get('/:id', authorize('admin', 'librarian'), getUserById);
+
+/**
+ * POST /api/users/librarian
+ * Tạo tài khoản thủ thư (Admin only)
+ */
+router.post(
+  '/librarian',
+  authorize('admin'),
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Invalid email format').normalizeEmail(),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  createLibrarian
+);
+
+/**
+ * PUT /api/users/:id
+ * Cập nhật thông tin bất kỳ user nào (Admin only)
+ */
+router.put(
+  '/:id',
+  authorize('admin'),
+  [
+    body('name').optional().trim().isLength({ min: 1, max: 100 }),
+    body('role').optional().isIn(['admin', 'librarian', 'lecturer', 'student']),
+  ],
+  editUser
+);
 
 /**
  * PUT /api/users/:id/role
