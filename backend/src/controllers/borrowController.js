@@ -1,11 +1,12 @@
 const BorrowRecord = require("../models/BorrowRecord");
 const Book = require("../models/Book");
+const Fine = require("../models/Fine");
 
-
-// Borrow request
+// =======================
+// BORROW REQUEST
+// =======================
 exports.requestBorrow = async (req, res) => {
   try {
-
     const { bookId } = req.body;
     const userId = req.user.id;
 
@@ -17,12 +18,13 @@ exports.requestBorrow = async (req, res) => {
 
     const borrow = await BorrowRecord.create({
       userId,
-      bookId
+      bookId,
+      status: "pending",
     });
 
     res.json({
       message: "Borrow request submitted",
-      borrow
+      borrow,
     });
 
   } catch (err) {
@@ -30,14 +32,13 @@ exports.requestBorrow = async (req, res) => {
   }
 };
 
-
-// Get my borrowed books
+// =======================
+// GET MY BOOKS
+// =======================
 exports.getMyBooks = async (req, res) => {
-
   try {
-
     const records = await BorrowRecord.find({
-      userId: req.user.id
+      userId: req.user.id,
     }).populate("bookId");
 
     res.json(records);
@@ -45,15 +46,13 @@ exports.getMyBooks = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-
 };
 
-
-// Get all borrow records (librarian)
+// =======================
+// GET ALL BORROWS (ADMIN/LIBRARIAN)
+// =======================
 exports.getAllBorrows = async (req, res) => {
-
   try {
-
     const records = await BorrowRecord.find()
       .populate("userId")
       .populate("bookId");
@@ -63,31 +62,36 @@ exports.getAllBorrows = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-
 };
 
-
-// Approve borrow
+// =======================
+// APPROVE BORROW
+// =======================
 exports.approveBorrow = async (req, res) => {
-
   try {
-
     const record = await BorrowRecord.findById(req.params.id);
 
     if (!record) {
       return res.status(404).json({ message: "Borrow record not found" });
     }
 
+    // 🔥 chỉ approve khi pending
+    if (record.status !== "pending") {
+      return res.status(400).json({
+        message: "Only pending requests can be approved",
+      });
+    }
+
     const book = await Book.findById(record.bookId);
 
-    if (book.available <= 0) {
+    if (!book || book.available <= 0) {
       return res.status(400).json({ message: "Book not available" });
     }
 
     const borrowDate = new Date();
 
     const dueDate = new Date();
-    dueDate.setDate(borrowDate.getDate() + 70); // 10 weeks = 70 days
+    dueDate.setDate(borrowDate.getDate() + 70); // 10 tuần
 
     record.status = "approved";
     record.borrowDate = borrowDate;
@@ -95,30 +99,35 @@ exports.approveBorrow = async (req, res) => {
 
     await record.save();
 
+    // trừ sách
     book.available -= 1;
     await book.save();
 
     res.json({
       message: "Borrow approved",
-      record
+      record,
     });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-
 };
 
-
-// Reject borrow
+// =======================
+// REJECT BORROW
+// =======================
 exports.rejectBorrow = async (req, res) => {
-
   try {
-
     const record = await BorrowRecord.findById(req.params.id);
 
     if (!record) {
       return res.status(404).json({ message: "Borrow record not found" });
+    }
+
+    if (record.status !== "pending") {
+      return res.status(400).json({
+        message: "Only pending requests can be rejected",
+      });
     }
 
     record.status = "rejected";
@@ -126,21 +135,19 @@ exports.rejectBorrow = async (req, res) => {
     await record.save();
 
     res.json({
-      message: "Borrow rejected"
+      message: "Borrow rejected",
     });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-
 };
 
-
-// Return book
+// =======================
+// RETURN BOOK
+// =======================
 exports.returnBook = async (req, res) => {
-
   try {
-
     const record = await BorrowRecord.findById(req.params.id);
 
     if (!record) {
@@ -149,39 +156,77 @@ exports.returnBook = async (req, res) => {
 
     if (record.status === "returned") {
       return res.status(400).json({
-        message: "Book already returned"
+        message: "Book already returned",
       });
     }
-    
+
+    // 🔥 chỉ return khi đã approve
+    if (record.status !== "approved") {
+      return res.status(400).json({
+        message: "Only approved records can be returned",
+      });
+    }
+
     const book = await Book.findById(record.bookId);
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
 
     const returnDate = new Date();
 
     record.returnDate = returnDate;
     record.status = "returned";
 
-    // Fine calculation
-    if (returnDate > record.dueDate) {
+    let fineAmount = 0;
 
-      const lateDays = Math.ceil(
-        (returnDate - record.dueDate) / (1000 * 60 * 60 * 24)
+    // =========================
+    // CHECK LATE
+    // =========================
+    if (record.dueDate && returnDate > record.dueDate) {
+      const diffTime = returnDate - record.dueDate;
+
+      const daysLate = Math.ceil(
+        diffTime / (1000 * 60 * 60 * 24)
       );
 
-      record.fineAmount = lateDays * 5000;
+      fineAmount = daysLate * 5000;
+
+      record.fineAmount = fineAmount;
+
+      // 🔥 tránh tạo duplicate fine
+      const existingFine = await Fine.findOne({
+        borrowId: record._id,
+      });
+
+      if (!existingFine) {
+        await Fine.create({
+          userId: record.userId,
+          borrowId: record._id,
+          amount: fineAmount,
+          reason: "late",
+          status: "pending",
+          paid: false,
+        });
+      }
     }
 
     await record.save();
 
+    // cộng lại sách
     book.available += 1;
     await book.save();
 
     res.json({
       message: "Book returned successfully",
-      fine: record.fineAmount
+      fine: fineAmount,
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Return book error:", err);
+    res.status(500).json({
+      message: "Return book failed",
+      error: err.message,
+    });
   }
-
 };

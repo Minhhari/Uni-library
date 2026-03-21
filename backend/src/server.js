@@ -11,6 +11,9 @@ const bookRoutes = require('./routes/bookRoutes');
 const borrowRoutes = require('./routes/borrowRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
+const paymentRoutes = require("./routes/paymentRoutes");
+const fineRoutes = require("./routes/fineRoutes");
+
 
 // Connect to MongoDB
 connectDB();
@@ -62,6 +65,8 @@ app.use('/api/books', bookRoutes);
 app.use('/api/borrow', borrowRoutes);
 app.use('/api/reservation', reservationRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/fines", fineRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────
 app.use('*', (req, res) => {
