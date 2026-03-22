@@ -13,9 +13,11 @@ const sendTokenResponse = async (user, statusCode, res, message) => {
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Lưu refresh token vào DB
+  // Lưu refresh token vào DB và reset login attempts
   user.refreshToken = refreshToken;
   user.lastLogin = new Date();
+  user.loginAttempts = 0;
+  user.lockUntil = undefined;
   await user.save({ validateBeforeSave: false });
 
   return res.status(statusCode).json({
@@ -127,11 +129,36 @@ const login = async (req, res) => {
       });
     }
 
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
+      return res.status(423).json({
+        success: false,
+        message: `Account is temporarily locked. Please try again in ${remainingMinutes} minutes.`,
+      });
+    }
+
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
+      // Increment login attempts
+      user.loginAttempts += 1;
+
+      const MAX_ATTEMPTS = 5;
+      if (user.loginAttempts >= MAX_ATTEMPTS) {
+        // Lock for 1 hour
+        user.lockUntil = Date.now() + 60 * 60 * 1000;
+        await user.save({ validateBeforeSave: false });
+        return res.status(423).json({
+          success: false,
+          message: 'Too many failed attempts. Account locked for 1 hour.',
+        });
+      }
+
+      await user.save({ validateBeforeSave: false });
+
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.',
+        message: `Invalid email or password. Attempt ${user.loginAttempts}/${MAX_ATTEMPTS}`,
       });
     }
 

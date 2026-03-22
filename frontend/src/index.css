@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    backdrop-filter: blur(40px);
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0px 12px 32px rgba(11, 28, 48, 0.04);
+    transform: scale(1.02);
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2;
+  }
+
+  .nav-item {
+    @apply px-6 py-3 transition-colors flex items-center gap-3 font-inter tracking-tight text-sm font-medium;
+  }
+
+  .input-field {
+    @apply w-full h-14 px-4 pt-4 pb-1 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all placeholder-transparent;
+  }
+
+  .input-label {
+    @apply absolute left-4 top-1 text-xs font-semibold text-primary transition-all;
+  }
+
+  .floating-bg {
+    @apply fixed top-0 left-0 w-full h-full -z-10 overflow-hidden bg-surface;
+  }
+
+  .book-silhouette {
+    @apply absolute text-surface-container-highest opacity-40 select-none pointer-events-none;
+  }
+}
+
+/* Custom Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1;
+}
