@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ROLES = [
-  { value: 'student', label: '🎓 Sinh viên' },
-  { value: 'lecturer', label: '👨‍🏫 Giảng viên' },
+  { value: 'student', label: 'Student' },
+  { value: 'lecturer', label: 'Lecturer' },
 ];
 
 const RegisterPage = () => {
@@ -51,85 +51,152 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>📚 LMS</h1>
-          <h2>Đăng ký tài khoản</h2>
-          <p>Tham gia thư viện số ngay hôm nay</p>
-        </div>
-
-        {error && <div className="alert alert-error">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label>Họ và tên</label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Nguyễn Văn A"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="email@example.com"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Vai trò</label>
-            <select name="role" value={form.role} onChange={handleChange}>
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Mật khẩu</label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Xác nhận mật khẩu</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Đang đăng ký...' : 'Đăng ký'}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
-        </p>
+    <div className="min-h-screen flex items-center justify-center p-6 relative">
+      <div className="floating-bg">
+        <span className="material-symbols-outlined book-silhouette text-8xl" style={{ top: '10%', left: '5%' }}>menu_book</span>
+        <span className="material-symbols-outlined book-silhouette text-6xl" style={{ top: '70%', left: '15%' }}>auto_stories</span>
+        <span className="material-symbols-outlined book-silhouette text-9xl" style={{ top: '40%', left: '80%' }}>library_books</span>
+        <span className="material-symbols-outlined book-silhouette text-7xl" style={{ top: '85%', left: '75%' }}>import_contacts</span>
+        <span className="material-symbols-outlined book-silhouette text-5xl" style={{ top: '20%', left: '60%' }}>book_4</span>
       </div>
+
+      <main className="w-full max-w-md relative z-10">
+        <div className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl shadow-on-surface/5 relative overflow-hidden border border-surface-container-low">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+          <header className="text-center mb-10 relative">
+            <div className="flex justify-center items-center gap-2 mb-3">
+              <span className="material-symbols-outlined text-primary text-4xl">menu_book</span>
+              <h1 className="text-3xl font-black tracking-tighter text-on-surface">LibraFlow</h1>
+            </div>
+            <p className="text-on-surface-variant font-medium tracking-tight">Join our campus library today</p>
+          </header>
+
+          {error && (
+            <div className="mb-6 p-4 bg-error-container text-on-error-container rounded-xl text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+              <span className="material-symbols-outlined text-lg">error</span>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="relative group">
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Full Name"
+                className="input-field peer"
+                required
+              />
+              <label
+                htmlFor="name"
+                className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.name ? 'top-1 text-xs text-primary' : ''}`}
+              >
+                Full Name
+              </label>
+            </div>
+
+            <div className="relative group">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Email Address"
+                className="input-field peer"
+                required
+                autoComplete="email"
+              />
+              <label
+                htmlFor="email"
+                className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.email ? 'top-1 text-xs text-primary' : ''}`}
+              >
+                Email Address
+              </label>
+            </div>
+
+            <div className="relative group">
+              <select
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                className="input-field peer appearance-none"
+              >
+                {ROLES.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+              <label className="input-label top-1 text-xs text-primary">Role</label>
+              <span className="material-symbols-outlined absolute right-4 top-4 text-on-surface-variant/40 pointer-events-none">expand_more</span>
+            </div>
+
+            <div className="relative group">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Password"
+                className="input-field peer"
+                required
+                autoComplete="new-password"
+              />
+              <label
+                htmlFor="password"
+                className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.password ? 'top-1 text-xs text-primary' : ''}`}
+              >
+                Password
+              </label>
+            </div>
+
+            <div className="relative group">
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm Password"
+                className="input-field peer"
+                required
+                autoComplete="new-password"
+              />
+              <label
+                htmlFor="confirmPassword"
+                className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.confirmPassword ? 'top-1 text-xs text-primary' : ''}`}
+              >
+                Confirm Password
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full h-14 btn-primary text-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+              disabled={loading}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+              {!loading && <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">how_to_reg</span>}
+            </button>
+          </form>
+
+          <footer className="mt-8 pt-8 border-t border-surface-container-low text-center">
+            <p className="text-sm text-on-surface-variant/60">
+              Already have an account? <Link to="/login" className="text-on-surface font-semibold hover:text-primary transition-colors">Sign in instead</Link>
+            </p>
+          </footer>
+        </div>
+      </main>
+
+      <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 text-xs font-medium text-on-surface-variant/40 whitespace-nowrap">
+        <span>v2.4.0-editorial</span>
+        <span>•</span>
+        <span>© 2024 LibraFlow Systems</span>
+      </footer>
     </div>
   );
 };

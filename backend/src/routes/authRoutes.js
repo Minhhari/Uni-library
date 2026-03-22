@@ -22,7 +22,11 @@ const registerValidators = [
     .isEmail().withMessage('Invalid email format')
     .normalizeEmail(),
   body('password')
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+    .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+    .matches(/[0-9]/).withMessage('Password must contain at least one number')
+    .matches(/[!@#$%^&*]/).withMessage('Password must contain at least one special character'),
   body('role')
     .optional()
     .isIn(['student', 'lecturer']).withMessage('Role must be student or lecturer'),

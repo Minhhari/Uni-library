@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
@@ -41,6 +43,22 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Apply Security Headers
+app.use(helmet());
+
+// Apply Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window`
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes.'
+  }
+});
+app.use(limiter); // Apply to all routes
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -49,7 +67,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // ─── Health check ──────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({
     success: true,
     message: 'Uni Library API is running 🚀',
@@ -59,14 +77,14 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─── API Routes ────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/books', bookRoutes);
-app.use('/api/borrow', borrowRoutes);
-app.use('/api/reservation', reservationRoutes);
-app.use('/api/recommendations', recommendationRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/fines", fineRoutes);
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/books', bookRoutes);
+app.use('/borrow', borrowRoutes);
+app.use('/reservation', reservationRoutes);
+app.use('/recommendations', recommendationRoutes);
+app.use("/payments", paymentRoutes);
+app.use("/fines", fineRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────
 app.use('*', (req, res) => {
