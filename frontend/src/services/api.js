@@ -42,10 +42,19 @@ export const authAPI = {
 
 // ─── User APIs ───────────────────────────────────────────
 export const userAPI = {
+  // Current user
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
   changePassword: (data) => api.put('/users/change-password', data),
+
+  // Admin - User Management
   getAllUsers: (params) => api.get('/users', { params }),
+  getUserById: (id) => api.get(`/users/${id}`),
+  editUser: (id, data) => api.put(`/users/${id}`, data),
+  updateUserRole: (id, role) => api.put(`/users/${id}/role`, { role }),
+  toggleUserStatus: (id) => api.put(`/users/${id}/status`),
+  deleteUser: (id) => api.delete(`/users/${id}`),
+  createLibrarian: (data) => api.post('/users/librarian', data),
 };
 
 export default api;
