@@ -29,7 +29,11 @@ const RegisterPage = () => {
   const validate = () => {
     if (!form.name.trim()) return 'Vui lòng nhập họ tên.';
     if (!form.email.trim()) return 'Vui lòng nhập email.';
-    if (form.password.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự.';
+    if (form.password.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự.';
+    if (!/[A-Z]/.test(form.password)) return 'Mật khẩu phải có ít nhất 1 chữ in hoa.';
+    if (!/[a-z]/.test(form.password)) return 'Mật khẩu phải có ít nhất 1 chữ thường.';
+    if (!/[0-9]/.test(form.password)) return 'Mật khẩu phải có ít nhất 1 số.';
+    if (!/[!@#$%^&*]/.test(form.password)) return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*).';
     if (form.password !== form.confirmPassword) return 'Mật khẩu không khớp.';
     return null;
   };
@@ -42,7 +46,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       const data = await register(form.name, form.email, form.password, form.role);
-      if (data.success) navigate('/', { replace: true });
+      if (data.success) navigate('/login', { replace: true, state: { message: 'Đăng ký thành công! Vui lòng đăng nhập.' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {

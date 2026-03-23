@@ -33,19 +33,19 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (name, email, password, role = 'student') => {
     const { data } = await authAPI.register({ name, email, password, role });
-    if (data.success) saveAuth(data.token, data.user);
+    // register không auto-login, chuyển sang trang login
     return data;
   }, []);
 
   const login = useCallback(async (email, password) => {
     const { data } = await authAPI.login({ email, password });
-    if (data.success) saveAuth(data.token, data.user);
+    if (data.success) saveAuth(data.accessToken, data.user);
     return data;
   }, []);
 
   const googleLogin = useCallback(async (googleToken) => {
     const { data } = await authAPI.googleLogin(googleToken);
-    if (data.success) saveAuth(data.token, data.user);
+    if (data.success) saveAuth(data.accessToken, data.user);
     return data;
   }, []);
 

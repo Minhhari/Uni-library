@@ -165,11 +165,7 @@ const LoginPage = () => {
         </div>
       </main>
 
-      <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 text-xs font-medium text-on-surface-variant/40 whitespace-nowrap">
-        <span>v2.4.0-editorial</span>
-        <span>•</span>
-        <span>© 2024 LibraFlow Systems</span>
-      </footer>
+
     </div>
   );
 };
