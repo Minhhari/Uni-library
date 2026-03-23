@@ -12,6 +12,8 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 import HomePage from './pages/HomePage';
 import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
+import AdminUserManagementPage from './pages/AdminUserManagementPage';
+import UserDetailPage from './pages/UserDetailPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -62,6 +64,10 @@ function App() {
               <Route path="/transactions" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+              {/* Admin routes */}
+              <Route path="/admin/users" element={<ProtectedRoute roles={['admin', 'librarian']}><AdminUserManagementPage /></ProtectedRoute>} />
+              <Route path="/admin/users/:id" element={<ProtectedRoute roles={['admin', 'librarian']}><UserDetailPage /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />

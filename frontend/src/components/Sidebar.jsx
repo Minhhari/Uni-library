@@ -16,7 +16,7 @@ const Sidebar = () => {
     if (user?.role === 'admin' || user?.role === 'librarian') {
         navItems.push(
             { name: 'Admin Panel', path: '/admin', icon: 'admin_panel_settings' },
-            { name: 'Users', path: '/users', icon: 'group' }
+            { name: 'Users', path: '/admin/users', icon: 'group' }
         );
     }
 
