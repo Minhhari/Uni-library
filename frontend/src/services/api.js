@@ -73,4 +73,10 @@ export const fineAPI = {
   getFineByBorrow: (borrowId) => api.get(`/fines/borrow/${borrowId}`),
 };
 
+// ─── Payment APIs ─────────────────────────────────────────
+export const paymentAPI = {
+  createPayment: (fineId) => api.post('/payments/create', { fineId }),
+  getPaymentStatus: (orderCode) => api.get(`/payments/${orderCode}`),
+};
+
 export default api;
