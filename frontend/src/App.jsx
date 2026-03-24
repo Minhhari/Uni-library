@@ -9,12 +9,13 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
-import HomePage from './pages/HomePage';
 import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
 import LibrarianDashboard from './pages/LibrarianDashboard'; // 👈 thêm
+import TransactionPage from './pages/TransactionPage';
+import StudentDashboard from './pages/StudentDashboard';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -58,12 +59,12 @@ function App() {
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
               <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
               <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
-              <Route path="/loans" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-              <Route path="/transactions" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+              <Route path="/loans" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+              <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Librarian Dashboard */}
