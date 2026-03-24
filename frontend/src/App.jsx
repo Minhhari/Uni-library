@@ -13,12 +13,13 @@ import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
-
+import StudentDashboard from './pages/StudentDashboard';
 import RecommendationPage from './pages/RecommendationPage';
 import DashboardPage from './pages/DashboardPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import TransactionPage from './pages/TransactionPage';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -59,14 +60,14 @@ function App() {
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
               <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
               <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
               <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
 
               {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
               <Route path="/loans" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/transactions" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
