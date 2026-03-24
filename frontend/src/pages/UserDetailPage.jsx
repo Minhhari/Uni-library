@@ -172,7 +172,7 @@ const UserDetailPage = () => {
                         </div>
                         <div className="flex justify-between">
                             <span className="font-bold uppercase tracking-widest">Google</span>
-                            <span className="text-on-surface">{user?.isGoogleAccount ? '✅ Yes' : '❌ No'}</span>
+                            <span className="text-on-surface">{user?.isGoogleAccount ? 'Yes' : 'No'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="font-bold uppercase tracking-widest">Status</span>
@@ -187,8 +187,8 @@ const UserDetailPage = () => {
                         <button
                             onClick={handleToggleStatus}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${user?.isActive
-                                    ? 'bg-error/10 text-error hover:bg-error/20'
-                                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                ? 'bg-error/10 text-error hover:bg-error/20'
+                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                                 }`}
                         >
                             <span className="material-symbols-outlined text-lg">{user?.isActive ? 'block' : 'check_circle'}</span>
