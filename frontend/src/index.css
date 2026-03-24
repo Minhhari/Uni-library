@@ -7,7 +7,12 @@
     @apply bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-headline tracking-tight;
   }
 }
@@ -16,7 +21,7 @@
   .glass-card {
     @apply transition-all duration-300;
   }
-  
+
   .glass-card:hover {
     backdrop-filter: blur(40px);
     background-color: rgba(255, 255, 255, 0.7);
@@ -53,6 +58,7 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

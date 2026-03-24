@@ -24,7 +24,8 @@ const app = express();
 
 // ─── Middleware ────────────────────────────────────────────────────────
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.FRONTEND_URL ||
+  'http://localhost:3000',
   'http://localhost:3001', // Frontend dev
   'http://localhost:5173', // Vite dev
   'http://localhost:4200', // Angular dev (nếu dùng)

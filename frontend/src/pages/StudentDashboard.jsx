@@ -1,141 +1,182 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { bookAPI, borrowAPI, fineAPI } from '../services/api';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const [books, setBooks] = useState([]);
+  const [stats, setStats] = useState({
+    activeLoans: 0,
+    nextDeadline: 'None',
+    accountBalance: '0'
+  });
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    { label: 'Books Borrowed', value: '2', icon: 'book', color: 'text-primary', border: 'border-primary' },
-    { label: 'Due in 3 Days', value: '1', icon: 'event_busy', color: 'text-tertiary', border: 'border-tertiary' },
-    { label: 'Outstanding Fine', value: '15,000 VND', icon: 'payments', color: 'text-secondary', border: 'border-secondary' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch all books for "Explore"
+        const booksRes = await bookAPI.getBooks({ limit: 12 });
+        setBooks(booksRes.data.data || []);
 
-  const currentlyBorrowing = [
-    {
-      title: 'The Psychology of Money',
-      author: 'Morgan Housel',
-      tag: 'ECONOMICS',
-      dueDate: 'June 15, 2024',
-      image: 'https://images.unsplash.com/photo-1592492159418-39f319320569?q=80&w=2670&auto=format&fit=crop'
-    },
-    {
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      tag: 'CLASSICS',
-      dueDate: 'July 02, 2024',
-      image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=2574&auto=format&fit=crop'
-    },
-  ];
+        // Fetch user stats from existing borrowAPI and fineAPI
+        const myBooksRes = await borrowAPI.getMyBooks();
+        const myBooks = myBooksRes.data || [];
 
-  const recommendations = [
-    { title: 'The Art of Innovation', author: 'Tom Kelley', tag: 'DESIGN', status: 'AVAILABLE', image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=2574&auto=format&fit=crop' },
-    { title: 'Astrophysics', author: 'Neil deGrasse Tyson', tag: 'SCIENCE', status: 'BORROWED', image: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2672&auto=format&fit=crop' },
-    { title: 'Selected Poems', author: 'Langston Hughes', tag: 'POETRY', status: 'AVAILABLE', image: 'https://images.unsplash.com/photo-1512428559083-a401a304453a?q=80&w=2670&auto=format&fit=crop' },
-    { title: 'Midnight Library', author: 'Matt Haig', tag: 'FICTION', status: 'AVAILABLE', image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=2674&auto=format&fit=crop' },
-    { title: 'Sapiens', author: 'Yuval Noah Harari', tag: 'HISTORY', status: 'AVAILABLE', image: 'https://images.unsplash.com/photo-1589519160732-57fc498494f8?q=80&w=2670&auto=format&fit=crop' },
-  ];
+        const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed').length;
+
+        const nextDeadlineBook = myBooks
+          .filter(b => b.dueDate && (b.status === 'approved' || b.status === 'borrowed'))
+          .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
+
+        const nextDeadline = nextDeadlineBook
+          ? new Date(nextDeadlineBook.dueDate).toLocaleDateString('en-US', { month: 'SHORT', day: 'numeric' }).toUpperCase()
+          : 'None';
+
+        const finesRes = await fineAPI.getMyFines();
+        const totalFine = (finesRes.data || []).reduce((acc, f) => acc + (f.amount || 0), 0);
+
+        setStats({
+          activeLoans,
+          nextDeadline,
+          accountBalance: totalFine.toLocaleString()
+        });
+      } catch (error) {
+        console.error('Error fetching student dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto pt-4 font-body pb-20">
       {/* Hero Section */}
-      <section>
-        <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">
-          Welcome back, {user?.name?.split(' ')[0] || 'Curator'} 👋
-        </h1>
-        <p className="text-on-surface-variant text-lg">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-        </p>
+      <section className="text-left space-y-6">
+        <div>
+          <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 mb-2">
+            Welcome back, {user?.name?.split(' ')[0] || 'Minh'} 👋
+          </h1>
+          <p className="text-gray-500 text-lg">
+            The digital gallery of knowledge is at your fingertips. What will you discover today?
+          </p>
+        </div>
+
+        {/* Big Search Bar */}
+        <div className="relative max-w-3xl">
+          <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+          <input
+            type="text"
+            placeholder="Search your library, authors, or ISBN..."
+            className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-gray-100 rounded-full text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white outline-none transition-all shadow-sm text-lg"
+          />
+        </div>
       </section>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, i) => (
-          <div key={i} className={`bg-surface-container-low p-8 rounded-3xl flex flex-col justify-between border-b-4 ${stat.border} shadow-sm hover:shadow-md transition-all hover:-translate-y-1`}>
-            <span className={`material-symbols-outlined ${stat.color} mb-4 filled`}>{stat.icon}</span>
-            <div>
-              <span className="text-4xl font-black text-on-surface block mb-1">{stat.value}</span>
-              <span className="text-on-surface-variant font-medium">{stat.label}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Currently Borrowing */}
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Currently Borrowing</h2>
-          <Link to="/loans" className="text-primary font-semibold text-sm hover:underline">View All History</Link>
-        </div>
-        <div className="flex gap-6 overflow-x-auto no-scrollbar pb-6 -mx-4 px-4">
-          {currentlyBorrowing.map((book, i) => (
-            <div key={i} className="flex-none w-[450px] bg-white p-6 rounded-3xl shadow-sm border border-outline-variant/10 flex gap-6 glass-card group">
-              <img
-                src={book.image}
-                className="w-32 h-44 object-cover rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-500"
-                alt={book.title}
-              />
-              <div className="flex flex-col justify-between flex-1">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-1 h-4 bg-primary rounded-full"></span>
-                    <span className="text-[10px] font-bold text-primary tracking-widest uppercase">{book.tag}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-on-surface leading-tight mb-1">{book.title}</h3>
-                  <p className="text-on-surface-variant text-sm">{book.author}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
-                    <span className="material-symbols-outlined text-sm">schedule</span>
-                    <span>Due: {book.dueDate}</span>
-                  </div>
-                  <button className="w-full py-3 btn-primary text-sm">Return Now</button>
+      {(stats.activeLoans > 0 || stats.nextDeadline !== 'None' || stats.accountBalance !== '0') && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {stats.activeLoans > 0 && (
+            <div className="bg-[#E7F5F2] border border-emerald-100/50 p-8 rounded-[32px] flex items-start gap-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+                <span className="material-symbols-outlined filled">menu_book</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-emerald-700/60 tracking-[0.1em] uppercase block mb-1">Active Loans</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-black text-emerald-900 leading-none">{stats.activeLoans}</span>
+                  <span className="text-sm font-bold text-emerald-800">Books Borrowed</span>
                 </div>
               </div>
             </div>
-          ))}
+          )}
+
+          {stats.nextDeadline !== 'None' && (
+            <div className="bg-[#FDF2F2] border border-rose-100/50 p-8 rounded-[32px] flex items-start gap-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-rose-600 shadow-sm">
+                <span className="material-symbols-outlined filled">calendar_month</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-rose-700/60 tracking-[0.1em] uppercase block mb-1">Next Deadline</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-black text-rose-900 leading-none">1</span>
+                  <span className="text-sm font-bold text-rose-800">Due {stats.nextDeadline}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {stats.accountBalance !== '0' && (
+            <div className="bg-[#EFF6FF] border border-blue-100/50 p-8 rounded-[32px] flex items-start gap-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
+                <span className="material-symbols-outlined filled">payments</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-blue-700/60 tracking-[0.1em] uppercase block mb-1">Account Balance</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-blue-900 leading-none">{stats.accountBalance}</span>
+                  <span className="text-sm font-bold text-blue-800">VND Fine</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Recommendation Row */}
+      <section className="bg-emerald-600 rounded-[40px] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/10 transition-all duration-700"></div>
+        <div className="relative z-10 space-y-2">
+          <h2 className="text-3xl font-black tracking-tight">Personalized Recommendations</h2>
+          <p className="text-emerald-100 text-lg opacity-80">Based on your reading history and academic interests.</p>
+        </div>
+        <Link
+          to="/recommendations"
+          className="relative z-10 px-10 py-5 bg-white text-emerald-600 font-black rounded-2xl hover:bg-emerald-50 hover:scale-105 transition-all shadow-xl active:scale-95 flex items-center gap-3"
+        >
+          <span className="material-symbols-outlined">auto_awesome</span>
+          See Recommendations
+        </Link>
       </section>
 
-      {/* Recommended for You */}
+      {/* Explore All Books */}
       <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Recommended for You</h2>
-          <div className="flex gap-2">
-            <button className="p-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-primary-container/20 transition-colors">
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button className="p-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-primary-container/20 transition-colors">
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
-          </div>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Explore Collection</h2>
+          <Link to="/books" className="text-emerald-600 font-bold text-sm hover:underline">View All Books</Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-          {recommendations.map((book, i) => (
-            <div key={i} className="group cursor-pointer">
-              <div className="relative aspect-[3/4] rounded-3xl overflow-hidden mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+          {books.map((book) => (
+            <Link to={`/books/${book._id}`} key={book._id} className="group cursor-pointer">
+              <div className="relative aspect-[2/3] rounded-[24px] overflow-hidden mb-4 shadow-sm group-hover:shadow-2xl transition-all duration-500 border border-gray-100">
                 <img
-                  src={book.image}
+                  src={book.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2574&auto=format&fit=crop'}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   alt={book.title}
                 />
                 <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-bold text-primary tracking-widest uppercase shadow-sm">
-                    {book.tag}
-                  </span>
-                </div>
-                <div className="absolute bottom-4 right-4">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold shadow-md ${book.status === 'AVAILABLE' ? 'bg-emerald-500 text-white' : 'bg-slate-400 text-white'
-                    }`}>
-                    {book.status}
+                  <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-emerald-600 rounded-lg text-[10px] font-black tracking-widest uppercase shadow-sm">
+                    {book.category?.name || 'GENRAL'}
                   </span>
                 </div>
               </div>
-              <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate">
+              <h4 className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors leading-tight mb-1 line-clamp-2">
                 {book.title}
               </h4>
-              <p className="text-on-surface-variant text-sm truncate">{book.author}</p>
-            </div>
+              <p className="text-gray-400 text-xs font-bold truncate">{book.author}</p>
+            </Link>
           ))}
         </div>
       </section>

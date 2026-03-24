@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardCard, ChartBorrowStats } from '../components';
-import { 
+import {
   UserGroupIcon,
   BookOpenIcon,
   DocumentTextIcon,
@@ -12,21 +12,27 @@ import {
 } from '@heroicons/react/24/outline';
 import { userAPI, bookAPI, borrowAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLocation, Link } from 'react-router-dom';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState([]);
+  const [myBooks, setMyBooks] = useState([]);
+
+  const isLoansPage = location.pathname === '/loans';
+  const isReservationsPage = location.pathname === '/reservations';
 
   useEffect(() => {
     loadDashboardData();
-  }, [user]);
+  }, [user, location.pathname]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       if (user?.role === 'admin') {
         await loadAdminStats();
       } else if (user?.role === 'librarian') {
@@ -72,7 +78,7 @@ const DashboardPage = () => {
   const loadLibrarianStats = async () => {
     try {
       const borrowStats = await getBorrowStatistics();
-      
+
       setStats({
         pendingRequests: borrowStats.pending,
         activeBorrows: borrowStats.active,
@@ -90,18 +96,19 @@ const DashboardPage = () => {
   const loadStudentStats = async () => {
     try {
       const myBooksResponse = await borrowAPI.getMyBooks();
-      const myBooks = myBooksResponse.data || [];
+      const booksList = myBooksResponse.data || [];
+      setMyBooks(booksList);
 
-      const activeBorrows = myBooks.filter(book => 
+      const activeBorrows = booksList.filter(book =>
         book.status === 'approved' || book.status === 'borrowed'
       ).length;
 
-      const overdueBooks = myBooks.filter(book => 
-        book.status === 'approved' && 
+      const overdueBooks = booksList.filter(book =>
+        book.status === 'approved' &&
         new Date(book.dueDate) < new Date()
       ).length;
 
-      const reservedBooks = myBooks.filter(book => 
+      const reservedBooks = booksList.filter(book =>
         book.status === 'reserved'
       ).length;
 
@@ -109,10 +116,10 @@ const DashboardPage = () => {
         activeBorrows,
         overdueBooks,
         reservedBooks,
-        totalBorrows: myBooks.length
+        totalBorrows: booksList.length
       });
 
-      setRecentActivities(myBooks.slice(0, 5));
+      setRecentActivities(booksList.slice(0, 5));
     } catch (error) {
       console.error('Error loading student stats:', error);
     }
@@ -267,68 +274,173 @@ const DashboardPage = () => {
     </div>
   );
 
-  const renderStudentDashboard = () => (
-    <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard
-          title="Active Borrows"
-          value={stats.activeBorrows || 0}
-          icon={DocumentTextIcon}
-          color="blue"
-        />
-        <DashboardCard
-          title="Overdue Books"
-          value={stats.overdueBooks || 0}
-          icon={ExclamationTriangleIcon}
-          color="red"
-        />
-        <DashboardCard
-          title="Reserved Books"
-          value={stats.reservedBooks || 0}
-          icon={ClockIcon}
-          color="yellow"
-        />
-        <DashboardCard
-          title="Total Borrows"
-          value={stats.totalBorrows || 0}
-          icon={ChartBarIcon}
-          color="green"
-        />
-      </div>
+  const renderStudentDashboard = () => {
+    const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed');
+    const reservations = myBooks.filter(b => b.status === 'reserved');
+    const others = myBooks.filter(b => b.status !== 'approved' && b.status !== 'borrowed' && b.status !== 'reserved');
 
-      {/* My Books Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">My Recent Books</h3>
-        <div className="space-y-3">
-          {recentActivities.map((book, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className={`w-2 h-2 rounded-full ${
-                  book.status === 'approved' ? 'bg-green-500' :
-                  book.status === 'pending' ? 'bg-yellow-500' :
-                  book.status === 'overdue' ? 'bg-red-500' : 'bg-gray-500'
-                }`} />
+    return (
+      <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 font-body max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-0">
+          <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">My Activity</h1>
+          <p className="text-gray-500 font-medium">Welcome back, {user?.name}! Here's what's happening today.</p>
+        </div>
+
+        {/* Stats Row */}
+        {(stats.activeBorrows > 0 || stats.overdueBooks > 0 || stats.reservedBooks > 0 || stats.totalBorrows > 0) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.activeBorrows > 0 && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
                 <div>
-                  <p className="font-medium text-gray-900">{book.bookId?.title || book.title}</p>
-                  <p className="text-sm text-gray-500">
-                    Due: {new Date(book.dueDate).toLocaleDateString()}
-                  </p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">Active Borrows</p>
+                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.activeBorrows}</h3>
+                </div>
+                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                  <span className="material-symbols-outlined filled">description</span>
                 </div>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                book.status === 'approved' ? 'bg-green-100 text-green-800' :
-                book.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                book.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-              }`}>
-                {book.status}
-              </span>
+            )}
+
+            {stats.overdueBooks > 0 && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-rose-500 transition-colors">Overdue Books</p>
+                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.overdueBooks}</h3>
+                </div>
+                <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
+                  <span className="material-symbols-outlined filled">warning</span>
+                </div>
+              </div>
+            )}
+
+            {stats.reservedBooks > 0 && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-amber-500 transition-colors">Reserved Books</p>
+                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.reservedBooks}</h3>
+                </div>
+                <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
+                  <span className="material-symbols-outlined filled">schedule</span>
+                </div>
+              </div>
+            )}
+
+            {stats.totalBorrows > 0 && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-emerald-500 transition-colors">Total Borrows</p>
+                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.totalBorrows}</h3>
+                </div>
+                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+                  <span className="material-symbols-outlined filled">leaderboard</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Combined Lists Section */}
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8 px-2 flex items-center gap-3">
+            <span className="w-1.5 h-8 bg-emerald-500 rounded-full"></span>
+            Library Status
+          </h2>
+
+          <div className="space-y-12">
+            {/* Active Loans Area */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                  Active Loans
+                  <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{activeLoans.length}</span>
+                </h3>
+              </div>
+
+              {activeLoans.length === 0 ? (
+                <p className="text-gray-400 text-sm italic py-4">No active loans at this time.</p>
+              ) : (
+                <div className="space-y-3">
+                  {activeLoans.map((item, index) => (
+                    <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <div>
+                          <p className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors">{item.bookId?.title || item.title}</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                            Due: {new Date(item.dueDate).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100/50">
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+
+            {/* Reservations Area */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                  My Reservations
+                  <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">{reservations.length}</span>
+                </h3>
+              </div>
+
+              {reservations.length === 0 ? (
+                <p className="text-gray-400 text-sm italic py-4">No pending reservations.</p>
+              ) : (
+                <div className="space-y-3">
+                  {reservations.map((item, index) => (
+                    <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                        <div>
+                          <p className="font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors">{item.bookId?.title || item.title}</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Reserved on: {new Date(item.createdAt).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-amber-100/50">
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* History Summary Area */}
+            {others.length > 0 && (
+              <div className="space-y-6 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">Other Activity</h3>
+                </div>
+                <div className="space-y-3">
+                  {others.slice(0, 3).map((item, index) => (
+                    <div key={index} className="p-4 rounded-2xl flex items-center justify-between border border-transparent">
+                      <div className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        <div>
+                          <p className="font-extrabold text-gray-900">{item.bookId?.title || item.title}</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Completed</p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-gray-200">
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderRecentActivities = () => {
     if (!recentActivities || recentActivities.length === 0) {
@@ -342,10 +454,9 @@ const DashboardPage = () => {
           {recentActivities.map((activity) => (
             <div key={activity.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
               <div className="flex items-center space-x-3">
-                <div className={`w-2 h-2 rounded-full ${
-                  activity.status === 'approved' || activity.status === 'completed' ? 'bg-green-500' :
+                <div className={`w-2 h-2 rounded-full ${activity.status === 'approved' || activity.status === 'completed' ? 'bg-green-500' :
                   activity.status === 'pending' ? 'bg-yellow-500' : 'bg-gray-500'
-                }`} />
+                  }`} />
                 <div>
                   <p className="font-medium text-gray-900">
                     {activity.user && `${activity.user} - `}
@@ -354,10 +465,9 @@ const DashboardPage = () => {
                   <p className="text-sm text-gray-500">{activity.time}</p>
                 </div>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                activity.status === 'approved' || activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${activity.status === 'approved' || activity.status === 'completed' ? 'bg-green-100 text-green-800' :
                 activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-              }`}>
+                }`}>
                 {activity.type}
               </span>
             </div>
@@ -378,24 +488,24 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {user?.role === 'admin' ? 'Admin Dashboard' :
-             user?.role === 'librarian' ? 'Librarian Dashboard' :
-             'My Dashboard'}
-          </h1>
-          <p className="text-gray-600">
-            Welcome back, {user?.name}! Here's what's happening today.
-          </p>
-        </div>
+        {/* Header - Hide for students as they have an integrated header in renderStudentDashboard */}
+        {!(user?.role === 'student' || user?.role === 'lecturer' || user?.role === 'user' || !user?.role) && (
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {user?.role === 'admin' ? 'Admin Dashboard' : 'Librarian Dashboard'}
+            </h1>
+            <p className="text-gray-600">
+              Welcome back, {user?.name}! Here's what's happening today.
+            </p>
+          </div>
+        )}
 
         {/* Dashboard Content */}
         <div className="space-y-6">
           {user?.role === 'admin' && renderAdminDashboard()}
           {user?.role === 'librarian' && renderLibrarianDashboard()}
-          {(user?.role === 'student' || user?.role === 'lecturer') && renderStudentDashboard()}
-          
+          {(user?.role === 'student' || user?.role === 'lecturer' || user?.role === 'user' || !user?.role) && renderStudentDashboard()}
+
           {/* Recent Activities - Admin/Librarian only */}
           {(user?.role === 'admin' || user?.role === 'librarian') && renderRecentActivities()}
         </div>
