@@ -7,6 +7,7 @@ const recommendationService = require('../services/recommendationService');
 exports.getRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
+    
     const options = {
       limit: parseInt(req.query.limit) || 10,
       includePersonalized: req.query.personalized !== 'false',
@@ -86,8 +87,9 @@ exports.getCollaborativeRecommendations = async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
     
-    const recommendations = await recommendationService.getCollaborativeRecommendations(userId, limit);
-
+    // Temporarily return empty array for collaborative recommendations
+    const recommendations = [];
+    
     res.status(200).json({
       success: true,
       message: 'Collaborative recommendations retrieved successfully',

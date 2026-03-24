@@ -14,6 +14,8 @@ import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
+import RecommendationPage from './pages/RecommendationPage';
+import DashboardPage from './pages/DashboardPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -57,9 +59,10 @@ function App() {
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
               <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
+              <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
               <Route path="/loans" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/transactions" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />

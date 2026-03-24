@@ -5,17 +5,17 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 3001,
     proxy: {
-      '/auth': 'http://localhost:5000',
-      '/users': 'http://localhost:5000',
-      '/books': 'http://localhost:5000',
-      '/borrow': 'http://localhost:5000',
-      '/reservation': 'http://localhost:5000',
-      '/recommendations': 'http://localhost:5000',
-      '/payments': 'http://localhost:5000',
-      '/fines': 'http://localhost:5000',
-      '/health': 'http://localhost:5000',
+      '/auth': 'http://localhost:8080',
+      '/users': 'http://localhost:8080',
+      '/books': 'http://localhost:8080',
+      '/borrow': 'http://localhost:8080',
+      '/reservation': 'http://localhost:8080',
+      '/recommendations': 'http://localhost:8080',
+      '/payments': 'http://localhost:8080',
+      '/fines': 'http://localhost:8080',
+      '/health': 'http://localhost:8080',
     }
   }
 })

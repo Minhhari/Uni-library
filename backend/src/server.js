@@ -25,6 +25,7 @@ const app = express();
 // ─── Middleware ────────────────────────────────────────────────────────
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:3000',
+  'http://localhost:3001', // Frontend dev
   'http://localhost:5173', // Vite dev
   'http://localhost:4200', // Angular dev (nếu dùng)
 ];
@@ -49,7 +50,7 @@ app.use(helmet());
 // Apply Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window`
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
   standardHeaders: true,
   legacyHeaders: false,
   message: {

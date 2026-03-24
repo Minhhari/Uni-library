@@ -29,7 +29,7 @@ const registerValidators = [
     .matches(/[!@#$%^&*]/).withMessage('Password must contain at least one special character'),
   body('role')
     .optional()
-    .isIn(['student', 'lecturer']).withMessage('Role must be student or lecturer'),
+    .isIn(['student', 'lecturer', 'admin', 'librarian']).withMessage('Role must be student, lecturer, admin, or librarian'),
 ];
 
 const loginValidators = [
