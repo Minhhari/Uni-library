@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const HomePage = () => {
+const StudentDashboard = () => {
   const { user } = useAuth();
 
   const stats = [
@@ -148,4 +148,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default StudentDashboard;

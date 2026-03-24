@@ -61,6 +61,13 @@ const bookSchema = new mongoose.Schema(
       enum: ["available", "unavailable", "maintenance"],
       default: "available",
     },
+    // Giá sách dùng để tính phí bồi thường khi hư hỏng hoặc mất sách
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
   },
   {
     timestamps: true,
