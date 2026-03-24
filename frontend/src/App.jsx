@@ -14,6 +14,7 @@ import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
+import LibrarianDashboard from './pages/LibrarianDashboard'; // 👈 thêm
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -64,6 +65,16 @@ function App() {
               <Route path="/transactions" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+              {/* Librarian Dashboard */}
+              <Route
+                path="/librarian"
+                element={
+                  <ProtectedRoute roles={['admin', 'librarian']}>
+                    <LibrarianDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Admin routes */}
               <Route path="/admin/users" element={<ProtectedRoute roles={['admin', 'librarian']}><AdminUserManagementPage /></ProtectedRoute>} />
