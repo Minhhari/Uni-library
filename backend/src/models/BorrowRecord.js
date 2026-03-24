@@ -28,6 +28,12 @@ const borrowRecordSchema = new mongoose.Schema({
   fineAmount: {
     type: Number,
     default: 0
+  },
+  // Tình trạng sách khi trả - do Librarian kiểm tra và cập nhật
+  bookCondition: {
+    type: String,
+    enum: ["good", "damaged", "lost"],
+    default: "good"
   }
 }, { timestamps: true,
     collection: "borrowRecords"
