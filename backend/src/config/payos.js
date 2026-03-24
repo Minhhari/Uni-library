@@ -1,9 +1,16 @@
-const { PayOS } = require("@payos/node");
+// const { PayOS } = require("@payos/node");
 
-const payOS = new PayOS({
-  clientId: process.env.PAYOS_CLIENT_ID,
-  apiKey: process.env.PAYOS_API_KEY,
-  checksumKey: process.env.PAYOS_CHECKSUM_KEY,
-});
+// const payOS = new PayOS({
+//   clientId: process.env.PAYOS_CLIENT_ID,
+//   apiKey: process.env.PAYOS_API_KEY,
+//   checksumKey: process.env.PAYOS_CHECKSUM_KEY,
+// });
+
+// Mock payOS object for development
+const payOS = {
+  paymentRequests: {
+    create: async (data) => ({ checkoutUrl: "http://localhost:3000/payment/mock" })
+  }
+};
 
 module.exports = payOS;

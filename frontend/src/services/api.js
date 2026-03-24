@@ -1,13 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// ─── Base Config ─────────────────────────────────────────
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT token to every request
+// ─── Interceptors ────────────────────────────────────────
+// Attach JWT token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('lms_token');
@@ -19,7 +22,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401 globally - auto logout
+// Handle 401 (auto logout)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -53,30 +56,67 @@ export const userAPI = {
   createLibrarian: (data) => api.post('/users/librarian', data),
 };
 
+// ─── Book APIs ───────────────────────────────────────────
+export const bookAPI = {
+  getBooks: (params) => api.get('/books', { params }),
+  getBookById: (id) => api.get(`/books/${id}`),
+  addBook: (data) => api.post('/books', data),
+  updateBook: (id, data) => api.put(`/books/${id}`, data),
+  deleteBook: (id) => api.delete(`/books/${id}`),
+  updateQuantity: (id, quantity) =>
+    api.put(`/books/${id}/quantity`, { quantity }),
+};
+
+// ─── Recommendation APIs ─────────────────────────────────
+export const recommendationAPI = {
+  getRecommendations: (params) =>
+    api.get('/recommendations', { params }),
+
+  getPersonalized: (params) =>
+    api.get('/recommendations/personalized', { params }),
+
+  getPopular: (params) =>
+    api.get('/recommendations/popular', { params }),
+
+  getCollaborative: (params) =>
+    api.get('/recommendations/collaborative', { params }),
+
+  getSemester: (params) =>
+    api.get('/recommendations/semester', { params }),
+
+  getAcademic: (params) =>
+    api.get('/recommendations/academic', { params }),
+
+  getSemesterInfo: () =>
+    api.get('/recommendations/semester/info'),
+};
+
 // ─── Borrow APIs ─────────────────────────────────────────
 export const borrowAPI = {
-  // Student
-  requestBorrow: (bookId) => api.post('/borrow/request', { bookId }),
-  getMyBooks: () => api.get('/borrow/my-books'),
-
-  // Librarian / Admin
-  getAllBorrows: () => api.get('/borrow/all'),
+  requestBorrow: (data) => api.post('/borrow/request', data),
+  getMyBooks: (params) => api.get('/borrow/my-books', { params }),
+  getAllBorrows: (params) => api.get('/borrow/all', { params }),
   approveBorrow: (id) => api.put(`/borrow/approve/${id}`),
   rejectBorrow: (id) => api.put(`/borrow/reject/${id}`),
-  returnBook: (id, bookCondition) => api.put(`/borrow/return/${id}`, { bookCondition }),
+  returnBook: (id) => api.put(`/borrow/return/${id}`),
 };
 
 // ─── Fine APIs ───────────────────────────────────────────
 export const fineAPI = {
   getMyFines: () => api.get('/fines/my'),
   getAllFines: () => api.get('/fines/all'),
-  getFineByBorrow: (borrowId) => api.get(`/fines/borrow/${borrowId}`),
+  getFineByBorrow: (borrowId) =>
+    api.get(`/fines/borrow/${borrowId}`),
 };
 
-// ─── Payment APIs ─────────────────────────────────────────
+// ─── Payment APIs ────────────────────────────────────────
 export const paymentAPI = {
-  createPayment: (fineId) => api.post('/payments/create', { fineId }),
-  getPaymentStatus: (orderCode) => api.get(`/payments/${orderCode}`),
+  createPayment: (fineId) =>
+    api.post('/payments/create', { fineId }),
+
+  getPaymentStatus: (orderCode) =>
+    api.get(`/payments/${orderCode}`),
 };
 
+// ─── Export ──────────────────────────────────────────────
 export default api;

@@ -8,6 +8,7 @@ const Sidebar = () => {
     const navItems = [
         { name: 'Dashboard', path: '/', icon: 'dashboard' },
         { name: 'Library', path: '/books', icon: 'menu_book' },
+        { name: 'Recommendations', path: '/recommendations', icon: 'recommend' },
         { name: 'My Loans', path: '/loans', icon: 'history' },
         { name: 'Transactions', path: '/transactions', icon: 'receipt_long' },
         { name: 'Reports', path: '/reports', icon: 'bar_chart' },

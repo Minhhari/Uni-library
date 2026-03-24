@@ -13,9 +13,9 @@ import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
-import LibrarianDashboard from './pages/LibrarianDashboard'; // 👈 thêm
-import TransactionPage from './pages/TransactionPage';
-import StudentDashboard from './pages/StudentDashboard';
+
+import RecommendationPage from './pages/RecommendationPage';
+import DashboardPage from './pages/DashboardPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -59,27 +59,21 @@ function App() {
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
               <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
-              <Route path="/loans" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-              <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+              <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
+
+              {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
+              <Route path="/loans" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/transactions" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-              {/* Librarian Dashboard */}
-              <Route
-                path="/librarian"
-                element={
-                  <ProtectedRoute roles={['admin', 'librarian']}>
-                    <LibrarianDashboard />
-                  </ProtectedRoute>
-                }
-              />
-
               {/* Admin routes */}
-              <Route path="/admin/users" element={<ProtectedRoute roles={['admin', 'librarian']}><AdminUserManagementPage /></ProtectedRoute>} />
-              <Route path="/admin/users/:id" element={<ProtectedRoute roles={['admin', 'librarian']}><UserDetailPage /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute><AdminUserManagementPage /></ProtectedRoute>} />
+              <Route path="/admin/users/:id" element={<ProtectedRoute><UserDetailPage /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />

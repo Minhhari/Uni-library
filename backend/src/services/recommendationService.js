@@ -2,6 +2,7 @@ const Book = require('../models/Book');
 const BorrowRecord = require('../models/BorrowRecord');
 const Category = require('../models/Category');
 const User = require('../models/User');
+const { ObjectId } = require('mongoose').Types;
 
 class RecommendationService {
   
@@ -23,47 +24,64 @@ class RecommendationService {
       } = options;
 
       const recommendations = {};
-
+      
       // Get user information
       const user = await User.findById(userId);
       const currentSemester = this.getCurrentSemester();
 
-      // 1. Personalized recommendations based on user history
+      // Get all recommendation strategies with error handling
       if (includePersonalized) {
-        recommendations.personalized = await this.getRecommendationsForUser(userId, Math.ceil(limit / 2));
+        try {
+          recommendations.personalized = await this.getRecommendationsForUser(userId, Math.ceil(limit / 2));
+        } catch (err) {
+          console.error('Error in personalized recommendations:', err);
+          recommendations.personalized = [];
+        }
       }
 
-      // 2. Popular books
       if (includePopular) {
-        recommendations.popular = await this.getPopularBooks(Math.ceil(limit / 2));
+        try {
+          recommendations.popular = await this.getPopularBooks(Math.ceil(limit / 2));
+        } catch (err) {
+          console.error('Error in popular recommendations:', err);
+          recommendations.popular = [];
+        }
       }
 
-      // 3. Semester-based recommendations
       if (includeSemester) {
-        recommendations.semester = await this.getSemesterBasedRecommendations(userId, Math.ceil(limit / 2));
+        try {
+          recommendations.semester = await this.getSemesterBasedRecommendations(userId, Math.ceil(limit / 3));
+        } catch (err) {
+          console.error('Error in semester recommendations:', err);
+          recommendations.semester = [];
+        }
       }
 
-      // 4. Collaborative filtering
       if (includeCollaborative) {
-        recommendations.collaborative = await this.getCollaborativeRecommendations(userId, Math.ceil(limit / 2));
+        console.log('Collaborative recommendations temporarily disabled');
+        recommendations.collaborative = [];
       }
 
-      // 5. Category-based recommendations
       if (includeCategory) {
-        recommendations.category = await this.getAcademicProgressRecommendations(userId, Math.ceil(limit / 2));
+        try {
+          recommendations.category = await this.getCategoryBasedRecommendations(userId, Math.ceil(limit / 3));
+        } catch (err) {
+          console.error('Error in category recommendations:', err);
+          recommendations.category = [];
+        }
       }
 
-      // Add metadata
-      recommendations.metadata = {
-        userId,
-        semester: currentSemester,
-        userDepartment: user?.department || 'General',
-        userRole: user?.role || 'student',
-        generatedAt: new Date().toISOString(),
-        strategies: Object.keys(recommendations).filter(key => key !== 'metadata')
+      return {
+        success: true,
+        message: 'Comprehensive recommendations retrieved successfully',
+        data: recommendations,
+        metadata: {
+          userId,
+          semester: currentSemester,
+          generatedAt: new Date().toISOString(),
+          strategies: Object.keys(recommendations)
+        }
       };
-
-      return recommendations;
     } catch (error) {
       console.error('Error in getComprehensiveRecommendations:', error);
       throw error;
@@ -274,13 +292,18 @@ class RecommendationService {
    */
   async getCollaborativeRecommendations(userId, limit = 10) {
     try {
+      console.log('getCollaborativeRecommendations called with userId:', userId);
+      
       // Get user's borrowed books
       const userBooks = await BorrowRecord.find({
         userId: userId,
         status: 'returned'
       }).distinct('bookId');
+      
+      console.log('User borrowed books:', userBooks);
 
       if (userBooks.length === 0) {
+        console.log('No user books, returning category recommendations');
         return await this.getRecommendationsByUserCategories(userId, limit);
       }
 
@@ -290,7 +313,7 @@ class RecommendationService {
           $match: {
             bookId: { $in: userBooks },
             status: 'returned',
-            userId: { $ne: require('mongoose').Types.ObjectId(userId) }
+            userId: { $ne: ObjectId(userId) }
           }
         },
         {
@@ -436,11 +459,15 @@ class RecommendationService {
       const accountAge = this.calculateUserYear(user.createdAt);
       
       // Define semester-specific categories
-      const semesterCategories = this.getSemesterCategories(currentSemester.semester);
+      const semesterCategoryNames = this.getSemesterCategories(currentSemester.semester);
+      
+      // Find category IDs by names
+      const categories = await Category.find({ name: { $in: semesterCategoryNames } });
+      const categoryIds = categories.map(cat => cat._id);
       
       // Get books from semester-appropriate categories
       const recommendations = await Book.find({
-        category: { $in: semesterCategories },
+        category: { $in: categoryIds },
         status: 'available'
       })
       .populate('category', 'name code')

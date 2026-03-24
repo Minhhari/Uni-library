@@ -57,8 +57,8 @@ const register = async (req, res) => {
       });
     }
 
-    // chỉ cho phép student / lecturer tự đăng ký
-    const allowedRoles = ['student', 'lecturer'];
+    // cho phép student / lecturer / admin / librarian đăng ký
+    const allowedRoles = ['student', 'lecturer', 'admin', 'librarian'];
     const assignedRole = allowedRoles.includes(role) ? role : 'student';
 
     const user = new User({
