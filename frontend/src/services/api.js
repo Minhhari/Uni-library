@@ -118,5 +118,12 @@ export const paymentAPI = {
     api.get(`/payments/${orderCode}`),
 };
 
+// ─── Admin APIs ──────────────────────────────────────────
+export const adminAPI = {
+  getStats: () => api.get('/admin/stats'),
+  getSettings: () => api.get('/admin/settings'),
+  updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
+};
+
 // ─── Export ──────────────────────────────────────────────
 export default api;

@@ -16,6 +16,9 @@ import UserDetailPage from './pages/UserDetailPage';
 import StudentDashboard from './pages/StudentDashboard';
 import RecommendationPage from './pages/RecommendationPage';
 import DashboardPage from './pages/DashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminSystemSettingsPage from './pages/AdminSystemSettingsPage';
+import AdminReportsPage from './pages/AdminReportsPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -91,8 +94,11 @@ function App() {
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Admin routes */}
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminUserManagementPage /></ProtectedRoute>} />
               <Route path="/admin/users/:id" element={<ProtectedRoute><UserDetailPage /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute><AdminSystemSettingsPage /></ProtectedRoute>} />
+              <Route path="/admin/reports" element={<ProtectedRoute><AdminReportsPage /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />

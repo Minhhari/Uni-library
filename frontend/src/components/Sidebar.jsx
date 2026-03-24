@@ -5,21 +5,32 @@ import { useAuth } from '../context/AuthContext';
 const Sidebar = () => {
     const { user, logout } = useAuth();
 
-    const navItems = [
-        { name: 'Dashboard', path: '/', icon: 'dashboard' },
-        { name: 'Library', path: '/books', icon: 'menu_book' },
-        { name: 'Recommendations', path: '/recommendations', icon: 'recommend' },
-        { name: 'My Loans', path: '/loans', icon: 'history' },
-        { name: 'Transactions', path: '/transactions', icon: 'receipt_long' },
-        { name: 'Reports', path: '/reports', icon: 'bar_chart' },
-    ];
+    const isAdmin = user?.role === 'admin';
+    const isLibrarian = user?.role === 'librarian';
 
-    if (user?.role === 'admin' || user?.role === 'librarian') {
-        navItems.push(
-            { name: 'Admin Panel', path: '/admin', icon: 'admin_panel_settings' },
-            { name: 'Users', path: '/admin/users', icon: 'group' }
-        );
-    }
+    const navItems = isAdmin
+        ? [
+            { name: 'Admin Dashboard', path: '/admin', icon: 'admin_panel_settings' },
+            { name: 'Manage Users', path: '/admin/users', icon: 'group' },
+            { name: 'System Settings', path: '/admin/settings', icon: 'tune' },
+            { name: 'Reports', path: '/admin/reports', icon: 'analytics' },
+            { name: 'Library', path: '/books', icon: 'menu_book' },
+        ]
+        : isLibrarian
+            ? [
+                { name: 'Dashboard', path: '/', icon: 'dashboard' },
+                { name: 'Library', path: '/books', icon: 'menu_book' },
+                { name: 'Manage Users', path: '/admin/users', icon: 'group' },
+                { name: 'Transactions', path: '/transactions', icon: 'receipt_long' },
+            ]
+            : [
+                { name: 'Dashboard', path: '/', icon: 'dashboard' },
+                { name: 'Library', path: '/books', icon: 'menu_book' },
+                { name: 'Recommendations', path: '/recommendations', icon: 'recommend' },
+                { name: 'My Loans', path: '/loans', icon: 'history' },
+                { name: 'Transactions', path: '/transactions', icon: 'receipt_long' },
+                { name: 'Reports', path: '/reports', icon: 'bar_chart' },
+            ];
 
     return (
         <aside className="bg-slate-900 dark:bg-slate-950 h-screen w-64 fixed left-0 top-0 flex flex-col py-8 shadow-xl z-50 transition-all font-body">

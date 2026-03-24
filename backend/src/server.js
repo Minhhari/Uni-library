@@ -15,6 +15,7 @@ const reservationRoutes = require('./routes/reservationRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const paymentRoutes = require("./routes/paymentRoutes");
 const fineRoutes = require("./routes/fineRoutes");
+const adminRoutes = require('./routes/adminRoutes');
 
 
 // Connect to MongoDB
@@ -87,6 +88,7 @@ app.use('/reservation', reservationRoutes);
 app.use('/recommendations', recommendationRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/fines", fineRoutes);
+app.use('/admin', adminRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────
 app.use('*', (req, res) => {
