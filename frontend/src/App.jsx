@@ -19,17 +19,35 @@ import DashboardPage from './pages/DashboardPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import StudentNavbar from './components/StudentNavbar';
 import TransactionPage from './pages/TransactionPage';
+import { useAuth } from './context/AuthContext';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
+  const { user } = useAuth();
   const isAuthPage = ['/login', '/register', '/unauthorized'].includes(location.pathname);
   const [searchQuery, setSearchQuery] = useState('');
 
   if (isAuthPage) {
     return <main className="w-full min-h-screen">{children}</main>;
+  }
+
+  const isStudent = user?.role === 'student' || !user?.role || user?.role === 'user';
+
+  if (isStudent) {
+    return (
+      <div className="bg-white min-h-screen font-body text-gray-900">
+        <StudentNavbar />
+        <main className="pt-20 min-h-screen">
+          <div className="p-10 max-w-[1400px] mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -66,7 +84,7 @@ function App() {
               <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
 
               {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
-              <Route path="/loans" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/my-activity" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 

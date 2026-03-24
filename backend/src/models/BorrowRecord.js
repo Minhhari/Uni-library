@@ -35,8 +35,9 @@ const borrowRecordSchema = new mongoose.Schema({
     enum: ["good", "damaged", "lost"],
     default: "good"
   }
-}, { timestamps: true,
-    collection: "borrowRecords"
- });
+}, {
+  timestamps: true,
+  collection: "borrowRecords"
+});
 
 module.exports = mongoose.model("BorrowRecord", borrowRecordSchema);
