@@ -8,7 +8,7 @@ const fineSchema = new mongoose.Schema({
 
   reason: {
     type: String,
-    enum: ["late", "lost", "damaged"]
+    enum: ["late", "lost", "damaged", "late_and_damaged", "lost_and_late"]
   },
 
   status: {

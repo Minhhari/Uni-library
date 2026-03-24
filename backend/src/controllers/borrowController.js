@@ -160,7 +160,7 @@ exports.returnBook = async (req, res) => {
       });
     }
 
-    // 🔥 chỉ return khi đã approve
+    // chỉ return khi đã approve
     if (record.status !== "approved") {
       return res.status(400).json({
         message: "Only approved records can be returned",
@@ -173,53 +173,92 @@ exports.returnBook = async (req, res) => {
       return res.status(404).json({ message: "Book not found" });
     }
 
-    const returnDate = new Date();
+    // bookCondition do Librarian truyền lên: "good" | "damaged" | "lost"
+    // Mặc định là "good" nếu không truyền
+    const bookCondition = req.body.bookCondition || "good";
 
+    if (!["good", "damaged", "lost"].includes(bookCondition)) {
+      return res.status(400).json({
+        message: "bookCondition must be one of: good, damaged, lost",
+      });
+    }
+
+    const returnDate = new Date();
     record.returnDate = returnDate;
     record.status = "returned";
+    record.bookCondition = bookCondition;
+
+    // =========================
+    // TÍNH TIỀN PHẠT
+    // =========================
+    const bookPrice = book.price || 0;
+    const isLost = bookCondition === "lost";
+    const isDamaged = bookCondition === "damaged";
+
+    let isLate = false;
+    let daysLate = 0;
+    if (record.dueDate && returnDate > record.dueDate) {
+      isLate = true;
+      const diffTime = returnDate - record.dueDate;
+      daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
 
     let fineAmount = 0;
+    let fineReason = null;
 
-    // =========================
-    // CHECK LATE
-    // =========================
-    if (record.dueDate && returnDate > record.dueDate) {
-      const diffTime = returnDate - record.dueDate;
-
-      const daysLate = Math.ceil(
-        diffTime / (1000 * 60 * 60 * 24)
-      );
-
+    if (isLost && isLate) {
+      // Mất sách + quá hạn: 100% giá sách + 5000/ngày trễ
+      fineAmount = bookPrice + daysLate * 5000;
+      fineReason = "lost_and_late";
+    } else if (isLost) {
+      // Mất sách đúng hạn: 100% giá sách
+      fineAmount = bookPrice;
+      fineReason = "lost";
+    } else if (isDamaged && isLate) {
+      // Hư hỏng + quá hạn: 50% giá sách + 5000/ngày trễ
+      fineAmount = bookPrice * 0.5 + daysLate * 5000;
+      fineReason = "late_and_damaged";
+    } else if (isDamaged) {
+      // Hư hỏng đúng hạn: 50% giá sách
+      fineAmount = bookPrice * 0.5;
+      fineReason = "damaged";
+    } else if (isLate) {
+      // Nguyên vẹn + quá hạn: 5000/ngày trễ
       fineAmount = daysLate * 5000;
+      fineReason = "late";
+    }
+    // Nguyên vẹn + đúng hạn: không phạt (fineAmount = 0)
 
-      record.fineAmount = fineAmount;
+    record.fineAmount = fineAmount;
+    await record.save();
 
-      // 🔥 tránh tạo duplicate fine
-      const existingFine = await Fine.findOne({
-        borrowId: record._id,
-      });
-
+    // Tạo Fine record nếu có phạt
+    if (fineAmount > 0) {
+      const existingFine = await Fine.findOne({ borrowId: record._id });
       if (!existingFine) {
         await Fine.create({
           userId: record.userId,
           borrowId: record._id,
           amount: fineAmount,
-          reason: "late",
+          reason: fineReason,
           status: "pending",
-          paid: false,
         });
       }
     }
 
-    await record.save();
-
-    // cộng lại sách
-    book.available += 1;
-    await book.save();
+    // Cộng lại số lượng sách (trừ khi sách bị mất)
+    if (!isLost) {
+      book.available += 1;
+      await book.save();
+    }
 
     res.json({
       message: "Book returned successfully",
-      fine: fineAmount,
+      bookCondition,
+      isLate,
+      daysLate,
+      fineAmount,
+      fineReason,
     });
 
   } catch (err) {
