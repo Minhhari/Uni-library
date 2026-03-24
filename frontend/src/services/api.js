@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -42,12 +41,9 @@ export const authAPI = {
 
 // ─── User APIs ───────────────────────────────────────────
 export const userAPI = {
-  // Current user
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
   changePassword: (data) => api.put('/users/change-password', data),
-
-  // Admin - User Management
   getAllUsers: (params) => api.get('/users', { params }),
   getUserById: (id) => api.get(`/users/${id}`),
   editUser: (id, data) => api.put(`/users/${id}`, data),
@@ -55,6 +51,26 @@ export const userAPI = {
   toggleUserStatus: (id) => api.put(`/users/${id}/status`),
   deleteUser: (id) => api.delete(`/users/${id}`),
   createLibrarian: (data) => api.post('/users/librarian', data),
+};
+
+// ─── Borrow APIs ─────────────────────────────────────────
+export const borrowAPI = {
+  // Student
+  requestBorrow: (bookId) => api.post('/borrow/request', { bookId }),
+  getMyBooks: () => api.get('/borrow/my-books'),
+
+  // Librarian / Admin
+  getAllBorrows: () => api.get('/borrow/all'),
+  approveBorrow: (id) => api.put(`/borrow/approve/${id}`),
+  rejectBorrow: (id) => api.put(`/borrow/reject/${id}`),
+  returnBook: (id, bookCondition) => api.put(`/borrow/return/${id}`, { bookCondition }),
+};
+
+// ─── Fine APIs ───────────────────────────────────────────
+export const fineAPI = {
+  getMyFines: () => api.get('/fines/my'),
+  getAllFines: () => api.get('/fines/all'),
+  getFineByBorrow: (borrowId) => api.get(`/fines/borrow/${borrowId}`),
 };
 
 export default api;
