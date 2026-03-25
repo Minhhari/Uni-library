@@ -1,9 +1,10 @@
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
+    const location = useLocation();
 
     const isAdmin = user?.role === 'admin';
     const isLibrarian = user?.role === 'librarian';
@@ -65,39 +66,58 @@ const Sidebar = () => {
 
             {/* Navigation */}
             <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar scroll-smooth">
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) =>
-                            `flex items-center gap-4 px-6 py-3.5 transition-all duration-300 group ${isActive
-                                ? 'text-emerald-400 font-bold border-l-4 border-emerald-500 bg-slate-800/60'
-                                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                            }`
+                {navItems.map((item) => {
+                    const itemPath = item.path.split('?')[0];
+                    const itemQuery = item.path.split('?')[1] || '';
+                    const itemTab = new URLSearchParams(itemQuery).get('tab');
+
+                    const currentTab = new URLSearchParams(location.search).get('tab');
+
+                    let active = false;
+                    if (itemPath === '/') {
+                        if (location.pathname === '/') {
+                            if (itemTab) {
+                                active = currentTab === itemTab;
+                            } else {
+                                active = !currentTab || currentTab === 'overview';
+                            }
                         }
-                    >
-                        <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
-                            {item.icon}
-                        </span>
-                        <span className="tracking-tight text-sm font-medium">{item.name}</span>
-                    </NavLink>
-                ))}
+                    } else if (itemPath === '/admin' && location.pathname === '/admin') {
+                        active = true;
+                    } else if (itemPath !== '/' && location.pathname.startsWith(itemPath)) {
+                        active = true;
+                    }
+
+                    return (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-4 px-6 py-3.5 transition-all duration-300 group border-l-4 ${active
+                                ? 'text-emerald-400 font-bold border-emerald-500 bg-slate-800/60'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border-transparent'
+                                }`}
+                        >
+                            <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
+                                {item.icon}
+                            </span>
+                            <span className="tracking-tight text-sm font-medium">{item.name}</span>
+                        </Link>
+                    );
+                })}
             </nav>
 
             {/* Footer Actions */}
             <div className="mt-auto border-t border-slate-800/50 pt-6 px-2">
-                <NavLink
+                <Link
                     to="/profile"
-                    className={({ isActive }) =>
-                        `flex items-center gap-4 px-6 py-3.5 transition-all duration-300 rounded-xl ${isActive
-                            ? 'text-emerald-400 font-bold bg-slate-800/60'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                        }`
-                    }
+                    className={`flex items-center gap-4 px-6 py-3.5 transition-all duration-300 rounded-xl ${location.pathname.startsWith('/profile')
+                        ? 'text-emerald-400 font-bold bg-slate-800/60'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                        }`}
                 >
                     <span className="material-symbols-outlined text-[20px]">settings</span>
                     <span className="tracking-tight text-sm font-medium">Settings</span>
-                </NavLink>
+                </Link>
                 <button
                     onClick={logout}
                     className="w-full flex items-center gap-4 px-6 py-3.5 text-slate-400 hover:text-error hover:bg-error/5 transition-all duration-300 rounded-xl text-left"

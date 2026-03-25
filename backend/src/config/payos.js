@@ -5,12 +5,15 @@
 //   apiKey: process.env.PAYOS_API_KEY,
 //   checksumKey: process.env.PAYOS_CHECKSUM_KEY,
 // });
+// module.exports = payOS;
 
-// Mock payOS object for development
-const payOS = {
-  paymentRequests: {
-    create: async (data) => ({ checkoutUrl: "http://localhost:3000/payment/mock" })
-  }
-};
+const { PayOS } = require("@payos/node");
+
+// Cú pháp ĐÚNG: Truyền 3 tham số riêng biệt (không dùng ngoặc nhọn {})
+const payOS = new PayOS(
+  process.env.PAYOS_CLIENT_ID,
+  process.env.PAYOS_API_KEY,
+  process.env.PAYOS_CHECKSUM_KEY
+);
 
 module.exports = payOS;

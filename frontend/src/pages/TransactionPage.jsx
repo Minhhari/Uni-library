@@ -36,9 +36,9 @@ const formatDate = (d) => {
 };
 
 const PAYMENT_METHODS = [
-  { id: "payos", label: "VNPay QR",       icon: "qr_code_2",       badge: "Recommended" },
-  { id: "cash",  label: "Cash at Counter", icon: "payments",        badge: null },
-  { id: "bank",  label: "Bank Transfer",   icon: "account_balance", badge: null },
+  { id: "payos", label: "VNPay QR", icon: "qr_code_2", badge: "Recommended" },
+  { id: "cash", label: "Cash at Counter", icon: "payments", badge: null },
+  { id: "bank", label: "Bank Transfer", icon: "account_balance", badge: null },
 ];
 
 // ─── Book Cover ──────────────────────────────────────────────────────────
@@ -72,8 +72,8 @@ const Toast = ({ toast }) => {
   if (!toast) return null;
   const styles = {
     success: "bg-emerald-50 border-emerald-300 text-emerald-800",
-    error:   "bg-red-50 border-red-300 text-red-800",
-    info:    "bg-blue-50 border-blue-300 text-blue-800",
+    error: "bg-red-50 border-red-300 text-red-800",
+    info: "bg-blue-50 border-blue-300 text-blue-800",
   };
   const icons = { success: "check_circle", error: "error", info: "info" };
   return (
@@ -86,13 +86,13 @@ const Toast = ({ toast }) => {
 
 // ─── Main Page ───────────────────────────────────────────────────────────
 const TransactionPage = () => {
-  const [loading, setLoading]                   = useState(true);
-  const [fines, setFines]                       = useState([]);
-  const [summary, setSummary]                   = useState({ totalOutstanding: 0, pendingCount: 0, totalPaid: 0, paidCount: 0 });
-  const [selectedMethod, setSelectedMethod]     = useState("payos");
-  const [payingId, setPayingId]                 = useState(null);
-  const [toast, setToast]                       = useState(null);
-  const [activeTab, setActiveTab]               = useState("pending");
+  const [loading, setLoading] = useState(true);
+  const [fines, setFines] = useState([]);
+  const [summary, setSummary] = useState({ totalOutstanding: 0, pendingCount: 0, totalPaid: 0, paidCount: 0 });
+  const [selectedMethod, setSelectedMethod] = useState("payos");
+  const [payingId, setPayingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [activeTab, setActiveTab] = useState("pending");
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -116,8 +116,8 @@ const TransactionPage = () => {
   useEffect(() => { fetchFines(); }, [fetchFines]);
 
   const pendingFines = fines.filter((f) => f.status === "pending");
-  const paidFines    = fines.filter((f) => f.status === "paid");
-  const displayed    = activeTab === "pending" ? pendingFines : paidFines;
+  const paidFines = fines.filter((f) => f.status === "paid");
+  const displayed = activeTab === "pending" ? pendingFines : paidFines;
 
   const handlePayItem = async (fine) => {
     if (selectedMethod !== "payos") {
@@ -192,23 +192,21 @@ const TransactionPage = () => {
             <div className="flex gap-1 bg-surface-container-low p-1 rounded-xl border border-surface-dim">
               {[
                 { id: "pending", label: "Pending Penalties", count: summary.pendingCount },
-                { id: "paid",    label: "Paid",              count: summary.paidCount },
+                { id: "paid", label: "Paid", count: summary.paidCount },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-5 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
-                    activeTab === tab.id
-                      ? "bg-primary text-white shadow"
-                      : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
-                  }`}
+                  className={`px-5 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === tab.id
+                    ? "bg-primary text-white shadow"
+                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                    }`}
                 >
                   {tab.label}
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-black ${
-                    activeTab === tab.id
-                      ? "bg-white/20 text-white"
-                      : "bg-surface-container-high text-on-surface-variant"
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-black ${activeTab === tab.id
+                    ? "bg-white/20 text-white"
+                    : "bg-surface-container-high text-on-surface-variant"
+                    }`}>
                     {tab.count}
                   </span>
                 </button>
@@ -395,11 +393,10 @@ const TransactionPage = () => {
                 <button
                   key={m.id}
                   onClick={() => setSelectedMethod(m.id)}
-                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
-                    selectedMethod === m.id
-                      ? "border-primary/40 bg-primary/5 shadow-sm"
-                      : "border-surface-dim bg-surface-container-low hover:border-outline/30 hover:bg-surface-container"
-                  }`}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${selectedMethod === m.id
+                    ? "border-primary/40 bg-primary/5 shadow-sm"
+                    : "border-surface-dim bg-surface-container-low hover:border-outline/30 hover:bg-surface-container"
+                    }`}
                 >
                   <span className={`material-symbols-outlined text-xl ${selectedMethod === m.id ? "text-primary" : "text-on-surface-variant"}`}>
                     {m.icon}
