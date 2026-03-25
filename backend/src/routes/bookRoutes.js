@@ -35,6 +35,7 @@ const updateBookValidation = [
 
 // Public routes
 router.get('/', getBooks);
+router.get('/details/:id', getBookById);
 router.get('/:id', getBookById);
 
 // Protected routes - Admin and Librarian only
