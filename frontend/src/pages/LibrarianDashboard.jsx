@@ -276,6 +276,20 @@ const LibrarianDashboard = () => {
     }
   };
 
+  const handleRejectBorrow = async (id) => {
+    setActionLoading(p => ({ ...p, [id]: true }));
+    try {
+      await api.put(`/borrow/reject/${id}`);
+      toast.success('Đã từ chối yêu cầu mượn');
+      fetchData();
+    } catch (e) {
+      console.error('Reject error:', e);
+      toast.error(e.response?.data?.message || 'Không thể từ chối yêu cầu');
+    } finally {
+      setActionLoading(p => ({ ...p, [id]: false }));
+    }
+  };
+
   const handleApproveReservation = async (id) => {
     try {
       await api.put(`/reservation/approve/${id}`);
@@ -462,8 +476,16 @@ const LibrarianDashboard = () => {
                           <button onClick={() => handleApproveBorrow(rec._id)} className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition shadow-lg shadow-emerald-100">
                             <span className="material-symbols-outlined text-[16px]">check</span>
                           </button>
-                          <button onClick={() => toast.info('Tính năng từ chối mượn')} className="w-8 h-8 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-300 transition">
-                            <span className="material-symbols-outlined text-[16px]">close</span>
+                          <button
+                            onClick={() => handleRejectBorrow(rec._id)}
+                            disabled={actionLoading[rec._id]}
+                            className="w-8 h-8 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-300 transition disabled:opacity-50"
+                          >
+                            {actionLoading[rec._id] ? (
+                              <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
+                            ) : (
+                              <span className="material-symbols-outlined text-[16px]">close</span>
+                            )}
                           </button>
                         </>
                       )}
