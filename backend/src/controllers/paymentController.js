@@ -1,5 +1,6 @@
 const payOS = require("../config/payos");
 const Fine = require("../models/Fine");
+const notificationService = require("../services/notificationService");
 
 // =======================
 // CREATE PAYMENT
@@ -48,11 +49,11 @@ exports.createPayment = async (req, res) => {
 
     const paymentLink = await payOS.paymentRequests.create(paymentData);
 
-  res.json({
-    checkoutUrl: paymentLink.checkoutUrl,
-    orderCode: fine.orderCode,
-    fineId: fine._id,
-  });
+    res.json({
+      checkoutUrl: paymentLink.checkoutUrl,
+      orderCode: fine.orderCode,
+      fineId: fine._id,
+    });
 
   } catch (err) {
     console.error("Create payment error:", err?.response?.data || err.message || err);
@@ -98,6 +99,14 @@ exports.handleWebhook = async (req, res) => {
     if (code === "00") {
       fine.status = "paid";
       fine.paidAt = new Date();
+
+      // Gửi thông báo cho sinh viên
+      await notificationService.createNotification(
+        fine.userId,
+        "Thanh toán phí phạt thành công",
+        `Bạn đã thanh toán thành công phí phạt ${fine.amount.toLocaleString()}đ cho lý do: ${fine.reason}.`,
+        "/profile?tab=fines"
+      );
 
       console.log(`✅ Payment SUCCESS: ${orderCode}`);
     } else {

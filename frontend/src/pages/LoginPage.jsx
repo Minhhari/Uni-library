@@ -12,6 +12,7 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -97,11 +98,11 @@ const LoginPage = () => {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Password"
-                className="input-field peer"
+                className="input-field peer pr-12"
                 required
                 autoComplete="current-password"
               />
@@ -111,6 +112,16 @@ const LoginPage = () => {
               >
                 Password
               </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-4 text-on-surface-variant/40 hover:text-primary focus:outline-none transition-colors"
+                tabIndex="-1"
+              >
+                <span className="material-symbols-outlined select-none text-xl">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
             </div>
 
             <div className="flex items-center justify-between text-xs px-1">

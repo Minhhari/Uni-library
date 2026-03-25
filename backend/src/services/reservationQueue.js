@@ -13,6 +13,7 @@
 
 const Reservation = require('../models/Reservation');
 const Book = require('../models/Book');
+const notificationService = require('../services/notificationService');
 
 // Ngưỡng "sách còn ít" → cho phép đặt chỗ
 const LOW_STOCK_THRESHOLD = parseInt(process.env.LOW_STOCK_THRESHOLD || '3', 10);
@@ -89,6 +90,14 @@ const processQueue = async (bookId) => {
   // Giảm available
   book.available = Math.max(0, book.available - 1);
   await book.save();
+
+  // Gửi thông báo cho user
+  await notificationService.createNotification(
+    nextReservation.userId,
+    'Sách đặt chỗ đã sẵn sàng!',
+    `Sách "${book.title}" bạn đặt chỗ đã có sẵn. Vui lòng tới thư viện lấy trước ngày ${expiresAt.toLocaleDateString()}.`,
+    '/my-activity'
+  );
 
   console.log(
     `[ReservationQueue] Auto-approved reservation ${nextReservation._id} for book "${book.title}" → user ${nextReservation.userId}`
