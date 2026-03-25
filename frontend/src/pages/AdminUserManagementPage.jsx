@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { userAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const ROLE_LABELS = {
     admin: 'Admin',
@@ -26,6 +27,8 @@ const AdminUserManagementPage = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
+    const { user: currentUser } = useAuth();
+    const isLibrarian = currentUser?.role === 'librarian';
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createForm, setCreateForm] = useState({ name: '', email: '', password: '' });
     const [createLoading, setCreateLoading] = useState(false);
@@ -43,7 +46,12 @@ const AdminUserManagementPage = () => {
             if (statusFilter !== '') params.isActive = statusFilter;
             const { data } = await userAPI.getAllUsers(params);
             if (data.success) {
-                setUsers(data.users || data.data || []);
+                let fetchedUsers = data.users || data.data || [];
+                // Librarian cannot see Admins
+                if (isLibrarian) {
+                    fetchedUsers = fetchedUsers.filter(u => u.role !== 'admin');
+                }
+                setUsers(fetchedUsers);
                 setTotalPages(data.totalPages || Math.ceil((data.total || 0) / LIMIT));
                 setTotal(data.total || 0);
             }
@@ -104,13 +112,15 @@ const AdminUserManagementPage = () => {
                         Manage all accounts — {total} users total
                     </p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/20"
-                >
-                    <span className="material-symbols-outlined text-lg">person_add</span>
-                    Create Librarian
-                </button>
+                {!isLibrarian && (
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                    >
+                        <span className="material-symbols-outlined text-lg">person_add</span>
+                        Create Librarian
+                    </button>
+                )}
             </div>
 
             {/* Alerts */}
@@ -148,8 +158,8 @@ const AdminUserManagementPage = () => {
                         className="px-4 py-3 bg-surface-container-low rounded-xl border border-transparent focus:border-primary/40 focus:outline-none text-sm text-on-surface transition-all min-w-[140px]"
                     >
                         <option value="">All Roles</option>
-                        <option value="admin">Admin</option>
-                        <option value="librarian">Librarian</option>
+                        {!isLibrarian && <option value="admin">Admin</option>}
+                        {!isLibrarian && <option value="librarian">Librarian</option>}
                         <option value="lecturer">Lecturer</option>
                         <option value="student">Student</option>
                     </select>
@@ -231,17 +241,19 @@ const AdminUserManagementPage = () => {
                                                 >
                                                     <span className="material-symbols-outlined text-lg">visibility</span>
                                                 </Link>
-                                                <button
-                                                    onClick={() => handleToggleStatus(u._id, u.isActive)}
-                                                    className={`p-2 rounded-xl transition-all ${u.isActive
-                                                        ? 'text-on-surface-variant hover:text-error hover:bg-error/10'
-                                                        : 'text-on-surface-variant hover:text-emerald-600 hover:bg-emerald-50'}`}
-                                                    title={u.isActive ? 'Disable Account' : 'Enable Account'}
-                                                >
-                                                    <span className="material-symbols-outlined text-lg">
-                                                        {u.isActive ? 'block' : 'check_circle'}
-                                                    </span>
-                                                </button>
+                                                {!isLibrarian && (
+                                                    <button
+                                                        onClick={() => handleToggleStatus(u._id, u.isActive)}
+                                                        className={`p-2 rounded-xl transition-all ${u.isActive
+                                                            ? 'text-on-surface-variant hover:text-error hover:bg-error/10'
+                                                            : 'text-on-surface-variant hover:text-emerald-600 hover:bg-emerald-50'}`}
+                                                        title={u.isActive ? 'Disable Account' : 'Enable Account'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg">
+                                                            {u.isActive ? 'block' : 'check_circle'}
+                                                        </span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

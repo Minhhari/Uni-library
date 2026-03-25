@@ -22,6 +22,7 @@ import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminSystemSettingsPage from './pages/AdminSystemSettingsPage';
 import AdminReportsPage from './pages/AdminReportsPage';
+import LibrarianDashboard from './pages/LibrarianDashboard';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -87,6 +88,14 @@ const AppLayout = ({ children }) => {
   );
 };
 
+const DashboardSelector = () => {
+  const { user } = useAuth();
+  if (user?.role === 'admin') return <AdminDashboardPage />;
+  if (user?.role === 'librarian') return <LibrarianDashboard />;
+  if (user?.role === 'lecturer') return <LecturerBookRequestPage />;
+  return <StudentDashboard />;
+};
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -100,7 +109,11 @@ function App() {
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <DashboardSelector />
+                </ProtectedRoute>
+              } />
               <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
               <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
               <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />

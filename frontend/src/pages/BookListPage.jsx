@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookAPI } from '../services/api';
-import { LoadingSpinner, ErrorMessage } from '../components';
+import { LoadingSpinner, ErrorMessage, CreateBookModal } from '../components';
 
 const BookListPage = () => {
     const [selectedGenre, setSelectedGenre] = useState('All');
@@ -12,6 +12,7 @@ const BookListPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -25,7 +26,7 @@ const BookListPage = () => {
             const booksData = response.data.data || [];
             setAllBooks(booksData);
             setFilteredBooks(booksData);
-            
+
             // Extract unique categories from books
             const uniqueCategories = [...new Set(booksData.map(book => book.category?.name).filter(Boolean))];
             setCategories(['All', ...uniqueCategories]);
@@ -43,8 +44,8 @@ const BookListPage = () => {
             filtered = filtered.filter(b => b.category?.name === selectedGenre);
         }
         if (searchQuery) {
-            filtered = filtered.filter(b => 
-                b.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            filtered = filtered.filter(b =>
+                b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 b.author.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
@@ -69,10 +70,24 @@ const BookListPage = () => {
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <header>
-                <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Browse Collection</h1>
-                <p className="text-on-surface-variant text-lg">Discover your next academic adventure among {allBooks.length} titles</p>
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Browse Collection</h1>
+                    <p className="text-on-surface-variant text-lg">Discover your next academic adventure among {allBooks.length} titles</p>
+                </div>
+                {user?.role === 'librarian' && (
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
+                    >
+                        <span className="material-symbols-outlined text-lg">add_box</span>
+                        Thêm sách mới
+                    </button>
+                )}
             </header>
+
+            {/* Create Modal */}
+            {showCreateModal && <CreateBookModal onClose={() => setShowCreateModal(false)} onSuccess={loadBooks} />}
 
             {/* Filters */}
             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
@@ -82,8 +97,8 @@ const BookListPage = () => {
                             key={genre}
                             onClick={() => setSelectedGenre(genre)}
                             className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${selectedGenre === genre
-                                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105'
-                                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105'
+                                : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                                 }`}
                         >
                             {genre}
@@ -134,8 +149,8 @@ const BookListPage = () => {
                             <p className="text-on-surface-variant text-xs truncate px-1 opacity-70 mb-3">{book.author}</p>
                             <div className="flex items-center justify-between px-1 mt-auto">
                                 <span className={`text-[9px] font-black border px-2 py-0.5 rounded-md uppercase tracking-widest ${book.status === 'AVAILABLE'
-                                        ? 'border-emerald-500/30 text-emerald-600 bg-emerald-50'
-                                        : 'border-on-surface-variant/20 text-on-surface-variant bg-surface-container-low'
+                                    ? 'border-emerald-500/30 text-emerald-600 bg-emerald-50'
+                                    : 'border-on-surface-variant/20 text-on-surface-variant bg-surface-container-low'
                                     }`}>
                                     {book.status}
                                 </span>

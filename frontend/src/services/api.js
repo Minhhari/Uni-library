@@ -59,6 +59,7 @@ export const userAPI = {
 // ─── Book APIs ───────────────────────────────────────────
 export const bookAPI = {
   getBooks: (params) => api.get('/books', { params }),
+  getCategories: () => api.get('/books/categories'),
   getBookById: (id) => api.get(`/books/${id}`),
   addBook: (data) => api.post('/books', data),
   updateBook: (id, data) => api.put(`/books/${id}`, data),
