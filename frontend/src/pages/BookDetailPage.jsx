@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { bookAPI, borrowAPI } from '../services/api';
 
 const BookDetailPage = () => {
     const { id } = useParams();
@@ -231,8 +233,8 @@ const BookDetailPage = () => {
                                         <label
                                             key={copy.id}
                                             className={`flex items-center justify-between p-5 rounded-[24px] cursor-pointer transition-all border-2 ${selectedCopy === copy.id
-                                                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
-                                                    : 'border-surface-container-low bg-surface hover:border-primary/20 hover:bg-white'
+                                                ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
+                                                : 'border-surface-container-low bg-surface hover:border-primary/20 hover:bg-white'
                                                 }`}
                                             onClick={() => setSelectedCopy(copy.id)}
                                         >
@@ -268,7 +270,7 @@ const BookDetailPage = () => {
                             <button
                                 className="w-full py-6 bg-gradient-to-r from-primary to-primary-container text-white font-black rounded-[28px] shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.95] transition-all text-xl tracking-tight"
                                 onClick={() => {
-                                    alert('Success! Your curated book is ready for pickup.');
+                                    toast.success('Success! Your curated book is ready for pickup.');
                                     setShowBorrowModal(false);
                                 }}
                             >

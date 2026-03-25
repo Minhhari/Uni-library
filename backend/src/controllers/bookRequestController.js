@@ -1,36 +1,6 @@
 const BookRequest = require('../models/BookRequest');
-const Notification = require('../models/Notification');
+const notificationService = require('../services/notificationService');
 const User = require('../models/User');
-
-const notifyLibrarians = async (message, link) => {
-    try {
-        const librarians = await User.find({ role: 'librarian', isActive: true });
-        if (librarians.length > 0) {
-            const notifications = librarians.map(lib => ({
-                userId: lib._id,
-                title: 'Yêu cầu sách từ Giảng viên',
-                message,
-                link
-            }));
-            await Notification.insertMany(notifications);
-        }
-    } catch (error) {
-        console.error('Error sending notifications to librarians:', error);
-    }
-};
-
-const notifyLecturer = async (userId, title, message, link) => {
-    try {
-        await Notification.create({
-            userId,
-            title,
-            message,
-            link
-        });
-    } catch (error) {
-        console.error('Error sending notification to lecturer:', error);
-    }
-};
 
 // @desc    Create a new book request
 // @route   POST /book-requests
@@ -54,7 +24,7 @@ exports.createRequest = async (req, res) => {
         });
 
         const lecturerName = req.user.name || req.user.email || 'Một giảng viên';
-        await notifyLibrarians(`Giảng viên ${lecturerName} vừa yêu cầu bổ sung ${books.length} sách mới.`, '/admin/book-requests');
+        await notificationService.notifyLibrarians('Yêu cầu bổ sung sách mới', `Giảng viên ${lecturerName} vừa yêu cầu bổ sung ${books.length} sách mới.`, '/admin/book-requests');
 
         res.status(201).json({
             success: true,
@@ -111,7 +81,7 @@ exports.uploadExcel = async (req, res) => {
         });
 
         const lecturerName = req.user.name || req.user.email || 'Một giảng viên';
-        await notifyLibrarians(`Giảng viên ${lecturerName} vừa upload file Excel yêu cầu bổ sung ${books.length} sách mới.`, '/admin/book-requests');
+        await notificationService.notifyLibrarians('Yêu cầu bổ sung sách mới (Excel)', `Giảng viên ${lecturerName} vừa upload file Excel yêu cầu bổ sung ${books.length} sách mới.`, '/admin/book-requests');
 
         res.status(201).json({
             success: true,
@@ -201,7 +171,7 @@ exports.updateRequestStatus = async (req, res) => {
         const message = status === 'Approved'
             ? `Danh sách yêu cầu sách của bạn đã được duyệt!`
             : `Danh sách yêu cầu sách của bạn đã bị từ chối. Lý do: ${note || 'Không có'}`;
-        await notifyLecturer(request.lecturer, 'Cập nhật trạng thái yêu cầu sách', message, '/book-requests');
+        await notificationService.createNotification(request.lecturer, 'Cập nhật trạng thái yêu cầu sách', message, '/book-requests');
 
         res.status(200).json({
             success: true,

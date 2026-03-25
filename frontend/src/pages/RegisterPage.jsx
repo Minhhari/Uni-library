@@ -20,6 +20,8 @@ const RegisterPage = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -142,11 +144,11 @@ const RegisterPage = () => {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Password"
-                className="input-field peer"
+                className="input-field peer pr-12"
                 required
                 autoComplete="new-password"
               />
@@ -156,17 +158,27 @@ const RegisterPage = () => {
               >
                 Password
               </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-4 text-on-surface-variant/40 hover:text-primary focus:outline-none transition-colors"
+                tabIndex="-1"
+              >
+                <span className="material-symbols-outlined select-none text-xl">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
             </div>
 
             <div className="relative group">
               <input
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={form.confirmPassword}
                 onChange={handleChange}
                 placeholder="Confirm Password"
-                className="input-field peer"
+                className="input-field peer pr-12"
                 required
                 autoComplete="new-password"
               />
@@ -176,6 +188,16 @@ const RegisterPage = () => {
               >
                 Confirm Password
               </label>
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-4 text-on-surface-variant/40 hover:text-primary focus:outline-none transition-colors"
+                tabIndex="-1"
+              >
+                <span className="material-symbols-outlined select-none text-xl">
+                  {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
             </div>
 
             <button

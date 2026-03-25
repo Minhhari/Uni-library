@@ -5,6 +5,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
@@ -24,6 +27,8 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import StudentNavbar from './components/StudentNavbar';
 import TransactionPage from './pages/TransactionPage';
+import LecturerBookRequestPage from './pages/LecturerDashboard';
+import LecturerNavbar from './components/LecturerNavbar';
 import { useAuth } from './context/AuthContext';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -39,11 +44,25 @@ const AppLayout = ({ children }) => {
   }
 
   const isStudent = user?.role === 'student' || !user?.role || user?.role === 'user';
+  const isLecturer = user?.role === 'lecturer';
 
   if (isStudent) {
     return (
       <div className="bg-white min-h-screen font-body text-gray-900">
         <StudentNavbar />
+        <main className="pt-20 min-h-screen">
+          <div className="p-10 max-w-[1400px] mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isLecturer) {
+    return (
+      <div className="bg-white min-h-screen font-body text-gray-900">
+        <LecturerNavbar />
         <main className="pt-20 min-h-screen">
           <div className="p-10 max-w-[1400px] mx-auto">
             {children}
@@ -92,6 +111,7 @@ function App() {
               <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/book-requests" element={<ProtectedRoute><LecturerBookRequestPage /></ProtectedRoute>} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
@@ -105,6 +125,7 @@ function App() {
             </Routes>
           </AppLayout>
         </Router>
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </AuthProvider>
     </GoogleOAuthProvider>
   );

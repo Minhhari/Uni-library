@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-toastify';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,29 +20,29 @@ const isOverdue = (dueDate, status) => {
 };
 
 const STATUS_CONFIG = {
-  approved:  { label: 'ON TIME',  bg: 'bg-emerald-100 text-emerald-700' },
-  returned:  { label: 'RETURNED', bg: 'bg-slate-100 text-slate-500' },
-  pending:   { label: 'PENDING',  bg: 'bg-amber-100 text-amber-700' },
-  rejected:  { label: 'REJECTED', bg: 'bg-red-100 text-red-600' },
-  overdue:   { label: 'OVERDUE',  bg: 'bg-red-100 text-red-600 font-bold' },
+  approved: { label: 'ON TIME', bg: 'bg-emerald-100 text-emerald-700' },
+  returned: { label: 'RETURNED', bg: 'bg-slate-100 text-slate-500' },
+  pending: { label: 'PENDING', bg: 'bg-amber-100 text-amber-700' },
+  rejected: { label: 'REJECTED', bg: 'bg-red-100 text-red-600' },
+  overdue: { label: 'OVERDUE', bg: 'bg-red-100 text-red-600 font-bold' },
 };
 
 const CONDITION_LABEL = {
-  good:    'Nguyên vẹn',
+  good: 'Nguyên vẹn',
   damaged: 'Hư hỏng',
-  lost:    'Mất sách',
+  lost: 'Mất sách',
 };
 
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, sub, accent, trend, trendUp }) => (
-  <div className={`bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-3 relative overflow-hidden`}>
-    <div className={`absolute top-0 right-0 w-24 h-24 rounded-full opacity-5 -translate-y-6 translate-x-6 ${accent}`} />
+  <div className={`bg - white rounded - 2xl p - 6 shadow - sm border border - slate - 100 flex flex - col gap - 3 relative overflow - hidden`}>
+    <div className={`absolute top - 0 right - 0 w - 24 h - 24 rounded - full opacity - 5 - translate - y - 6 translate - x - 6 ${accent} `} />
     <div className="flex items-center justify-between">
-      <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg ${accent}`}>
+      <span className={`w - 10 h - 10 rounded - xl flex items - center justify - center text - white text - lg ${accent} `}>
         <span className="material-symbols-outlined text-[20px]">{icon}</span>
       </span>
       {trend != null && (
-        <span className={`text-xs font-bold flex items-center gap-0.5 ${trendUp ? 'text-emerald-500' : 'text-red-500'}`}>
+        <span className={`text - xs font - bold flex items - center gap - 0.5 ${trendUp ? 'text-emerald-500' : 'text-red-500'} `}>
           <span className="material-symbols-outlined text-[14px]">{trendUp ? 'trending_up' : 'trending_down'}</span>
           {trend}
         </span>
@@ -65,7 +66,7 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.put(`/borrow/return/${record._id}`, { bookCondition: condition });
+      const res = await api.put(`/ borrow /return/${record._id}`, { bookCondition: condition });
       onSuccess(res.data);
     } catch (e) {
       setError(e.response?.data?.message || 'Có lỗi xảy ra');
@@ -81,7 +82,7 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
 
   const previewFine = (() => {
     const late = daysLate * 5000;
-    if (condition === 'lost')    return daysLate > 0 ? bookPrice + late : bookPrice;
+    if (condition === 'lost') return daysLate > 0 ? bookPrice + late : bookPrice;
     if (condition === 'damaged') return daysLate > 0 ? bookPrice * 0.5 + late : bookPrice * 0.5;
     return late;
   })();
@@ -127,9 +128,9 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { val: 'good',    icon: 'check_circle', label: 'Nguyên vẹn', color: 'emerald' },
-                { val: 'damaged', icon: 'warning',      label: 'Hư hỏng',    color: 'amber' },
-                { val: 'lost',    icon: 'help',         label: 'Mất sách',   color: 'red' },
+                { val: 'good', icon: 'check_circle', label: 'Nguyên vẹn', color: 'emerald' },
+                { val: 'damaged', icon: 'warning', label: 'Hư hỏng', color: 'amber' },
+                { val: 'lost', icon: 'help', label: 'Mất sách', color: 'red' },
               ].map((opt) => (
                 <button
                   key={opt.val}
@@ -137,16 +138,16 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-bold
                     ${condition === opt.val
                       ? opt.color === 'emerald' ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : opt.color === 'amber'   ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                : 'border-red-500 bg-red-50 text-red-700'
+                        : opt.color === 'amber' ? 'border-amber-500 bg-amber-50 text-amber-700'
+                          : 'border-red-500 bg-red-50 text-red-700'
                       : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
                     }`}
                 >
                   <span className={`material-symbols-outlined text-[22px]
                     ${condition === opt.val
                       ? opt.color === 'emerald' ? 'text-emerald-600'
-                      : opt.color === 'amber'   ? 'text-amber-600'
-                                                : 'text-red-600'
+                        : opt.color === 'amber' ? 'text-amber-600'
+                          : 'text-red-600'
                       : 'text-slate-400'}`}>
                     {opt.icon}
                   </span>
@@ -244,9 +245,9 @@ const ResultModal = ({ result, onClose }) => (
 const LibrarianDashboard = () => {
   const { user } = useAuth();
 
-  const [borrows, setBorrows]           = useState([]);
-  const [books, setBooks]               = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [borrows, setBorrows] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
 
   const [returnTarget, setReturnTarget] = useState(null);
@@ -275,16 +276,16 @@ const LibrarianDashboard = () => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  const totalBooks     = books.reduce((s, b) => s + (b.quantity || 0), 0);
-  const activeBorrows  = borrows.filter((b) => b.status === 'approved').length;
-  const overdueItems   = borrows.filter((b) => isOverdue(b.dueDate, b.status)).length;
+  const totalBooks = books.reduce((s, b) => s + (b.quantity || 0), 0);
+  const activeBorrows = borrows.filter((b) => b.status === 'approved').length;
+  const overdueItems = borrows.filter((b) => isOverdue(b.dueDate, b.status)).length;
   const pendingReturns = borrows.filter((b) => b.status === 'pending').length;
 
   // ── Filtered list ─────────────────────────────────────────────────────────
   const filtered = borrows.filter((b) => {
-    if (filter === 'pending')  return b.status === 'pending';
+    if (filter === 'pending') return b.status === 'pending';
     if (filter === 'approved') return b.status === 'approved' && !isOverdue(b.dueDate, b.status);
-    if (filter === 'overdue')  return isOverdue(b.dueDate, b.status);
+    if (filter === 'overdue') return isOverdue(b.dueDate, b.status);
     return true;
   }).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -295,7 +296,7 @@ const LibrarianDashboard = () => {
       await api.put(`/borrow/approve/${id}`);
       await fetchAll();
     } catch (e) {
-      alert(e.response?.data?.message || 'Lỗi');
+      toast.error(e.response?.data?.message || 'Lỗi');
     } finally {
       setActionLoading((p) => ({ ...p, [id]: null }));
     }
@@ -308,7 +309,7 @@ const LibrarianDashboard = () => {
       await api.put(`/borrow/reject/${id}`);
       await fetchAll();
     } catch (e) {
-      alert(e.response?.data?.message || 'Lỗi');
+      toast.error(e.response?.data?.message || 'Lỗi');
     } finally {
       setActionLoading((p) => ({ ...p, [id]: null }));
     }
@@ -335,16 +336,16 @@ const LibrarianDashboard = () => {
 
   const AVATAR_COLORS = [
     'bg-violet-500', 'bg-sky-500', 'bg-emerald-500',
-    'bg-amber-500',  'bg-rose-500', 'bg-indigo-500',
+    'bg-amber-500', 'bg-rose-500', 'bg-indigo-500',
   ];
   const avatarColor = (id) => AVATAR_COLORS[(id?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
   // ── Quick actions ─────────────────────────────────────────────────────────
   const quickActions = [
-    { icon: 'library_add',   label: 'Add New Book',    sub: 'Catalog new items',        href: '/books' },
+    { icon: 'library_add', label: 'Add New Book', sub: 'Catalog new items', href: '/books' },
     { icon: 'assignment_return', label: 'Process Return', sub: 'Check in borrowed books', action: () => setFilter('approved') },
     { icon: 'notification_important', label: 'Send Reminder', sub: 'Notify overdue borrowers', action: () => setFilter('overdue') },
-    { icon: 'bar_chart',     label: 'Generate Report', sub: 'Export monthly statistics', href: '/reports' },
+    { icon: 'bar_chart', label: 'Generate Report', sub: 'Export monthly statistics', href: '/reports' },
   ];
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -392,10 +393,10 @@ const LibrarianDashboard = () => {
 
         {/* ── Stat Cards ── */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon="menu_book"    label="Total Books"      value={totalBooks}    accent="bg-emerald-500" trend="+2.4%" trendUp />
-          <StatCard icon="shopping_bag" label="Active Borrows"   value={activeBorrows}  accent="bg-sky-500"    trend="+12%"  trendUp />
-          <StatCard icon="warning"      label="Overdue Items"    value={overdueItems}   accent="bg-red-500"    trend="+5%"   trendUp={false} />
-          <StatCard icon="assignment_return" label="Pending Returns" value={pendingReturns} accent="bg-violet-500" trend="-8%"  trendUp />
+          <StatCard icon="menu_book" label="Total Books" value={totalBooks} accent="bg-emerald-500" trend="+2.4%" trendUp />
+          <StatCard icon="shopping_bag" label="Active Borrows" value={activeBorrows} accent="bg-sky-500" trend="+12%" trendUp />
+          <StatCard icon="warning" label="Overdue Items" value={overdueItems} accent="bg-red-500" trend="+5%" trendUp={false} />
+          <StatCard icon="assignment_return" label="Pending Returns" value={pendingReturns} accent="bg-violet-500" trend="-8%" trendUp />
         </div>
 
         {/* ── Main Content ── */}
@@ -412,10 +413,10 @@ const LibrarianDashboard = () => {
               {/* Filter tabs */}
               <div className="flex gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
                 {[
-                  { key: 'all',      label: 'All' },
-                  { key: 'pending',  label: `Pending (${pendingReturns})` },
+                  { key: 'all', label: 'All' },
+                  { key: 'pending', label: `Pending (${pendingReturns})` },
                   { key: 'approved', label: 'Active' },
-                  { key: 'overdue',  label: `Overdue (${overdueItems})` },
+                  { key: 'overdue', label: `Overdue (${overdueItems})` },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
@@ -451,9 +452,9 @@ const LibrarianDashboard = () => {
                       </td>
                     </tr>
                   ) : filtered.slice(0, 10).map((rec) => {
-                    const name  = rec.userId?.name || '?';
+                    const name = rec.userId?.name || '?';
                     const title = rec.bookId?.title || '—';
-                    const al    = actionLoading[rec._id];
+                    const al = actionLoading[rec._id];
                     return (
                       <tr key={rec._id} className="hover:bg-slate-50/80 transition group">
                         {/* Student */}
@@ -593,10 +594,10 @@ const LibrarianDashboard = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
               <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Borrow Summary</h3>
               {[
-                { label: 'Approved / Active', value: activeBorrows,  color: 'bg-sky-500' },
-                { label: 'Pending',           value: pendingReturns, color: 'bg-amber-400' },
-                { label: 'Overdue',           value: overdueItems,   color: 'bg-red-500' },
-                { label: 'Returned',          value: borrows.filter((b) => b.status === 'returned').length, color: 'bg-slate-400' },
+                { label: 'Approved / Active', value: activeBorrows, color: 'bg-sky-500' },
+                { label: 'Pending', value: pendingReturns, color: 'bg-amber-400' },
+                { label: 'Overdue', value: overdueItems, color: 'bg-red-500' },
+                { label: 'Returned', value: borrows.filter((b) => b.status === 'returned').length, color: 'bg-slate-400' },
               ].map((s) => (
                 <div key={s.label} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                   <div className="flex items-center gap-2.5">
