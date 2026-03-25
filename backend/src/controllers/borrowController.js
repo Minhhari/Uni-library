@@ -1,6 +1,7 @@
 const BorrowRecord = require("../models/BorrowRecord");
 const Book = require("../models/Book");
 const Fine = require("../models/Fine");
+const notificationService = require("../services/notificationService");
 
 // =======================
 // BORROW REQUEST
@@ -103,6 +104,13 @@ exports.approveBorrow = async (req, res) => {
     book.available -= 1;
     await book.save();
 
+    await notificationService.createNotification(
+      record.userId,
+      "Yêu cầu mượn sách đã được duyệt",
+      `Sách "${book.title}" đã sẵn sàng. Vui lòng trả sách trước ngày ${dueDate.toLocaleDateString()}.`,
+      "/my-activity"
+    );
+
     res.json({
       message: "Borrow approved",
       record,
@@ -133,6 +141,14 @@ exports.rejectBorrow = async (req, res) => {
     record.status = "rejected";
 
     await record.save();
+
+    // Gửi thông báo cho sinh viên
+    await notificationService.createNotification(
+      record.userId,
+      "Yêu cầu mượn sách bị từ chối",
+      "Yêu cầu mượn sách của bạn đã bị từ chối bởi thủ thư.",
+      "/my-activity"
+    );
 
     res.json({
       message: "Borrow rejected",
@@ -246,11 +262,29 @@ exports.returnBook = async (req, res) => {
       }
     }
 
-    // Cộng lại số lượng sách (trừ khi sách bị mất)
-    if (!isLost) {
+    // Cập nhật trạng thái sách & Cộng lại số lượng sách 
+    if (isLost) {
+      book.status = "lost";
+      // Không tăng available vì sách đã mất
+    } else if (isDamaged) {
+      book.status = "maintenance";
+      // Không tăng available vì cần sửa chữa
+    } else {
       book.available += 1;
-      await book.save();
     }
+    await book.save();
+
+    // Gửi thông báo về việc trả sách & phạt nếu có
+    let notificationMessage = `Bạn đã trả sách "${book.title}" thành công.`;
+    if (fineAmount > 0) {
+      notificationMessage += ` Phát sinh phí phạt: ${fineAmount.toLocaleString()}đ do ${fineReason}. Vui lòng thanh toán sớm.`;
+    }
+    await notificationService.createNotification(
+      record.userId,
+      fineAmount > 0 ? "Thông báo trả sách & Phí phạt" : "Thông báo trả sách",
+      notificationMessage,
+      fineAmount > 0 ? "/profile?tab=fines" : "/my-activity"
+    );
 
     res.json({
       message: "Book returned successfully",

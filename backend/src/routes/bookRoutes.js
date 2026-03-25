@@ -6,7 +6,8 @@ const {
   createBook,
   updateBook,
   deleteBook,
-  updateBookQuantity
+  updateBookQuantity,
+  getCategories
 } = require('../controllers/bookController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
@@ -35,6 +36,7 @@ const updateBookValidation = [
 
 // Public routes
 router.get('/', getBooks);
+router.get('/categories', getCategories);
 router.get('/details/:id', getBookById);
 router.get('/:id', getBookById);
 

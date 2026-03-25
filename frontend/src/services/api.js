@@ -59,6 +59,7 @@ export const userAPI = {
 // ─── Book APIs ───────────────────────────────────────────
 export const bookAPI = {
   getBooks: (params) => api.get('/books', { params }),
+  getCategories: () => api.get('/books/categories'),
   getBookById: (id) => api.get(`/books/${id}`),
   addBook: (data) => api.post('/books', data),
   updateBook: (id, data) => api.put(`/books/${id}`, data),
@@ -123,6 +124,25 @@ export const adminAPI = {
   getStats: () => api.get('/admin/stats'),
   getSettings: () => api.get('/admin/settings'),
   updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
+};
+
+// ─── Book Request APIs ───────────────────────────────────
+export const bookRequestAPI = {
+  createRequest: (data) => api.post('/book-requests', data),
+  uploadExcel: (formData) => api.post('/book-requests/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getMyRequests: () => api.get('/book-requests/my-requests'),
+  getAllRequests: (params) => api.get('/book-requests', { params }),
+  updateStatus: (id, status, note) => api.put(`/book-requests/${id}/status`, { status, note })
+};
+
+// ─── Notification APIs ───────────────────────────────────
+export const notificationAPI = {
+  getMyNotifications: () => api.get('/notifications'),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put('/notifications/read-all'),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`)
 };
 
 // ─── Export ──────────────────────────────────────────────

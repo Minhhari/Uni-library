@@ -1,5 +1,6 @@
 const Reservation = require('../models/Reservation');
 const Book = require('../models/Book');
+const notificationService = require('../services/notificationService');
 const {
   canReserve,
   processQueueBatch,
@@ -182,6 +183,14 @@ const approveReservation = async (req, res) => {
       { path: 'bookId', select: 'title author available' },
     ]);
 
+    // Gửi thông báo cho user
+    await notificationService.createNotification(
+      reservation.userId,
+      'Sách đặt chỗ đã được duyệt!',
+      `Sách "${reservation.bookId.title}" bạn đặt chỗ đã được phê duyệt thủ công. Vui lòng lấy trước ngày ${expiresAt.toLocaleDateString()}.`,
+      '/my-activity'
+    );
+
     return res.json({
       success: true,
       message: 'Reservation đã được duyệt.',
@@ -222,6 +231,14 @@ const rejectReservation = async (req, res) => {
       { path: 'userId', select: 'fullName email' },
       { path: 'bookId', select: 'title author available' },
     ]);
+
+    // Gửi thông báo cho user
+    await notificationService.createNotification(
+      reservation.userId,
+      'Yêu cầu đặt sách bị từ chối',
+      `Yêu cầu đặt sách "${reservation.bookId.title}" đã bị từ chối. Lý do: ${reservation.adminNote}`,
+      '/my-activity'
+    );
 
     return res.json({
       success: true,
