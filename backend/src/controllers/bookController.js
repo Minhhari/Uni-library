@@ -2,6 +2,18 @@ const Book = require('../models/Book');
 const Category = require('../models/Category');
 const { validationResult } = require('express-validator');
 
+// @desc    Get all categories
+// @route   GET /api/books/categories
+// @access  Public
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ status: 'active' }).sort({ name: 1 });
+    res.status(200).json({ success: true, count: categories.length, data: categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error when fetching categories' });
+  }
+};
+
 // @desc    Get all books with pagination, search, and filter
 // @route   GET /api/books
 // @access  Public
