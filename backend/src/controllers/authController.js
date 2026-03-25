@@ -58,7 +58,7 @@ const register = async (req, res) => {
     }
 
     // cho phép student / lecturer / admin / librarian đăng ký
-    const allowedRoles = ['student', 'lecturer', 'admin', 'librarian'];
+    const allowedRoles = ['student', 'lecturer'];
     const assignedRole = allowedRoles.includes(role) ? role : 'student';
 
     const user = new User({

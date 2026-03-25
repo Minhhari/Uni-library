@@ -44,10 +44,10 @@ exports.getMyFines = async (req, res) => {
         daysOverdue,
         book: borrow?.bookId
           ? {
-              title: borrow.bookId.title,
-              author: borrow.bookId.author,
-              coverImage: borrow.bookId.coverImage,
-            }
+            title: borrow.bookId.title,
+            author: borrow.bookId.author,
+            coverImage: borrow.bookId.coverImage,
+          }
           : null,
         dueDate: borrow?.dueDate || null,
         returnDate: borrow?.returnDate || null,
