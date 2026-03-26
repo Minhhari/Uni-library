@@ -15,7 +15,7 @@ const StudentNavbar = () => {
             {/* Nav Links */}
             <div className="flex items-center gap-8">
                 <NavLink
-                    to="/"
+                    to="/books"
                     className={({ isActive }) =>
                         `text-sm font-bold transition-all ${isActive ? 'text-emerald-600 border-b-2 border-emerald-600 pb-1' : 'text-gray-500 hover:text-emerald-600'}`
                     }
