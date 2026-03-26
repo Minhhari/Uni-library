@@ -539,9 +539,14 @@ const LibrarianDashboard = () => {
                     {res.status}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl font-bold">
-                  <span className="material-symbols-outlined text-[16px]">person</span>
-                  {res.userId?.name || res.userId?.fullName}
+                <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">
+                    {res.userId?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-700 truncate">{res.userId?.name || 'Unknown User'}</div>
+                    <div className="text-[10px] text-slate-400 font-bold">{res.userId?.studentId || res.userId?.email || ''}</div>
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-auto">
                   {res.status === 'pending' && (

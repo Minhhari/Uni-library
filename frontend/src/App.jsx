@@ -28,6 +28,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import StudentNavbar from './components/StudentNavbar';
 import TransactionPage from './pages/TransactionPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import LecturerBookRequestPage from './pages/LecturerDashboard';
 import LecturerNavbar from './components/LecturerNavbar';
 import { useAuth } from './context/AuthContext';
@@ -121,6 +122,7 @@ function App() {
               {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
               <Route path="/my-activity" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
+              <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
