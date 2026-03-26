@@ -8,7 +8,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const BookDetailPage = () => {
     const { id } = useParams();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user, setShowTermsModal } = useAuth();
+    const isTermsAccepted = (['student', 'lecturer'].includes(user?.role) ? user?.hasAcceptedTerms : true);
 
     const [book, setBook] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -192,29 +193,49 @@ const BookDetailPage = () => {
                     <div className="flex items-center gap-4 w-full lg:w-auto">
                         {/* Borrow Now */}
                         <button
-                            onClick={() => { setBorrowResult(null); setShowBorrowModal(true); }}
+                            onClick={() => { 
+                                if (!isTermsAccepted) {
+                                    setShowTermsModal(true);
+                                    return;
+                                }
+                                setBorrowResult(null); 
+                                setShowBorrowModal(true); 
+                            }}
                             disabled={!isAvailable}
                             className={`flex-1 lg:flex-none px-12 py-5 font-black rounded-3xl shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${isAvailable
                                 ? 'bg-gradient-to-r from-primary to-primary-container text-white hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] shadow-primary/20'
                                 : 'bg-surface-container-low text-on-surface-variant cursor-not-allowed opacity-60'}`}
                         >
                             <span className="material-symbols-outlined text-2xl">auto_stories</span>
-                            Borrow Now
+                            {isTermsAccepted ? 'Borrow Now' : 'Accept Terms to Borrow'}
                         </button>
 
                         {/* Reserve */}
                         <button
-                            onClick={handleReserve}
+                            onClick={() => {
+                                if (!isTermsAccepted) {
+                                    setShowTermsModal(true);
+                                    return;
+                                }
+                                handleReserve();
+                            }}
                             disabled={reserveLoading}
-                            className="hidden sm:flex items-center gap-2 px-8 py-5 bg-surface-container-low text-on-surface font-bold rounded-3xl hover:bg-primary/5 transition-all w-44 justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+                            className={`hidden sm:flex items-center gap-2 px-8 py-5 text-on-surface font-bold rounded-3xl transition-all w-44 justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isTermsAccepted ? 'bg-surface-container-low hover:bg-primary/5' : 'bg-amber-100/50 hover:bg-amber-100 text-amber-900 border border-amber-200'}`}
                         >
                             {reserveLoading
                                 ? <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                : <span className="material-symbols-outlined text-xl">bookmark_add</span>}
-                            Reserve
+                                : <span className="material-symbols-outlined text-xl">{isTermsAccepted ? 'bookmark_add' : 'lock'}</span>}
+                            {isTermsAccepted ? 'Reserve' : 'Accept Terms'}
                         </button>
                     </div>
                 </div>
+
+                {!isTermsAccepted && isAuthenticated && (
+                    <div className="mt-4 px-6 py-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-bold flex items-center gap-2 animate-pulse">
+                        <span className="material-symbols-outlined">info</span>
+                        Bạn cần chấp nhận Điều khoản & Chính sách tại trang Explore để mượn sách.
+                    </div>
+                )}
 
                 {/* Reserve feedback */}
                 {reserveResult && (

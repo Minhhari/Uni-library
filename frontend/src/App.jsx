@@ -31,14 +31,21 @@ import TransactionPage from './pages/TransactionPage';
 import LecturerBookRequestPage from './pages/LecturerDashboard';
 import LecturerNavbar from './components/LecturerNavbar';
 import { useAuth } from './context/AuthContext';
+import { TermsModal } from './components';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, showTermsModal, setShowTermsModal } = useAuth();
   const isAuthPage = ['/login', '/register', '/unauthorized'].includes(location.pathname);
   const [searchQuery, setSearchQuery] = useState('');
+
+  React.useEffect(() => {
+    if (user && ['student', 'lecturer'].includes(user.role) && !user.hasAcceptedTerms && location.pathname === '/') {
+      setShowTermsModal(true);
+    }
+  }, [user, location.pathname, setShowTermsModal]);
 
   if (isAuthPage) {
     return <main className="w-full min-h-screen">{children}</main>;
@@ -55,6 +62,7 @@ const AppLayout = ({ children }) => {
           <div className="p-10 max-w-[1400px] mx-auto">
             {children}
           </div>
+          <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
         </main>
       </div>
     );
@@ -68,6 +76,7 @@ const AppLayout = ({ children }) => {
           <div className="p-10 max-w-[1400px] mx-auto">
             {children}
           </div>
+          <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
         </main>
       </div>
     );

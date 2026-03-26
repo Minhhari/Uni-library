@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // initial auth check
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Load user from token on mount
   useEffect(() => {
@@ -60,6 +61,19 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('lms_user', JSON.stringify(updatedUser));
   }, []);
 
+  const acceptTerms = useCallback(async () => {
+    try {
+      const { data } = await userAPI.acceptTerms();
+      if (data.success) {
+        updateUser(data.user);
+      }
+      return data;
+    } catch (error) {
+      console.error('Accept terms error:', error);
+      throw error;
+    }
+  }, [updateUser]);
+
   // Helper role checks
   const isAdmin = user?.role === 'admin';
   const isLibrarian = user?.role === 'librarian';
@@ -82,6 +96,9 @@ export const AuthProvider = ({ children }) => {
         googleLogin,
         logout,
         updateUser,
+        acceptTerms,
+        showTermsModal,
+        setShowTermsModal,
       }}
     >
       {children}

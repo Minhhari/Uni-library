@@ -84,6 +84,10 @@ const userSchema = new mongoose.Schema(
     lockUntil: {
       type: Date,
     },
+    hasAcceptedTerms: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -113,6 +117,8 @@ userSchema.methods.toPublicJSON = function () {
   delete obj.googleId;
   delete obj.refreshToken;
   delete obj.__v;
+  // Ensure hasAcceptedTerms is included if it exists, otherwise keep default
+  if (obj.hasAcceptedTerms === undefined) obj.hasAcceptedTerms = false;
   return obj;
 };
 
