@@ -75,14 +75,22 @@ const StudentDashboard = () => {
         </div>
 
         {/* Big Search Bar */}
-        <div className="relative max-w-3xl">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = e.target.search.value;
+            window.location.href = `/books?search=${encodeURIComponent(q)}`;
+          }}
+          className="relative max-w-3xl"
+        >
           <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">search</span>
           <input
+            name="search"
             type="text"
             placeholder="Search your library, authors, or ISBN..."
             className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-gray-100 rounded-full text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white outline-none transition-all shadow-sm text-lg"
           />
-        </div>
+        </form>
       </section>
 
       {/* Stats Row */}
@@ -162,13 +170,13 @@ const StudentDashboard = () => {
             <Link to={`/books/${book._id}`} key={book._id} className="group cursor-pointer">
               <div className="relative aspect-[2/3] rounded-[24px] overflow-hidden mb-4 shadow-sm group-hover:shadow-2xl transition-all duration-500 border border-gray-100">
                 <img
-                  src={book.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2574&auto=format&fit=crop'}
+                  src={book.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2574&auto=format&fit=crop'}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   alt={book.title}
                 />
                 <div className="absolute top-4 left-4">
                   <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-emerald-600 rounded-lg text-[10px] font-black tracking-widest uppercase shadow-sm">
-                    {book.category?.name || 'GENRAL'}
+                    {book.category?.name || 'GENERAL'}
                   </span>
                 </div>
               </div>

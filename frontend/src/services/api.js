@@ -116,9 +116,13 @@ export const paymentAPI = {
   createPayment: (fineId) =>
     api.post('/payments/create', { fineId }),
 
+  verifyPayment: (orderCode) =>
+    api.get(`/payments/verify/${orderCode}`),
+
   getPaymentStatus: (orderCode) =>
     api.get(`/payments/${orderCode}`),
 };
+
 
 // ─── Admin APIs ──────────────────────────────────────────
 export const adminAPI = {

@@ -123,7 +123,7 @@ const getAllReservations = async (req, res) => {
     const total = await Reservation.countDocuments(filter);
 
     const reservations = await Reservation.find(filter)
-      .populate('userId', 'fullName email studentId')
+      .populate('userId', 'name email studentId')
       .populate('bookId', 'title author isbn available')
       .sort({ status: 1, queuePosition: 1, reservationDate: 1 })
       .skip(skip)
