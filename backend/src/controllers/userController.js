@@ -347,6 +347,34 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// ───────────────────────────────────────────────────────────────────────
+// @desc    Accept terms and policies
+// @route   PUT /api/users/accept-terms
+// @access  Private
+// ───────────────────────────────────────────────────────────────────────
+const acceptTerms = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: { hasAcceptedTerms: true } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Terms and policies accepted successfully.',
+      user: user.toPublicJSON(),
+    });
+  } catch (error) {
+    console.error('Accept terms error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -358,4 +386,5 @@ module.exports = {
   deleteUser,
   createLibrarian,
   editUser,
+  acceptTerms,
 };

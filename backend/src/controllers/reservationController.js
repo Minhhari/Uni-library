@@ -16,6 +16,15 @@ const createReservation = async (req, res) => {
   try {
     const { bookId } = req.body;
     const userId = req.user._id;
+    const userRole = req.user.role;
+
+    // Check if user has accepted terms (students/lecturers only)
+    if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
+      return res.status(403).json({ 
+        success: false,
+        message: "You must accept the Terms & Policies before reserving books." 
+      });
+    }
 
     if (!bookId) {
       return res.status(400).json({ success: false, message: 'bookId is required.' });

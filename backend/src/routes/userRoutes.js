@@ -11,6 +11,7 @@ const {
   deleteUser,
   createLibrarian,
   editUser,
+  acceptTerms,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -61,6 +62,12 @@ router.put(
  * Body: { currentPassword, newPassword }
  */
 router.put('/change-password', changePassword);
+
+/**
+ * PUT /api/users/accept-terms
+ * Chấp nhận điều khoản và chính sách
+ */
+router.put('/accept-terms', acceptTerms);
 
 // ─── Admin / Librarian Routes ──────────────────────────────────────────
 
