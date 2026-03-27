@@ -22,7 +22,7 @@ const borrowRecordSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "approved", "rejected", "returned"],
+    enum: ["pending", "waiting_for_pickup", "approved", "rejected", "returned", "expired"],
     default: "pending"
   },
   fineAmount: {
@@ -34,6 +34,9 @@ const borrowRecordSchema = new mongoose.Schema({
     type: String,
     enum: ["good", "damaged", "lost"],
     default: "good"
+  },
+  pickupDeadline: {
+    type: Date
   }
 }, {
   timestamps: true,

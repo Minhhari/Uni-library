@@ -25,10 +25,10 @@ const StudentDashboard = () => {
         const myBooksRes = await borrowAPI.getMyBooks();
         const myBooks = myBooksRes.data || [];
 
-        const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed').length;
+        const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed' || b.status === 'waiting_for_pickup').length;
 
         const nextDeadlineBook = myBooks
-          .filter(b => b.dueDate && (b.status === 'approved' || b.status === 'borrowed'))
+          .filter(b => b.dueDate && (b.status === 'approved' || b.status === 'borrowed' || b.status === 'waiting_for_pickup'))
           .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
 
         const nextDeadline = nextDeadlineBook

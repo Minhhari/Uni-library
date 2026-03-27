@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { bookAPI, borrowAPI } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const BookDetailPage = () => {
     const { id } = useParams();
@@ -193,13 +193,13 @@ const BookDetailPage = () => {
                     <div className="flex items-center gap-4 w-full lg:w-auto">
                         {/* Borrow Now */}
                         <button
-                            onClick={() => { 
+                            onClick={() => {
                                 if (!isTermsAccepted) {
                                     setShowTermsModal(true);
                                     return;
                                 }
-                                setBorrowResult(null); 
-                                setShowBorrowModal(true); 
+                                setBorrowResult(null);
+                                setShowBorrowModal(true);
                             }}
                             disabled={!isAvailable}
                             className={`flex-1 lg:flex-none px-12 py-5 font-black rounded-3xl shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${isAvailable

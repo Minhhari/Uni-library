@@ -15,8 +15,17 @@ router.get("/all", protect, borrowController.getAllBorrows);
 // librarian approve
 router.put("/approve/:id", protect, borrowController.approveBorrow);
 
+// librarian pickup
+router.put("/pickup/:id", protect, borrowController.pickupBook);
+
 // librarian reject
 router.put("/reject/:id", protect, borrowController.rejectBorrow);
+
+// // student confirm pickup
+// router.put("/confirm-pickup/:id", protect, borrowController.confirmPickup);
+
+// // librarian confirm pickup
+// router.put("/librarian-confirm-pickup/:id", protect, borrowController.librarianConfirmPickup);
 
 // return book
 router.put("/return/:id", protect, borrowController.returnBook);

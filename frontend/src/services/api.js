@@ -100,6 +100,8 @@ export const borrowAPI = {
   getAllBorrows: (params) => api.get('/borrow/all', { params }),
   approveBorrow: (id) => api.put(`/borrow/approve/${id}`),
   rejectBorrow: (id) => api.put(`/borrow/reject/${id}`),
+  confirmPickup: (id) => api.put(`/borrow/confirm-pickup/${id}`),
+  librarianConfirmPickup: (id) => api.put(`/borrow/librarian-confirm-pickup/${id}`),
   returnBook: (id) => api.put(`/borrow/return/${id}`),
 };
 
