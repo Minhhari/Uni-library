@@ -98,24 +98,28 @@ exports.approveBorrow = async (req, res) => {
     }
 
     const borrowDate = new Date();
+    const pickupDeadline = new Date();
+    pickupDeadline.setDate(pickupDeadline.getDate() + 3); // 3 ngày để lấy sách
 
     const dueDate = new Date();
-    dueDate.setDate(borrowDate.getDate() + 70); // 10 tuần
+    dueDate.setDate(borrowDate.getDate() + 70); // 10 tuần sau khi mượn
 
-    record.status = "approved";
-    record.borrowDate = borrowDate;
-    record.dueDate = dueDate;
+    // 🔥 Chuyển sang waiting_for_pickup và trừ sách ngay
+    record.status = "waiting_for_pickup";
+    record.borrowDate = null; // Chưa set, chỉ set khi thực sự mượn
+    record.dueDate = dueDate; // Set trước due date
+    record.pickupDeadline = pickupDeadline;
 
     await record.save();
 
-    // trừ sách
+    // ✅ TRỪ SÁCH NGAY KHI DUYỆT
     book.available -= 1;
     await book.save();
 
     await notificationService.createNotification(
       record.userId,
       "Yêu cầu mượn sách đã được duyệt",
-      `Sách "${book.title}" đã sẵn sàng. Vui lòng trả sách trước ngày ${dueDate.toLocaleDateString()}.`,
+      `Sách "${book.title}" đã được giữ cho bạn. Vui lòng đến nhận trước ngày ${pickupDeadline.toLocaleDateString()}.`,
       "/my-activity"
     );
 
@@ -124,6 +128,44 @@ exports.approveBorrow = async (req, res) => {
       record,
     });
 
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// =======================
+// PICKUP BOOK (LIBRARIAN GIAO SÁCH)
+// =======================
+exports.pickupBook = async (req, res) => {
+  try {
+    const record = await BorrowRecord.findById(req.params.id);
+
+    if (!record) {
+      return res.status(404).json({ message: "Borrow record not found" });
+    }
+
+    if (record.status !== "waiting_for_pickup") {
+      return res.status(400).json({
+        message: "Only requests waiting for pickup can be picked up",
+      });
+    }
+
+    record.status = "approved"; // Representing 'borrowed' in UI
+    record.borrowDate = new Date();
+
+    await record.save();
+
+    await notificationService.createNotification(
+      record.userId,
+      "Xác nhận nhận sách",
+      `Bạn đã nhận mượn sách thành công. Hạn trả là ${record.dueDate.toLocaleDateString('vi-VN')}.`,
+      "/my-activity"
+    );
+
+    res.json({
+      message: "Book picked up successfully",
+      record,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

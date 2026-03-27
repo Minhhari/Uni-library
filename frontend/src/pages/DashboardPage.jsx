@@ -100,7 +100,7 @@ const DashboardPage = () => {
       setMyBooks(booksList);
 
       const activeBorrows = booksList.filter(book =>
-        book.status === 'approved' || book.status === 'borrowed'
+        book.status === 'approved' || book.status === 'borrowed' || book.status === 'waiting_for_pickup'
       ).length;
 
       const overdueBooks = booksList.filter(book =>
@@ -275,9 +275,9 @@ const DashboardPage = () => {
   );
 
   const renderStudentDashboard = () => {
-    const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed');
+    const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed' || b.status === 'waiting_for_pickup');
     const reservations = myBooks.filter(b => b.status === 'reserved');
-    const others = myBooks.filter(b => b.status !== 'approved' && b.status !== 'borrowed' && b.status !== 'reserved');
+    const others = myBooks.filter(b => !['approved', 'borrowed', 'waiting_for_pickup', 'reserved'].includes(b.status));
 
     return (
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 font-body max-w-7xl mx-auto">
@@ -373,7 +373,7 @@ const DashboardPage = () => {
                         </div>
                       </div>
                       <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100/50">
-                        {item.status}
+                        {item.status === 'waiting_for_pickup' ? 'CHỜ LẤY SÁCH' : item.status === 'approved' ? 'ĐANG MƯỢN' : item.status}
                       </span>
                     </div>
                   ))}
@@ -429,7 +429,7 @@ const DashboardPage = () => {
                         </div>
                       </div>
                       <span className="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-gray-200">
-                        {item.status}
+                        {item.status === 'expired' ? 'HỦY DO QUÁ HẠN LẤY' : item.status === 'returned' ? 'ĐÃ TRẢ' : item.status === 'rejected' ? 'BỊ TỪ CHỐI' : item.status}
                       </span>
                     </div>
                   ))}

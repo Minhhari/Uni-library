@@ -27,6 +27,8 @@ const STATUS_CONFIG = {
   pending: { label: 'CHỜ DUYỆT', bg: 'bg-amber-100 text-amber-700' },
   rejected: { label: 'TỪ CHỐI', bg: 'bg-red-100 text-red-600' },
   overdue: { label: 'QUÁ HẠN', bg: 'bg-red-100 text-red-600 font-bold' },
+  waiting_for_pickup: { label: 'CHỜ LẤY SÁCH', bg: 'bg-blue-100 text-blue-700' },
+  expired: { label: 'ĐÃ HỦY (QUÁ HẠN)', bg: 'bg-slate-200 text-slate-500' },
 };
 
 const CONDITION_LABEL = {
@@ -276,6 +278,19 @@ const LibrarianDashboard = () => {
     }
   };
 
+  const handlePickupBorrow = async (id) => {
+    setActionLoading(p => ({ ...p, [id]: true }));
+    try {
+      await api.put(`/borrow/pickup/${id}`);
+      toast.success('Đã xác nhận giao sách');
+      fetchData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Lỗi xác nhận giao sách');
+    } finally {
+      setActionLoading(p => ({ ...p, [id]: false }));
+    }
+  };
+
   const handleRejectBorrow = async (id) => {
     setActionLoading(p => ({ ...p, [id]: true }));
     try {
@@ -488,6 +503,20 @@ const LibrarianDashboard = () => {
                             )}
                           </button>
                         </>
+                      )}
+                      {rec.status === 'waiting_for_pickup' && (
+                        <button
+                          onClick={() => handlePickupBorrow(rec._id)}
+                          disabled={actionLoading[rec._id]}
+                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50"
+                        >
+                          {actionLoading[rec._id] ? (
+                            <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
+                          ) : (
+                            <span className="material-symbols-outlined text-[16px]">front_hand</span>
+                          )}
+                          Giao Sách
+                        </button>
                       )}
                       {rec.status === 'approved' && (
                         <button onClick={() => setReturnTarget(rec)} className="flex items-center gap-2 px-4 py-1.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition shadow-lg shadow-slate-200">
