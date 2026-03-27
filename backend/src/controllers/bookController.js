@@ -155,6 +155,7 @@ exports.createBook = async (req, res) => {
       publish_year,
       description,
       cover_image,
+      previewImages,
       quantity,
       location
     } = req.body;
@@ -187,6 +188,7 @@ exports.createBook = async (req, res) => {
       publish_year,
       description,
       cover_image,
+      previewImages,
       quantity,
       available: quantity, // Initially all books are available
       location
@@ -241,6 +243,7 @@ exports.updateBook = async (req, res) => {
       publish_year,
       description,
       cover_image,
+      previewImages,
       quantity,
       location,
       status
@@ -278,6 +281,7 @@ exports.updateBook = async (req, res) => {
       publish_year,
       description,
       cover_image,
+      previewImages,
       quantity,
       location,
       status

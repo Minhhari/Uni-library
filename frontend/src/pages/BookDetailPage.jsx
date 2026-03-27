@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { bookAPI, borrowAPI } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const BookDetailPage = () => {
     const { id } = useParams();
@@ -14,8 +14,11 @@ const BookDetailPage = () => {
     const [book, setBook] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     const [showBorrowModal, setShowBorrowModal] = useState(false);
+
+    // Look Inside state
+    const [showLookInside, setShowLookInside] = useState(false);
+    const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
     // Borrow state
     const [borrowLoading, setBorrowLoading] = useState(false);
@@ -151,8 +154,18 @@ const BookDetailPage = () => {
                     <img src={coverImage} className="w-full h-full object-cover blur-3xl opacity-30 transform scale-125" alt="bg" />
                 </div>
                 <div className="relative z-20 flex flex-col md:flex-row items-center gap-12 max-w-7xl px-8 w-full">
-                    <div className="shrink-0 transform -rotate-3 hover:rotate-0 transition-all duration-500 shadow-2xl p-2 bg-white rounded-3xl group">
+                    <div className="shrink-0 transform -rotate-3 hover:rotate-0 transition-all duration-500 shadow-2xl p-2 bg-white rounded-3xl group relative">
                         <img src={coverImage} className="w-56 h-80 object-cover rounded-2xl shadow-inner group-hover:scale-105 transition-transform" alt={book.title} />
+                        {/* Look Inside Button */}
+                        {book.previewImages && book.previewImages.length > 0 && (
+                            <button
+                                onClick={() => { setShowLookInside(true); setCurrentPreviewIndex(0); }}
+                                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur text-primary font-black px-4 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-2 hover:scale-110 active:scale-95 transition-all whitespace-nowrap z-30 opacity-0 group-hover:opacity-100"
+                            >
+                                <span className="material-symbols-outlined text-xl">menu_book</span>
+                                Đọc thử
+                            </button>
+                        )}
                     </div>
                     <div className="flex-1 space-y-6 text-center md:text-left">
                         <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap">
@@ -345,6 +358,47 @@ const BookDetailPage = () => {
                                     Đóng
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Look Inside Modal */}
+            {showLookInside && book.previewImages && book.previewImages.length > 0 && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4 lg:p-10 backdrop-blur-xl animate-in fade-in duration-300">
+                    <button
+                        onClick={() => setShowLookInside(false)}
+                        className="absolute top-6 right-6 text-white/50 hover:text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all z-[210] flex items-center justify-center"
+                    >
+                        <span className="material-symbols-outlined text-3xl">close</span>
+                    </button>
+
+                    {book.previewImages.length > 1 && (
+                        <>
+                            <button
+                                onClick={() => setCurrentPreviewIndex(prev => prev === 0 ? book.previewImages.length - 1 : prev - 1)}
+                                className="absolute left-4 lg:left-10 top-1/2 -translate-y-1/2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-4 rounded-full transition-all z-[210] flex items-center justify-center active:scale-95 hover:scale-110"
+                            >
+                                <span className="material-symbols-outlined text-3xl lg:text-4xl">chevron_left</span>
+                            </button>
+                            <button
+                                onClick={() => setCurrentPreviewIndex(prev => prev === book.previewImages.length - 1 ? 0 : prev + 1)}
+                                className="absolute right-4 lg:right-10 top-1/2 -translate-y-1/2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-4 rounded-full transition-all z-[210] flex items-center justify-center active:scale-95 hover:scale-110"
+                            >
+                                <span className="material-symbols-outlined text-3xl lg:text-4xl">chevron_right</span>
+                            </button>
+                        </>
+                    )}
+
+                    <div className="relative max-w-5xl max-h-full w-full h-full flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <img
+                            key={currentPreviewIndex} // Force re-render for animation on change
+                            src={book.previewImages[currentPreviewIndex]}
+                            alt={`Preview page ${currentPreviewIndex + 1}`}
+                            className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl select-none animate-in zoom-in-95 fade-in duration-300"
+                        />
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/20 text-white px-6 py-3 rounded-full font-bold text-sm tracking-widest shadow-xl">
+                            {currentPreviewIndex + 1} / {book.previewImages.length}
                         </div>
                     </div>
                 </div>

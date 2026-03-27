@@ -40,6 +40,9 @@ const bookSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    previewImages: [{
+      type: String, // URLs of images for Look Inside
+    }],
     quantity: {
       type: Number,
       required: true,

@@ -152,5 +152,15 @@ export const notificationAPI = {
   deleteNotification: (id) => api.delete(`/notifications/${id}`)
 };
 
+// ─── Upload APIs ─────────────────────────────────────────
+export const uploadAPI = {
+  uploadSingle: (formData) => api.post('/upload/single', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  uploadMultiple: (formData) => api.post('/upload/multiple', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+};
+
 // ─── Export ──────────────────────────────────────────────
 export default api;
