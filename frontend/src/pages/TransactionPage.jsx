@@ -4,11 +4,11 @@ import { fineAPI, paymentAPI } from "../services/api";
 // ─── Helpers ────────────────────────────────────────────────────────────
 const reasonLabel = (reason) => {
   const map = {
-    late: "LATE RETURN",
-    lost: "LOST ITEM",
-    damaged: "DAMAGED ITEM",
-    late_and_damaged: "LATE + DAMAGED",
-    lost_and_late: "LOST + LATE",
+    late: "TRẢ TRỄ",
+    lost: "MẤT SÁCH",
+    damaged: "SÁCH HƯ HỎNG",
+    late_and_damaged: "TRỄ + HƯ HỎNG",
+    lost_and_late: "MẤT + TRỄ",
   };
   return map[reason] || reason?.toUpperCase();
 };
@@ -26,13 +26,13 @@ const reasonBadgeClass = (reason) => {
 };
 
 const conditionLabel = (cond) => {
-  const map = { damaged: "Water Damage (Cover)", lost: "Lost — Not Returned", good: "Good Condition" };
+  const map = { damaged: "Hư hỏng do nước (Bìa)", lost: "Đã mất — Không hoàn trả", good: "Tình trạng tốt" };
   return map[cond] || cond;
 };
 
 const formatDate = (d) => {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(d).toLocaleDateString("vi-VN", { month: "short", day: "numeric", year: "numeric" });
 };
 
 const formatVND = (amount) => {
@@ -40,8 +40,8 @@ const formatVND = (amount) => {
 };
 
 const PAYMENT_METHODS = [
-  { id: "payos", label: "VNPay QR", icon: "qr_code_2", badge: "Recommended" },
-  { id: "cash", label: "Cash at Counter", icon: "payments", badge: null },
+  { id: "payos", label: "VNPay QR", icon: "qr_code_2", badge: "Khuyên dùng" },
+  { id: "cash", label: "Tiền mặt tại quầy", icon: "payments", badge: null },
 ];
 
 // ─── Book Cover ──────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ const TransactionPage = () => {
       setFines(list);
       setSummary(sum);
     } catch {
-      showToast("Failed to load fines. Please try again.", "error");
+      showToast("Không thể tải danh sách tiền phạt. Vui lòng thử lại.", "error");
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ const TransactionPage = () => {
 
   const handlePayItem = async (fine) => {
     if (selectedMethod !== "payos") {
-      showToast(`Please go to the counter to pay ${formatVND(fine.amount)}.`, "info");
+      showToast(`Vui lòng đến quầy để thanh toán ${formatVND(fine.amount)}.`, "info");
       return;
     }
     try {
@@ -132,10 +132,10 @@ const TransactionPage = () => {
       const res = await paymentAPI.createPayment(fine._id);
       if (res.data?.checkoutUrl) {
         window.open(res.data.checkoutUrl, "_blank");
-        showToast("Payment link opened — complete payment in the new tab.", "success");
+        showToast("Liên kết thanh toán đã mở — vui lòng hoàn tất thanh toán ở tab mới.", "success");
       }
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to create payment.", "error");
+      showToast(err?.response?.data?.message || "Không thể tạo giao dịch thanh toán.", "error");
     } finally {
       setPayingId(null);
     }
@@ -144,7 +144,7 @@ const TransactionPage = () => {
   const handleConfirmAll = () => {
     if (!pendingFines.length) return;
     if (selectedMethod !== "payos") {
-      showToast("Please visit the counter to settle all fines.", "info");
+      showToast("Vui lòng đến quầy để thanh toán tất cả các khoản phạt.", "info");
       return;
     }
     handlePayItem(pendingFines[0]);
@@ -158,21 +158,21 @@ const TransactionPage = () => {
       <div className="flex items-start justify-between mb-8">
         <div>
           <p className="text-xs font-bold tracking-[0.18em] uppercase text-on-surface-variant mb-1">
-            Account Overview
+            Tổng quan tài khoản
           </p>
           <h1 className="text-4xl font-black tracking-tight text-on-surface leading-tight">
-            My Fines
+            Khoản phạt của tôi
           </h1>
           <p className="text-on-surface-variant text-sm mt-2 max-w-md leading-relaxed">
-            View and manage your outstanding library penalties. Payments are processed
-            securely via institutional portals.
+            Xem và quản lý các khoản phạt thư viện chưa thanh toán. Thanh toán được xử lý
+            an toàn qua cổng thông tin của trường.
           </p>
         </div>
 
         {/* Outstanding Balance Card */}
         <div className="bg-red-50 border border-red-200 rounded-2xl px-8 py-5 text-right min-w-[200px] shadow-sm">
           <p className="text-[10px] font-black tracking-[0.2em] uppercase text-red-500 mb-1">
-            Outstanding Balance
+            Số dư nợ
           </p>
           {loading ? (
             <div className="h-10 w-32 bg-red-100 rounded-lg animate-pulse ml-auto" />
@@ -194,8 +194,8 @@ const TransactionPage = () => {
           <div className="flex items-center justify-between mb-5">
             <div className="flex gap-1 bg-surface-container-low p-1 rounded-xl border border-surface-dim">
               {[
-                { id: "pending", label: "Pending Penalties", count: summary.pendingCount },
-                { id: "paid", label: "Paid", count: summary.paidCount },
+                { id: "pending", label: "Khoản phạt chờ xử lý", count: summary.pendingCount },
+                { id: "paid", label: "Đã thanh toán", count: summary.paidCount },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -216,7 +216,7 @@ const TransactionPage = () => {
               ))}
             </div>
             <span className="text-xs text-on-surface-variant font-semibold">
-              {displayed.length} Items Found
+              Tìm thấy {displayed.length} mục
             </span>
           </div>
 
@@ -232,7 +232,7 @@ const TransactionPage = () => {
                   {activeTab === "pending" ? "check_circle" : "receipt_long"}
                 </span>
                 <p className="text-on-surface-variant font-semibold">
-                  {activeTab === "pending" ? "No pending fines — you're all clear! 🎉" : "No paid fines yet."}
+                  {activeTab === "pending" ? "Không có khoản phạt nào — Bạn đã hoàn tất! 🎉" : "Chưa có khoản phạt nào đã thanh toán."}
                 </p>
               </div>
             ) : (
@@ -245,20 +245,20 @@ const TransactionPage = () => {
 
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-on-surface text-sm leading-tight mb-1 line-clamp-1">
-                      {fine.book?.title || "Unknown Book"}
+                      {fine.book?.title || "Sách không xác định"}
                     </h3>
 
                     {fine.reason === "damaged" || fine.reason === "lost" ? (
                       <p className="text-xs text-on-surface-variant mb-2.5">
-                        Return Condition:{" "}
+                        Tình trạng trả sách:{" "}
                         <span className="text-amber-600 font-semibold">{conditionLabel(fine.bookCondition)}</span>
                       </p>
                     ) : (
                       <p className="text-xs text-on-surface-variant mb-2.5">
-                        Due: {formatDate(fine.dueDate)}
+                        Hạn trả: {formatDate(fine.dueDate)}
                         {fine.daysOverdue > 0 && (
                           <span className="text-orange-500 font-bold ml-2">
-                            • {fine.daysOverdue} Days Overdue
+                            • {fine.daysOverdue} ngày quá hạn
                           </span>
                         )}
                       </p>
@@ -279,7 +279,7 @@ const TransactionPage = () => {
                   <div className="text-right flex-shrink-0 flex flex-col items-end">
                     <p className="text-2xl font-black text-on-surface">{formatVND(fine.amount)}</p>
                     <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-3">
-                      {fine.reason === "damaged" || fine.reason === "lost" ? "Fixed Penalty" : "5.000 VND/Ngày"}
+                      {fine.reason === "damaged" || fine.reason === "lost" ? "Phạt cố định" : "5.000 VND/Ngày"}
                     </p>
                     {fine.status === "pending" ? (
                       <button
@@ -290,19 +290,19 @@ const TransactionPage = () => {
                         {payingId === fine._id ? (
                           <>
                             <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                            Processing...
+                            Đang xử lý...
                           </>
                         ) : (
                           <>
                             <span className="material-symbols-outlined text-sm">payments</span>
-                            Pay Item
+                            Thanh toán
                           </>
                         )}
                       </button>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-2 rounded-xl">
                         <span className="material-symbols-outlined text-sm">check_circle</span>
-                        Paid
+                        Đã trả
                       </span>
                     )}
                   </div>
@@ -314,12 +314,12 @@ const TransactionPage = () => {
           {/* Past Settlements Table */}
           {paidFines.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-2xl font-black text-on-surface mb-5 tracking-tight">Past Settlements</h2>
+              <h2 className="text-2xl font-black text-on-surface mb-5 tracking-tight">Lịch sử thanh toán</h2>
               <div className="bg-white border border-surface-dim rounded-2xl overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
                   <thead className="border-b border-surface-dim bg-surface-container-low">
                     <tr>
-                      {["Date", "Description", "Method", "Amount", "Receipt"].map((h) => (
+                      {["Ngày", "Mô tả", "Phương thức", "Số tiền", "Biên lai"].map((h) => (
                         <th key={h} className="text-left text-[10px] font-black tracking-[0.15em] uppercase text-on-surface-variant px-6 py-4">
                           {h}
                         </th>
@@ -334,11 +334,11 @@ const TransactionPage = () => {
                       >
                         <td className="px-6 py-4 text-on-surface-variant font-semibold">{formatDate(fine.dueDate)}</td>
                         <td className="px-6 py-4 text-on-surface font-semibold">
-                          {fine.reason === "late" ? "Late Return" : reasonLabel(fine.reason)}: {fine.book?.title || "Unknown"}
+                          {fine.reason === "late" ? "Trả trễ" : reasonLabel(fine.reason)}: {fine.book?.title || "Không xác định"}
                         </td>
                         <td className="px-6 py-4">
                           <span className="bg-surface-container text-on-surface-variant border border-surface-dim text-[10px] font-black tracking-widest uppercase px-2.5 py-1 rounded-lg">
-                            {fine.orderCode ? "VNPAY" : "CASH"}
+                            {fine.orderCode ? "VNPAY" : "TIỀN MẶT"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-on-surface font-black">{formatVND(fine.amount)}</td>
@@ -362,12 +362,12 @@ const TransactionPage = () => {
           <div className="bg-white border border-surface-dim rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
               <span className="material-symbols-outlined text-primary text-xl">account_balance</span>
-              <h2 className="text-xl font-black text-on-surface">Settlement</h2>
+              <h2 className="text-xl font-black text-on-surface">Thanh toán</h2>
             </div>
 
             <div className="space-y-2.5 pb-5 border-b border-surface-dim mb-5">
               <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant">Fine Subtotal ({summary.pendingCount} items)</span>
+                <span className="text-on-surface-variant">Tổng tiền phạt ({summary.pendingCount} mục)</span>
                 {loading ? (
                   <div className="h-4 w-16 bg-surface-container rounded animate-pulse" />
                 ) : (
@@ -375,11 +375,11 @@ const TransactionPage = () => {
                 )}
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant">Processing Fee</span>
+                <span className="text-on-surface-variant">Phí xử lý</span>
                 <span className="text-primary font-bold">{formatVND(0)}</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-surface-dim mt-2">
-                <span className="font-black text-on-surface">Total Due</span>
+                <span className="font-black text-on-surface">Tổng cộng</span>
                 {loading ? (
                   <div className="h-7 w-20 bg-surface-container rounded animate-pulse" />
                 ) : (
@@ -389,7 +389,7 @@ const TransactionPage = () => {
             </div>
 
             <p className="text-[10px] font-black tracking-[0.2em] uppercase text-on-surface-variant mb-3">
-              Choose Payment Method
+              Chọn phương thức thanh toán
             </p>
             <div className="space-y-2 mb-5">
               {PAYMENT_METHODS.map((m) => (
@@ -424,16 +424,17 @@ const TransactionPage = () => {
               disabled={summary.pendingCount === 0 || loading}
               className="w-full bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-xl transition-all shadow hover:shadow-md flex items-center justify-center gap-2 text-sm"
             >
-              Confirm Payment
+              Xác nhận thanh toán
               <span className="material-symbols-outlined text-lg">arrow_forward</span>
             </button>
 
             <p className="text-[11px] text-on-surface-variant text-center mt-4 leading-relaxed">
-              By clicking confirm, you agree to LibraFlow's payment terms and library policy.
-              Receipts are emailed instantly.
+              Bằng cách nhấn xác nhận, bạn đồng ý với các điều khoản thanh toán và chính sách thư viện của LibraFlow.
+              Biên lai sẽ được gửi qua email ngay lập tức.
             </p>
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -10,4 +10,5 @@ export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as Sidebar } from './Sidebar';
 export { default as Topbar } from './Topbar';
 export { default as CreateBookModal } from './CreateBookModal';
+export { default as EditBookModal } from './EditBookModal';
 export { default as TermsModal } from './TermsModal';

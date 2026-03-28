@@ -29,7 +29,7 @@ const LoginPage = () => {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ const LoginPage = () => {
       const data = await googleLogin(credentialResponse.credential);
       if (data.success) navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Google login failed.');
+      setError(err.response?.data?.message || 'Đăng nhập bằng Google thất bại.');
     }
   };
 
@@ -63,7 +63,7 @@ const LoginPage = () => {
               <span className="material-symbols-outlined text-primary text-4xl">menu_book</span>
               <h1 className="text-3xl font-black tracking-tighter text-on-surface">LibraFlow</h1>
             </div>
-            <p className="text-on-surface-variant font-medium tracking-tight">Your campus library, reimagined</p>
+            <p className="text-on-surface-variant font-medium tracking-tight">Thư viện của bạn, phong cách mới</p>
           </header>
 
           {error && (
@@ -81,7 +81,7 @@ const LoginPage = () => {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="Email Address"
+                placeholder="Địa chỉ Email"
                 className="input-field peer"
                 required
                 autoComplete="email"
@@ -90,7 +90,7 @@ const LoginPage = () => {
                 htmlFor="email"
                 className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.email ? 'top-1 text-xs text-primary' : ''}`}
               >
-                Email Address
+                Địa chỉ Email
               </label>
             </div>
 
@@ -101,7 +101,7 @@ const LoginPage = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 className="input-field peer pr-12"
                 required
                 autoComplete="current-password"
@@ -110,7 +110,7 @@ const LoginPage = () => {
                 htmlFor="password"
                 className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.password ? 'top-1 text-xs text-primary' : ''}`}
               >
-                Password
+                Mật khẩu
               </label>
               <button
                 type="button"
@@ -127,9 +127,9 @@ const LoginPage = () => {
             <div className="flex items-center justify-between text-xs px-1">
               <label className="flex items-center gap-2 cursor-pointer text-on-surface-variant hover:text-on-surface transition-colors">
                 <input className="w-4 h-4 rounded-md border-outline-variant text-primary focus:ring-primary/20" type="checkbox" />
-                Remember me
+                Ghi nhớ tôi
               </label>
-              <Link to="#" className="text-primary font-semibold hover:underline decoration-2 underline-offset-4">Forgot password?</Link>
+              <Link to="#" className="text-primary font-semibold hover:underline decoration-2 underline-offset-4">Quên mật khẩu?</Link>
             </div>
 
             <button
@@ -137,21 +137,21 @@ const LoginPage = () => {
               className="w-full h-14 btn-primary text-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all group"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
               {!loading && <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">arrow_forward</span>}
             </button>
           </form>
 
           <div className="my-8 flex items-center gap-4 text-xs font-bold text-on-surface-variant/40 uppercase tracking-widest">
             <div className="h-[1px] flex-1 bg-surface-container-low"></div>
-            <span>or continue with</span>
+            <span>hoặc tiếp tục với</span>
             <div className="h-[1px] flex-1 bg-surface-container-low"></div>
           </div>
 
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google login failed.')}
+              onError={() => setError('Đăng nhập bằng Google thất bại.')}
               useOneTap={false}
               shape="pill"
               theme="outline"
@@ -162,19 +162,20 @@ const LoginPage = () => {
 
           <footer className="mt-8 pt-8 border-t border-surface-container-low text-center">
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-on-surface-variant/60 uppercase tracking-widest font-bold">New to the platform?</p>
-              <Link to="/register" className="text-sm text-on-surface font-semibold hover:text-primary transition-colors">Create a student account</Link>
+              <p className="text-xs text-on-surface-variant/60 uppercase tracking-widest font-bold">Lần đầu truy cập nền tảng?</p>
+              <Link to="/register" className="text-sm text-on-surface font-semibold hover:text-primary transition-colors">Tạo tài khoản sinh viên</Link>
             </div>
           </footer>
         </div>
 
         <div className="mt-8 text-center px-4">
           <p className="text-xs text-on-surface-variant/60 leading-relaxed">
-            By signing in, you agree to the LibraFlow <br />
-            <span className="underline cursor-pointer">Terms of Service</span> and <span className="underline cursor-pointer">Academic Integrity Policy</span>.
+            Bằng cách đăng nhập, bạn đồng ý với LibraFlow <br />
+            <span className="underline cursor-pointer">Điều khoản dịch vụ</span> và <span className="underline cursor-pointer">Chính sách học thuật</span>.
           </p>
         </div>
       </main>
+
 
 
     </div>

@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ROLES = [
-  { value: 'student', label: 'Student' },
-  { value: 'lecturer', label: 'Lecturer' },
+  { value: 'student', label: 'Sinh viên' },
+  { value: 'lecturer', label: 'Giảng viên' },
 ];
 
 const RegisterPage = () => {
@@ -75,7 +75,7 @@ const RegisterPage = () => {
               <span className="material-symbols-outlined text-primary text-4xl">menu_book</span>
               <h1 className="text-3xl font-black tracking-tighter text-on-surface">LibraFlow</h1>
             </div>
-            <p className="text-on-surface-variant font-medium tracking-tight">Join our campus library today</p>
+            <p className="text-on-surface-variant font-medium tracking-tight">Tham gia thư viện trường ngay hôm nay</p>
           </header>
 
           {error && (
@@ -93,7 +93,7 @@ const RegisterPage = () => {
                 type="text"
                 value={form.name}
                 onChange={handleChange}
-                placeholder="Full Name"
+                placeholder="Họ và tên"
                 className="input-field peer"
                 required
               />
@@ -101,7 +101,7 @@ const RegisterPage = () => {
                 htmlFor="name"
                 className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.name ? 'top-1 text-xs text-primary' : ''}`}
               >
-                Full Name
+                Họ và tên
               </label>
             </div>
 
@@ -112,7 +112,7 @@ const RegisterPage = () => {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="Email Address"
+                placeholder="Địa chỉ Email"
                 className="input-field peer"
                 required
                 autoComplete="email"
@@ -121,7 +121,7 @@ const RegisterPage = () => {
                 htmlFor="email"
                 className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.email ? 'top-1 text-xs text-primary' : ''}`}
               >
-                Email Address
+                Địa chỉ Email
               </label>
             </div>
 
@@ -136,7 +136,7 @@ const RegisterPage = () => {
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
               </select>
-              <label className="input-label top-1 text-xs text-primary">Role</label>
+              <label className="input-label top-1 text-xs text-primary">Vai trò</label>
               <span className="material-symbols-outlined absolute right-4 top-4 text-on-surface-variant/40 pointer-events-none">expand_more</span>
             </div>
 
@@ -147,7 +147,7 @@ const RegisterPage = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 className="input-field peer pr-12"
                 required
                 autoComplete="new-password"
@@ -156,7 +156,7 @@ const RegisterPage = () => {
                 htmlFor="password"
                 className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.password ? 'top-1 text-xs text-primary' : ''}`}
               >
-                Password
+                Mật khẩu
               </label>
               <button
                 type="button"
@@ -177,7 +177,7 @@ const RegisterPage = () => {
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm Password"
+                placeholder="Xác nhận mật khẩu"
                 className="input-field peer pr-12"
                 required
                 autoComplete="new-password"
@@ -186,7 +186,7 @@ const RegisterPage = () => {
                 htmlFor="confirmPassword"
                 className={`input-label peer-placeholder-shown:text-base peer-placeholder-shown:text-on-surface-variant peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary ${form.confirmPassword ? 'top-1 text-xs text-primary' : ''}`}
               >
-                Confirm Password
+                Xác nhận mật khẩu
               </label>
               <button
                 type="button"
@@ -205,14 +205,14 @@ const RegisterPage = () => {
               className="w-full h-14 btn-primary text-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all group"
               disabled={loading}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
               {!loading && <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">how_to_reg</span>}
             </button>
           </form>
 
           <footer className="mt-8 pt-8 border-t border-surface-container-low text-center">
             <p className="text-sm text-on-surface-variant/60">
-              Already have an account? <Link to="/login" className="text-on-surface font-semibold hover:text-primary transition-colors">Sign in instead</Link>
+              Đã có tài khoản? <Link to="/login" className="text-on-surface font-semibold hover:text-primary transition-colors">Đăng nhập ngay</Link>
             </p>
           </footer>
         </div>

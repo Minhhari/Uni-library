@@ -3,12 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { bookAPI, borrowAPI } from '../services/api';
+import { EditBookModal } from '../components';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const BookDetailPage = () => {
     const { id } = useParams();
-    const { isAuthenticated, user, setShowTermsModal } = useAuth();
+    const { isAuthenticated, user, showTermsModal, setShowTermsModal } = useAuth();
     const isTermsAccepted = (['student', 'lecturer'].includes(user?.role) ? user?.hasAcceptedTerms : true);
 
     const [book, setBook] = useState(null);
@@ -21,6 +22,7 @@ const BookDetailPage = () => {
     const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
     // Borrow state
+    const [showEditModal, setShowEditModal] = useState(false);
     const [borrowLoading, setBorrowLoading] = useState(false);
     const [borrowResult, setBorrowResult] = useState(null);
 
@@ -140,7 +142,7 @@ const BookDetailPage = () => {
     const isAvailable = book.available > 0 && book.status === 'available';
     const coverImage = book.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=2574&auto=format&fit=crop';
     const categoryName = book.category?.name || 'Chưa phân loại';
-    const statusLabel = isAvailable ? 'AVAILABLE' : book.status === 'maintenance' ? 'MAINTENANCE' : 'UNAVAILABLE';
+    const statusLabel = isAvailable ? 'CÓ SẴN' : book.status === 'maintenance' ? 'BẢO TRÌ' : 'HẾT SÁCH';
     const statusColor = isAvailable
         ? 'bg-emerald-50 text-emerald-600 border border-emerald-500/20'
         : 'bg-red-50 text-red-600 border border-red-500/20';
@@ -156,16 +158,7 @@ const BookDetailPage = () => {
                 <div className="relative z-20 flex flex-col md:flex-row items-center gap-12 max-w-7xl px-8 w-full">
                     <div className="shrink-0 transform -rotate-3 hover:rotate-0 transition-all duration-500 shadow-2xl p-2 bg-white rounded-3xl group relative">
                         <img src={coverImage} className="w-56 h-80 object-cover rounded-2xl shadow-inner group-hover:scale-105 transition-transform" alt={book.title} />
-                        {/* Look Inside Button */}
-                        {book.previewImages && book.previewImages.length > 0 && (
-                            <button
-                                onClick={() => { setShowLookInside(true); setCurrentPreviewIndex(0); }}
-                                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur text-primary font-black px-4 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-2 hover:scale-110 active:scale-95 transition-all whitespace-nowrap z-30 opacity-0 group-hover:opacity-100"
-                            >
-                                <span className="material-symbols-outlined text-xl">menu_book</span>
-                                Đọc thử
-                            </button>
-                        )}
+
                     </div>
                     <div className="flex-1 space-y-6 text-center md:text-left">
                         <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap">
@@ -174,9 +167,9 @@ const BookDetailPage = () => {
                         </div>
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter leading-tight text-on-surface drop-shadow-sm">{book.title}</h1>
                         <div className="flex items-center gap-4 justify-center md:justify-start flex-wrap">
-                            <span className="text-on-surface-variant font-bold text-xl opacity-80">By {book.author}</span>
+                            <span className="text-on-surface-variant font-bold text-xl opacity-80">Tác giả: {book.author}</span>
                             <span className="w-1.5 h-1.5 bg-outline-variant/30 rounded-full"></span>
-                            <span className="text-on-surface-variant/60 font-medium">Năm: {book.publish_year}</span>
+                            <span className="text-on-surface-variant/60 font-medium">Năm xuất bản: {book.publish_year}</span>
                         </div>
                     </div>
                 </div>
@@ -190,7 +183,7 @@ const BookDetailPage = () => {
                             <div className={`w-4 h-4 rounded-full shadow-lg ${isAvailable ? 'bg-emerald-500 animate-pulse shadow-emerald-500/50' : 'bg-red-400'}`}></div>
                             <span className="text-2xl font-black text-on-surface flex items-baseline gap-1">
                                 {book.available}
-                                <span className="text-sm font-bold text-on-surface-variant/40">of {book.quantity} copies available</span>
+                                <span className="text-sm font-bold text-on-surface-variant/40">trên {book.quantity} cuốn có sẵn</span>
                             </span>
                         </div>
                         {book.location && (
@@ -203,43 +196,67 @@ const BookDetailPage = () => {
                             </>
                         )}
                     </div>
-                    <div className="flex items-center gap-4 w-full lg:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                        {/* More Info / Look Inside */}
+                        {book.previewImages && book.previewImages.length > 0 && (
+                            <button
+                                onClick={() => { setShowLookInside(true); setCurrentPreviewIndex(0); }}
+                                className="flex-1 sm:flex-none items-center gap-2 px-8 py-5 text-primary font-black rounded-3xl bg-primary/5 hover:bg-primary/10 transition-all w-full sm:w-44 justify-center flex border-2 border-primary/20"
+                            >
+                                <span className="material-symbols-outlined text-xl">menu_book</span>
+                                Xem thêm
+                            </button>
+                        )}
+                        {/* Edit Button for Librarian/Admin */}
+                        {(user?.role === 'librarian' || user?.role === 'admin') && (
+                            <button
+                                onClick={() => setShowEditModal(true)}
+                                className="flex-1 sm:flex-none items-center gap-2 px-8 py-5 text-white font-black rounded-3xl bg-slate-900 hover:bg-slate-800 transition-all w-full sm:w-44 justify-center flex shadow-xl shadow-slate-200"
+                            >
+                                <span className="material-symbols-outlined text-xl">edit</span>
+                                Chỉnh sửa
+                            </button>
+                        )}
                         {/* Borrow Now */}
-                        <button
-                            onClick={() => {
-                                if (!isTermsAccepted) {
-                                    setShowTermsModal(true);
-                                    return;
-                                }
-                                setBorrowResult(null);
-                                setShowBorrowModal(true);
-                            }}
-                            disabled={!isAvailable}
-                            className={`flex-1 lg:flex-none px-12 py-5 font-black rounded-3xl shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${isAvailable
-                                ? 'bg-gradient-to-r from-primary to-primary-container text-white hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] shadow-primary/20'
-                                : 'bg-surface-container-low text-on-surface-variant cursor-not-allowed opacity-60'}`}
-                        >
-                            <span className="material-symbols-outlined text-2xl">auto_stories</span>
-                            {isTermsAccepted ? 'Borrow Now' : 'Accept Terms to Borrow'}
-                        </button>
+                        {user?.role !== 'librarian' && user?.role !== 'admin' && (
+                            <button
+                                onClick={() => {
+                                    if (!isTermsAccepted) {
+                                        setShowTermsModal(true);
+                                        return;
+                                    }
+                                    setBorrowResult(null);
+                                    setShowBorrowModal(true);
+                                }}
+                                disabled={!isAvailable}
+                                className={`flex-1 lg:flex-none px-12 py-5 font-black rounded-3xl shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${isAvailable
+                                    ? 'bg-gradient-to-r from-primary to-primary-container text-white hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] shadow-primary/20'
+                                    : 'bg-surface-container-low text-on-surface-variant cursor-not-allowed opacity-60'}`}
+                            >
+                                <span className="material-symbols-outlined text-2xl">auto_stories</span>
+                                {isTermsAccepted ? 'Mượn ngay' : 'Chấp nhận Điều khoản để mượn'}
+                            </button>
+                        )}
 
                         {/* Reserve */}
-                        <button
-                            onClick={() => {
-                                if (!isTermsAccepted) {
-                                    setShowTermsModal(true);
-                                    return;
-                                }
-                                handleReserve();
-                            }}
-                            disabled={reserveLoading}
-                            className={`hidden sm:flex items-center gap-2 px-8 py-5 text-on-surface font-bold rounded-3xl transition-all w-44 justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isTermsAccepted ? 'bg-surface-container-low hover:bg-primary/5' : 'bg-amber-100/50 hover:bg-amber-100 text-amber-900 border border-amber-200'}`}
-                        >
-                            {reserveLoading
-                                ? <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                : <span className="material-symbols-outlined text-xl">{isTermsAccepted ? 'bookmark_add' : 'lock'}</span>}
-                            {isTermsAccepted ? 'Reserve' : 'Accept Terms'}
-                        </button>
+                        {user?.role !== 'librarian' && user?.role !== 'admin' && (
+                            <button
+                                onClick={() => {
+                                    if (!isTermsAccepted) {
+                                        setShowTermsModal(true);
+                                        return;
+                                    }
+                                    handleReserve();
+                                }}
+                                disabled={reserveLoading}
+                                className={`hidden sm:flex items-center gap-2 px-8 py-5 text-on-surface font-bold rounded-3xl transition-all w-44 justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isTermsAccepted ? 'bg-surface-container-low hover:bg-primary/5' : 'bg-amber-100/50 hover:bg-amber-100 text-amber-900 border border-amber-200'}`}
+                            >
+                                {reserveLoading
+                                    ? <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    : <span className="material-symbols-outlined text-xl">{isTermsAccepted ? 'bookmark_add' : 'lock'}</span>}
+                                {isTermsAccepted ? 'Đặt trước' : 'Chấp nhận Điều khoản'}
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -402,6 +419,18 @@ const BookDetailPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && (
+                <EditBookModal
+                    book={book}
+                    onClose={() => setShowEditModal(false)}
+                    onSuccess={(updatedBook) => {
+                        setBook(updatedBook);
+                        setShowEditModal(false);
+                    }}
+                />
             )}
         </div>
     );

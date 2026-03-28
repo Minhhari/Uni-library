@@ -6,8 +6,8 @@ const FEATURES = [
     {
         to: '/admin/users',
         icon: 'group',
-        title: 'Manage Users',
-        description: 'View, search, assign roles, lock/unlock Student & Lecturer accounts. Create new Librarian accounts.',
+        title: 'Quản lý người dùng',
+        description: 'Xem, tìm kiếm, phân quyền, khóa/mở tài khoản Sinh viên & Giảng viên. Tạo tài khoản Thủ thư mới.',
         gradient: 'from-indigo-500 to-violet-600',
         bg: 'bg-indigo-50',
         border: 'border-indigo-100',
@@ -17,8 +17,8 @@ const FEATURES = [
     {
         to: '/admin/settings',
         icon: 'tune',
-        title: 'System Settings',
-        description: 'Configure max loan days, overdue fine rates, reservation limits, and other global parameters.',
+        title: 'Cài đặt hệ thống',
+        description: 'Cấu hình số ngày mượn tối đa, mức phí phạt quá hạn, giới hạn đặt trước và các thông số khác.',
         gradient: 'from-amber-400 to-orange-500',
         bg: 'bg-amber-50',
         border: 'border-amber-100',
@@ -28,8 +28,8 @@ const FEATURES = [
     {
         to: '/admin/reports',
         icon: 'analytics',
-        title: 'Reports & Analytics',
-        description: 'Overview dashboard with account statistics, borrow activity charts, and fine/revenue summaries.',
+        title: 'Báo cáo & Thống kê',
+        description: 'Bảng điều khiển tổng quan với thống kê tài khoản, biểu đồ mượn trả và tóm tắt doanh thu tiền phạt.',
         gradient: 'from-emerald-500 to-teal-600',
         bg: 'bg-emerald-50',
         border: 'border-emerald-100',
@@ -54,16 +54,16 @@ const AdminDashboardPage = () => {
                             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg">
                                 <span className="material-symbols-outlined text-white text-xl">admin_panel_settings</span>
                             </div>
-                            <span className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Admin Control Center</span>
+                            <span className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trung tâm Quản trị hệ thống</span>
                         </div>
                         <h1 className="text-4xl font-extrabold tracking-tight leading-snug">
-                            Welcome back,{' '}
+                            Chào mừng quay trở lại,{' '}
                             <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-                                {user?.name?.split(' ').slice(-1)[0] || 'Admin'}
+                                {user?.name?.split(' ').slice(-1)[0] || 'Quản trị viên'}
                             </span>
                         </h1>
                         <p className="text-slate-400 mt-3 max-w-lg text-sm leading-relaxed">
-                            Manage user accounts, configure system parameters, and monitor library performance — all from one place.
+                            Quản lý tài khoản người dùng, cấu hình thông số hệ thống và theo dõi hiệu suất thư viện — tất cả ở một nơi.
                         </p>
                     </div>
                     <div className="hidden md:flex flex-shrink-0 w-24 h-24 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm items-center justify-center">
@@ -74,7 +74,7 @@ const AdminDashboardPage = () => {
 
             {/* ── Feature Cards ── */}
             <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-5">Quick Access</p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-5">Truy cập nhanh</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {FEATURES.map((f) => (
                         <Link
@@ -98,7 +98,7 @@ const AdminDashboardPage = () => {
 
                             {/* CTA */}
                             <div className={`flex items-center gap-1.5 text-sm font-bold ${f.accent} group-hover:gap-3 transition-all duration-200`}>
-                                Open
+                                Truy cập
                                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                             </div>
                         </Link>

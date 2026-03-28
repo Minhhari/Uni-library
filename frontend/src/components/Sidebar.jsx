@@ -11,11 +11,11 @@ const Sidebar = () => {
 
     const navItems = isAdmin
         ? [
-            { name: 'Admin Dashboard', path: '/admin', icon: 'admin_panel_settings' },
-            { name: 'Manage Users', path: '/admin/users', icon: 'group' },
-            { name: 'System Settings', path: '/admin/settings', icon: 'tune' },
-            { name: 'Reports', path: '/admin/reports', icon: 'analytics' },
-            { name: 'Library', path: '/books', icon: 'menu_book' },
+            { name: 'Bảng Quản trị', path: '/admin', icon: 'admin_panel_settings' },
+            { name: 'Quản lý người dùng', path: '/admin/users', icon: 'group' },
+            { name: 'Cài đặt hệ thống', path: '/admin/settings', icon: 'tune' },
+            { name: 'Báo cáo & Thống kê', path: '/admin/reports', icon: 'analytics' },
+            { name: 'Thư viện sách', path: '/books', icon: 'menu_book' },
         ]
         : isLibrarian
             ? [
@@ -25,15 +25,16 @@ const Sidebar = () => {
                 { name: 'Yêu cầu nhập sách', path: '/?tab=requests', icon: 'local_shipping' },
                 { name: 'Tra cứu hội viên', path: '/admin/users', icon: 'group' },
                 { name: 'Khoản phạt', path: '/?tab=fines', icon: 'payments' },
-                { name: 'Kho sách', path: '/books', icon: 'menu_book' },
+                { name: 'Kho sách (Tra cứu)', path: '/books', icon: 'search' },
+                { name: 'Quản lý sách', path: '/?tab=books', icon: 'inventory_2' },
             ]
             : [
-                { name: 'Dashboard', path: '/', icon: 'dashboard' },
-                { name: 'Library', path: '/books', icon: 'menu_book' },
-                { name: 'Recommendations', path: '/recommendations', icon: 'recommend' },
-                { name: 'My Loans', path: '/loans', icon: 'history' },
-                { name: 'Transactions', path: '/transactions', icon: 'receipt_long' },
-                { name: 'Reports', path: '/reports', icon: 'bar_chart' },
+                { name: 'Tổng quan', path: '/', icon: 'dashboard' },
+                { name: 'Thư viện sách', path: '/books', icon: 'menu_book' },
+                { name: 'Gợi ý cho bạn', path: '/recommendations', icon: 'recommend' },
+                { name: 'Hoạt động của tôi', path: '/loans', icon: 'history' },
+                { name: 'Lịch sử phạt', path: '/transactions', icon: 'receipt_long' },
+                { name: 'Báo cáo', path: '/reports', icon: 'bar_chart' },
             ];
 
     return (
@@ -43,7 +44,7 @@ const Sidebar = () => {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">L</div>
                 <div className="flex flex-col">
                     <span className="text-2xl font-black tracking-tighter text-white leading-none">LibraFlow</span>
-                    <span className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase mt-1">Systems</span>
+                    <span className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase mt-1">Hệ thống</span>
                 </div>
             </div>
 
@@ -82,8 +83,8 @@ const Sidebar = () => {
                                 active = !currentTab || currentTab === 'overview';
                             }
                         }
-                    } else if (itemPath === '/admin' && location.pathname === '/admin') {
-                        active = true;
+                    } else if (itemPath === '/admin') {
+                        active = location.pathname === '/admin';
                     } else if (itemPath !== '/' && location.pathname.startsWith(itemPath)) {
                         active = true;
                     }
@@ -116,14 +117,14 @@ const Sidebar = () => {
                         }`}
                 >
                     <span className="material-symbols-outlined text-[20px]">settings</span>
-                    <span className="tracking-tight text-sm font-medium">Settings</span>
+                    <span className="tracking-tight text-sm font-medium">Cài đặt tài khoản</span>
                 </Link>
                 <button
                     onClick={logout}
                     className="w-full flex items-center gap-4 px-6 py-3.5 text-slate-400 hover:text-error hover:bg-error/5 transition-all duration-300 rounded-xl text-left"
                 >
                     <span className="material-symbols-outlined text-[20px]">logout</span>
-                    <span className="tracking-tight text-sm font-medium">Logout</span>
+                    <span className="tracking-tight text-sm font-medium">Đăng xuất</span>
                 </button>
             </div>
         </aside>

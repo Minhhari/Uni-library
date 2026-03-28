@@ -1,6 +1,7 @@
 const BorrowRecord = require("../models/BorrowRecord");
 const Book = require("../models/Book");
 const Fine = require("../models/Fine");
+const SystemSetting = require("../models/SystemSetting");
 const notificationService = require("../services/notificationService");
 
 // =======================
@@ -12,17 +13,58 @@ exports.requestBorrow = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Check if user has accepted terms (students/lecturers only)
-    if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
-      return res.status(403).json({ 
-        message: "You must accept the Terms & Policies before borrowing books." 
+    // 1. Phân quyền
+    if (['librarian', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        message: "Librarians and Admins are not allowed to borrow books."
       });
     }
 
-    const book = await Book.findById(bookId);
+    if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
+      return res.status(403).json({
+        message: "You must accept the Terms & Policies before borrowing books."
+      });
+    }
 
+    // 2. 🔥 ƯU TIÊN: Kiểm tra xem chính user đang mượn hoặc đã đặt cuốn này chưa
+    const [alreadyBorrowing, alreadyReserved] = await Promise.all([
+      BorrowRecord.findOne({
+        userId,
+        bookId,
+        status: { $in: ["pending", "approved", "waiting_for_pickup"] }
+      }),
+      require('../models/Reservation').findOne({
+        userId,
+        bookId,
+        status: { $in: ["pending", "approved"] }
+      })
+    ]);
+
+    if (alreadyBorrowing || alreadyReserved) {
+      return res.status(400).json({
+        message: "Bạn đang mượn hoặc đã có yêu cầu đặt chỗ cho cuốn sách này rồi."
+      });
+    }
+
+    // 3. Kiểm tra tính sẵn có của sách
+    const book = await Book.findById(bookId);
     if (!book || book.available <= 0) {
-      return res.status(400).json({ message: "Book not available" });
+      return res.status(400).json({ message: "Sách không còn sẵn để mượn." });
+    }
+
+    // 4. Kiểm tra giới hạn tổng số lượng sách được mượn (System Settings)
+    const maxBooksSetting = await SystemSetting.findOne({ key: 'maxBooksPerUser' });
+    const maxBooks = maxBooksSetting ? Number(maxBooksSetting.value) : 5;
+
+    const activeBorrowsCount = await BorrowRecord.countDocuments({
+      userId,
+      status: { $in: ["pending", "approved", "waiting_for_pickup"] }
+    });
+
+    if (activeBorrowsCount >= maxBooks) {
+      return res.status(400).json({
+        message: `Bạn đã đạt giới hạn mượn sách (${maxBooks} cuốn). Vui lòng trả bớt sách hoặc chờ duyệt yêu cầu hiện tại.`
+      });
     }
 
     const borrow = await BorrowRecord.create({
@@ -105,12 +147,16 @@ exports.approveBorrow = async (req, res) => {
       return res.status(400).json({ message: "Book not available" });
     }
 
+    // Fetch loan duration from settings
+    const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
+    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 14;
+
     const borrowDate = new Date();
     const pickupDeadline = new Date();
     pickupDeadline.setDate(pickupDeadline.getDate() + 3); // 3 ngày để lấy sách
 
     const dueDate = new Date();
-    dueDate.setDate(borrowDate.getDate() + 70); // 10 tuần sau khi mượn
+    dueDate.setDate(borrowDate.getDate() + maxDays);
 
     // 🔥 Chuyển sang waiting_for_pickup và trừ sách ngay
     record.status = "waiting_for_pickup";
@@ -277,28 +323,32 @@ exports.returnBook = async (req, res) => {
       daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
+    // Fetch fine rate from settings
+    const fineRateSetting = await SystemSetting.findOne({ key: 'finePerDay' });
+    const fineRate = fineRateSetting ? Number(fineRateSetting.value) : 5000;
+
     let fineAmount = 0;
     let fineReason = null;
 
     if (isLost && isLate) {
-      // Mất sách + quá hạn: 100% giá sách + 5000/ngày trễ
-      fineAmount = bookPrice + daysLate * 5000;
+      // Mất sách + quá hạn: 100% giá sách + fineRate/ngày trễ
+      fineAmount = bookPrice + daysLate * fineRate;
       fineReason = "lost_and_late";
     } else if (isLost) {
       // Mất sách đúng hạn: 100% giá sách
       fineAmount = bookPrice;
       fineReason = "lost";
     } else if (isDamaged && isLate) {
-      // Hư hỏng + quá hạn: 50% giá sách + 5000/ngày trễ
-      fineAmount = bookPrice * 0.5 + daysLate * 5000;
+      // Hư hỏng + quá hạn: 50% giá sách + fineRate/ngày trễ
+      fineAmount = bookPrice * 0.5 + daysLate * fineRate;
       fineReason = "late_and_damaged";
     } else if (isDamaged) {
       // Hư hỏng đúng hạn: 50% giá sách
       fineAmount = bookPrice * 0.5;
       fineReason = "damaged";
     } else if (isLate) {
-      // Nguyên vẹn + quá hạn: 5000/ngày trễ
-      fineAmount = daysLate * 5000;
+      // Nguyên vẹn + quá hạn: fineRate/ngày trễ
+      fineAmount = daysLate * fineRate;
       fineReason = "late";
     }
     // Nguyên vẹn + đúng hạn: không phạt (fineAmount = 0)

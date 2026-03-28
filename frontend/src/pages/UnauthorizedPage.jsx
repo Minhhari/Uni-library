@@ -12,13 +12,13 @@ const UnauthorizedPage = () => (
       <div className="w-20 h-20 bg-error/10 text-error rounded-full flex items-center justify-center mx-auto mb-6">
         <span className="material-symbols-outlined text-5xl">lock_person</span>
       </div>
-      <h1 className="text-3xl font-black text-on-surface mb-3 tracking-tighter">Access Denied</h1>
+      <h1 className="text-3xl font-black text-on-surface mb-3 tracking-tighter">Truy cập bị từ chối</h1>
       <p className="text-on-surface-variant mb-8">
-        You don't have the required permissions to access this gallery.
-        Please contact the librarian if you believe this is an error.
+        Bạn không có quyền truy cập vào trang này.
+        Vui lòng liên hệ thủ thư nếu bạn tin rằng đây là một lỗi.
       </p>
       <Link to="/" className="btn-primary py-3 px-8 inline-flex">
-        Return to Dashboard
+        Quay lại Bảng điều khiển
       </Link>
     </div>
   </div>

@@ -41,9 +41,9 @@ const PaymentSuccessPage = () => {
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-4xl text-blue-500 animate-spin">progress_activity</span>
                         </div>
-                        <h1 className="text-2xl font-black text-on-surface mb-2">Verifying Payment…</h1>
+                        <h1 className="text-2xl font-black text-on-surface mb-2">Đang xác minh thanh toán…</h1>
                         <p className="text-on-surface-variant text-sm">
-                            Please wait while we confirm your payment with PayOS.
+                            Vui lòng đợi trong khi chúng tôi xác nhận thanh toán của bạn với PayOS.
                         </p>
                     </>
                 )}
@@ -53,16 +53,16 @@ const PaymentSuccessPage = () => {
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-5xl text-emerald-500 filled">check_circle</span>
                         </div>
-                        <h1 className="text-3xl font-black text-on-surface mb-2">Payment Successful!</h1>
+                        <h1 className="text-3xl font-black text-on-surface mb-2">Thanh toán thành công!</h1>
                         <p className="text-on-surface-variant text-sm mb-8">
-                            Your fine has been cleared. A receipt has been sent to your registered email.
+                            Khoản phạt của bạn đã được xóa. Biên lai đã được gửi đến email đã đăng ký của bạn.
                         </p>
                         <Link
                             to="/transactions"
                             className="inline-flex items-center gap-2 bg-primary text-white font-black px-8 py-3.5 rounded-2xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl active:scale-95"
                         >
                             <span className="material-symbols-outlined text-lg">receipt_long</span>
-                            View My Transactions
+                            Xem các giao dịch của tôi
                         </Link>
                     </>
                 )}
@@ -73,12 +73,12 @@ const PaymentSuccessPage = () => {
                             <span className="material-symbols-outlined text-5xl text-red-400 filled">cancel</span>
                         </div>
                         <h1 className="text-3xl font-black text-on-surface mb-2">
-                            {status === "no-code" ? "Invalid Link" : "Payment Not Confirmed"}
+                            {status === "no-code" ? "Liên kết không hợp lệ" : "Thanh toán chưa được xác nhận"}
                         </h1>
                         <p className="text-on-surface-variant text-sm mb-8">
                             {status === "no-code"
-                                ? "No payment order was found. Please try paying again from the Transactions page."
-                                : "We could not confirm your payment. If money was deducted, please contact the library counter. You can also try again."}
+                                ? "Không tìm thấy đơn hàng thanh toán nào. Vui lòng thử thanh toán lại từ trang Giao dịch."
+                                : "Chúng tôi không thể xác nhận thanh toán của bạn. Nếu tiền đã bị trừ, vui lòng liên hệ quầy thư viện. Bạn cũng có thể thử lại."}
                         </p>
                         <div className="flex gap-3 justify-center flex-wrap">
                             <Link
@@ -86,13 +86,13 @@ const PaymentSuccessPage = () => {
                                 className="inline-flex items-center gap-2 bg-primary text-white font-black px-6 py-3 rounded-2xl hover:bg-primary/90 transition-all shadow active:scale-95 text-sm"
                             >
                                 <span className="material-symbols-outlined text-base">arrow_back</span>
-                                Back to Transactions
+                                Quay lại Giao dịch
                             </Link>
                             <a
                                 href="/"
                                 className="inline-flex items-center gap-2 border border-surface-dim text-on-surface-variant font-bold px-6 py-3 rounded-2xl hover:bg-surface-container transition-all text-sm"
                             >
-                                Go Home
+                                Về trang chủ
                             </a>
                         </div>
                     </>

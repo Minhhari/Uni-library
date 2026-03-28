@@ -3,11 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
 
 const ROLE_LABELS = {
-  admin: 'Admin',
-  librarian: 'Librarian',
-  lecturer: 'Lecturer',
-  student: 'Student',
-  guest: 'Guest',
+  admin: 'Quản trị viên',
+  librarian: 'Thủ thư',
+  lecturer: 'Giảng viên',
+  student: 'Sinh viên',
+  guest: 'Khách',
 };
 
 const ProfilePage = () => {
@@ -34,11 +34,11 @@ const ProfilePage = () => {
       const { data } = await userAPI.updateProfile(form);
       if (data.success) {
         updateUser(data.user);
-        setMessage('Profile updated successfully!');
+        setMessage('Đã cập nhật hồ sơ thành công!');
         setEditMode(false);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Update failed.');
+      setError(err.response?.data?.message || 'Cập nhật thất bại.');
     } finally {
       setLoading(false);
     }
@@ -47,7 +47,7 @@ const ProfilePage = () => {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (pwForm.newPassword !== pwForm.confirmNew) {
-      return setError('Passwords do not match.');
+      return setError('Mật khẩu không khớp.');
     }
     setLoading(true);
     setError('');
@@ -58,11 +58,11 @@ const ProfilePage = () => {
         newPassword: pwForm.newPassword,
       });
       if (data.success) {
-        setMessage('Password changed successfully!');
+        setMessage('Đã thay đổi mật khẩu thành công!');
         setPwForm({ currentPassword: '', newPassword: '', confirmNew: '' });
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Change password failed.');
+      setError(err.response?.data?.message || 'Thay đổi mật khẩu thất bại.');
     } finally {
       setLoading(false);
     }
@@ -73,8 +73,8 @@ const ProfilePage = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header>
-        <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Account Settings</h1>
-        <p className="text-on-surface-variant text-lg">Manage your profile and security preferences</p>
+        <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Cài đặt tài khoản</h1>
+        <p className="text-on-surface-variant text-lg">Quản lý hồ sơ và các tùy chọn bảo mật của bạn</p>
       </header>
 
       {message && (
@@ -114,8 +114,8 @@ const ProfilePage = () => {
           </div>
 
           <div className="bg-surface-container-low p-6 rounded-3xl border border-outline-variant/10 text-xs text-on-surface-variant/70 leading-relaxed">
-            <p>Member since: {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-            <p>Account ID: {user._id?.substring(0, 8).toUpperCase()}</p>
+            <p>Thành viên từ: {new Date(user.createdAt).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</p>
+            <p>ID tài khoản: {user._id?.substring(0, 8).toUpperCase()}</p>
           </div>
         </div>
 
@@ -126,14 +126,14 @@ const ProfilePage = () => {
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">person</span>
-                Personal Information
+                Thông tin cá nhân
               </h3>
               {!editMode && (
                 <button
                   onClick={() => setEditMode(true)}
                   className="px-6 py-2 bg-surface-container-high text-primary rounded-xl font-bold text-sm hover:bg-primary/10 transition-colors"
                 >
-                  Edit
+                  Chỉnh sửa
                 </button>
               )}
             </div>
@@ -145,10 +145,10 @@ const ProfilePage = () => {
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    placeholder="Full Name"
+                    placeholder="Họ và tên"
                     className="input-field peer"
                   />
-                  <label className="input-label top-1 text-xs text-primary">Full Name</label>
+                  <label className="input-label top-1 text-xs text-primary">Họ và tên</label>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -157,45 +157,45 @@ const ProfilePage = () => {
                       name="phone"
                       value={form.phone}
                       onChange={handleChange}
-                      placeholder="Phone Number"
+                      placeholder="Số điện thoại"
                       className="input-field peer"
                     />
-                    <label className="input-label top-1 text-xs text-primary">Phone Number</label>
+                    <label className="input-label top-1 text-xs text-primary">Số điện thoại</label>
                   </div>
                   <div className="relative group">
                     <input
                       name="department"
                       value={form.department}
                       onChange={handleChange}
-                      placeholder="Department"
+                      placeholder="Khoa/Phòng ban"
                       className="input-field peer"
                     />
-                    <label className="input-label top-1 text-xs text-primary">Department</label>
+                    <label className="input-label top-1 text-xs text-primary">Khoa/Phòng ban</label>
                   </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
                   <button type="submit" className="btn-primary py-3 px-8" disabled={loading}>
-                    {loading ? 'Saving...' : 'Save Changes'}
+                    {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditMode(false)}
                     className="px-8 py-3 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm hover:bg-surface-container-highest transition-colors"
                   >
-                    Cancel
+                    Hủy bỏ
                   </button>
                 </div>
               </form>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                 <div className="space-y-1">
-                  <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Phone Number</p>
-                  <p className="text-on-surface font-medium">{user.phone || 'Not provided'}</p>
+                  <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Số điện thoại</p>
+                  <p className="text-on-surface font-medium">{user.phone || 'Chưa cung cấp'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Department</p>
-                  <p className="text-on-surface font-medium">{user.department || 'Not provided'}</p>
+                  <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Khoa/Phòng ban</p>
+                  <p className="text-on-surface font-medium">{user.department || 'Chưa cung cấp'}</p>
                 </div>
               </div>
             )}
@@ -206,7 +206,7 @@ const ProfilePage = () => {
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-outline-variant/10">
               <h3 className="text-xl font-bold flex items-center gap-2 mb-8">
                 <span className="material-symbols-outlined text-tertiary">lock</span>
-                Security & Password
+                Bảo mật & Mật khẩu
               </h3>
               <form onSubmit={handleChangePassword} className="space-y-6">
                 <div className="relative group">
@@ -214,10 +214,10 @@ const ProfilePage = () => {
                     type="password"
                     value={pwForm.currentPassword}
                     onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })}
-                    placeholder="Current Password"
+                    placeholder="Mật khẩu hiện tại"
                     className="input-field peer"
                   />
-                  <label className="input-label top-1 text-xs text-primary">Current Password</label>
+                  <label className="input-label top-1 text-xs text-primary">Mật khẩu hiện tại</label>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="relative group">
@@ -225,24 +225,24 @@ const ProfilePage = () => {
                       type="password"
                       value={pwForm.newPassword}
                       onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })}
-                      placeholder="New Password"
+                      placeholder="Mật khẩu mới"
                       className="input-field peer"
                     />
-                    <label className="input-label top-1 text-xs text-primary">New Password</label>
+                    <label className="input-label top-1 text-xs text-primary">Mật khẩu mới</label>
                   </div>
                   <div className="relative group">
                     <input
                       type="password"
                       value={pwForm.confirmNew}
                       onChange={(e) => setPwForm({ ...pwForm, confirmNew: e.target.value })}
-                      placeholder="Confirm New Password"
+                      placeholder="Xác nhận mật khẩu mới"
                       className="input-field peer"
                     />
-                    <label className="input-label top-1 text-xs text-primary">Confirm Password</label>
+                    <label className="input-label top-1 text-xs text-primary">Xác nhận mật khẩu</label>
                   </div>
                 </div>
                 <button type="submit" className="px-8 py-3 bg-tertiary text-white rounded-xl font-bold text-sm hover:bg-tertiary/90 transition-all shadow-sm hover:shadow-lg active:scale-95 disabled:opacity-50" disabled={loading}>
-                  {loading ? 'Changing...' : 'Change Password'}
+                  {loading ? 'Đang thay đổi...' : 'Thay đổi mật khẩu'}
                 </button>
               </form>
             </div>
@@ -250,6 +250,7 @@ const ProfilePage = () => {
 
         </div>
       </div>
+
     </div>
   );
 };
