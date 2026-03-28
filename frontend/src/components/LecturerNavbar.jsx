@@ -53,10 +53,10 @@ const LecturerNavbar = () => {
                 <button className="text-gray-400 hover:text-emerald-600 transition-colors">
                     <span className="material-symbols-outlined text-2xl">notifications</span>
                 </button>
-                <button 
-                  onClick={logout}
-                  className="flex items-center gap-1.5 text-gray-500 hover:text-red-600 font-bold transition-all px-3 py-1.5 rounded-lg hover:bg-red-50"
-                  title="Logout"
+                <button
+                    onClick={logout}
+                    className="flex items-center gap-1.5 text-gray-500 hover:text-red-600 font-bold transition-all px-3 py-1.5 rounded-lg hover:bg-red-50"
+                    title="Logout"
                 >
                     <span className="material-symbols-outlined text-xl">logout</span>
                     <span className="text-sm">Logout</span>

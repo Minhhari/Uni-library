@@ -21,7 +21,7 @@ const heroBooks = [
         major: "Kỹ năng mềm",
         publisher: "NXB Tổng hợp TP.HCM",
         preview_images: [
-            "https://covers.openlibrary.org/b/isbn/9781439190731-L.jpg",
+            "https://nxbhcm.com.vn/Image/Biasach/dacnhantam86.jpg",
             "https://placehold.co/600x800/1e1e1e/FFF?text=Muc+Luc+Dac+Nhan+Tam+1",
             "https://placehold.co/600x800/1e1e1e/FFF?text=Muc+Luc+Dac+Nhan+Tam+2"
         ]
