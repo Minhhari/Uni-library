@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const LecturerNavbar = () => {
     const { user, logout } = useAuth();
@@ -50,9 +51,7 @@ const LecturerNavbar = () => {
 
             {/* Right Icons & Profile */}
             <div className="flex items-center gap-6">
-                <button className="text-gray-400 hover:text-emerald-600 transition-colors">
-                    <span className="material-symbols-outlined text-2xl">notifications</span>
-                </button>
+                <NotificationDropdown />
                 <button 
                   onClick={logout}
                   className="flex items-center gap-1.5 text-gray-500 hover:text-red-600 font-bold transition-all px-3 py-1.5 rounded-lg hover:bg-red-50"
