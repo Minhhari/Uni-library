@@ -1,52 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const Topbar = ({ onSearch }) => {
     const { user } = useAuth();
-    const [searchQuery, setSearchQuery] = useState('');
-
-    const handleSearch = (e) => {
-        setSearchQuery(e.target.value);
-        if (onSearch) onSearch(e.target.value);
-    };
 
     return (
-        <header className="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl flex justify-between items-center h-16 px-8 ml-64 border-b border-surface-container-low/50 transition-all font-body">
-            {/* Command Search Bar */}
-            <div className="flex-1 max-w-2xl flex justify-center">
-                <div className="relative flex items-center w-full max-w-xl group">
-                    <span className="material-symbols-outlined absolute left-4 text-on-surface-variant/40 group-focus-within:text-primary transition-colors text-xl">
-                        search
-                    </span>
-                    <input
-                        value={searchQuery}
-                        onChange={handleSearch}
-                        className="w-full pl-12 pr-12 py-2 bg-surface-container-low/60 border-none rounded-full text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/40 shadow-inner"
-                        placeholder="Search the collection... (Cmd + K)"
-                        type="text"
-                    />
-                    <div className="absolute right-3 flex items-center gap-1 opacity-20 group-focus-within:opacity-0 transition-opacity">
-                        <span className="text-[10px] font-black px-1.5 py-0.5 border border-on-surface-variant rounded-md">⌘</span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 border border-on-surface-variant rounded-md">K</span>
-                    </div>
-                </div>
-            </div>
-
+        <header className="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl flex justify-end items-center h-16 px-8 ml-64 border-b border-surface-container-low/50 transition-all font-body">
             {/* Actions & Profile */}
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 mr-2 px-1">
-                    <button className="w-10 h-10 hover:bg-surface-container-high rounded-full flex items-center justify-center relative transition-all group overflow-hidden" title="Notifications">
-                        <span className="material-symbols-outlined text-on-surface-variant/60 group-hover:text-primary transition-colors">
-                            notifications
-                        </span>
-                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-error rounded-full border-2 border-white animate-pulse"></span>
-                    </button>
-
-                    <button className="w-10 h-10 hover:bg-surface-container-high rounded-full flex items-center justify-center transition-all group overflow-hidden" title="Toggle Theme">
-                        <span className="material-symbols-outlined text-on-surface-variant/60 group-hover:text-primary transition-colors">
-                            dark_mode
-                        </span>
-                    </button>
+                    <NotificationDropdown />
 
                     <button className="w-10 h-10 hover:bg-surface-container-high rounded-full flex items-center justify-center transition-all group overflow-hidden" title="Statistics">
                         <span className="material-symbols-outlined text-on-surface-variant/60 group-hover:text-primary transition-colors">

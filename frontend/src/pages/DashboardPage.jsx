@@ -10,7 +10,7 @@ import {
   ExclamationTriangleIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
-import { userAPI, bookAPI, borrowAPI } from '../services/api';
+import { userAPI, bookAPI, borrowAPI, reservationAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, Link } from 'react-router-dom';
 
@@ -95,31 +95,39 @@ const DashboardPage = () => {
 
   const loadStudentStats = async () => {
     try {
-      const myBooksResponse = await borrowAPI.getMyBooks();
-      const booksList = myBooksResponse.data || [];
-      setMyBooks(booksList);
+      const [borrowsResponse, reservationsResponse] = await Promise.all([
+        borrowAPI.getMyBooks(),
+        reservationAPI.getMyReservations()
+      ]);
 
-      const activeBorrows = booksList.filter(book =>
-        book.status === 'approved' || book.status === 'borrowed' || book.status === 'waiting_for_pickup'
+      const borrowsList = (borrowsResponse.data || []).map(b => ({ ...b, itemType: 'borrow' }));
+      const reservationsList = (reservationsResponse.data?.data || reservationsResponse.data || []).map(r => ({ ...r, itemType: 'reservation' }));
+
+      // Combine them
+      const fullList = [...borrowsList, ...reservationsList];
+      setMyBooks(fullList);
+
+      const activeBorrows = fullList.filter(item =>
+        item.itemType === 'borrow' && (item.status === 'approved' || item.status === 'borrowed' || item.status === 'waiting_for_pickup')
       ).length;
 
-      const overdueBooks = booksList.filter(book =>
-        book.status === 'approved' &&
-        new Date(book.dueDate) < new Date()
+      const overdueBooks = fullList.filter(item =>
+        item.itemType === 'borrow' && item.status === 'approved' &&
+        item.dueDate && new Date(item.dueDate) < new Date()
       ).length;
 
-      const reservedBooks = booksList.filter(book =>
-        book.status === 'reserved'
+      const reservedBooks = fullList.filter(item =>
+        item.itemType === 'reservation' && (item.status === 'pending' || item.status === 'approved' || item.status === 'waiting_for_pickup')
       ).length;
 
       setStats({
         activeBorrows,
         overdueBooks,
         reservedBooks,
-        totalBorrows: booksList.length
+        totalBorrows: fullList.length
       });
 
-      setRecentActivities(booksList.slice(0, 5));
+      setRecentActivities(fullList.slice(0, 5));
     } catch (error) {
       console.error('Error loading student stats:', error);
     }
@@ -275,40 +283,42 @@ const DashboardPage = () => {
   );
 
   const renderStudentDashboard = () => {
-    const activeLoans = myBooks.filter(b => b.status === 'approved' || b.status === 'borrowed' || b.status === 'waiting_for_pickup');
-    const reservations = myBooks.filter(b => b.status === 'reserved');
-    const others = myBooks.filter(b => !['approved', 'borrowed', 'waiting_for_pickup', 'reserved'].includes(b.status));
+    // Active loans: items from "borrow" request flow that are approved/borrowed or waiting for pickup
+    const activeLoans = myBooks.filter(b => b.itemType === 'borrow' && ['approved', 'borrowed', 'waiting_for_pickup'].includes(b.status));
+    // Reservations: items from "reservation" flow that are pending or approved (ready for pickup)
+    const reservations = myBooks.filter(b => b.itemType === 'reservation' && ['pending', 'approved', 'waiting_for_pickup'].includes(b.status));
+    const others = myBooks.filter(b => b.status === 'returned' || b.status === 'rejected' || b.status === 'expired' || b.status === 'cancelled');
 
     return (
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 font-body max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-0">
-          <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">My Activity</h1>
-          <p className="text-gray-500 font-medium">Welcome back, {user?.name}! Here's what's happening today.</p>
+          <h1 className="text-4xl font-black tracking-tight text-on-surface mb-2">My Activity</h1>
+          <p className="text-on-surface-variant font-medium text-lg opacity-80">Welcome back, {user?.name}! Here's what's happening today.</p>
         </div>
 
         {/* Stats Row */}
         {(stats.activeBorrows > 0 || stats.overdueBooks > 0 || stats.reservedBooks > 0 || stats.totalBorrows > 0) && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.activeBorrows > 0 && (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div className="bg-white p-6 rounded-[24px] shadow-sm border border-surface-dim flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">Active Borrows</p>
-                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.activeBorrows}</h3>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-primary transition-colors">Active Borrows</p>
+                  <h3 className="text-3xl font-black text-on-surface leading-none">{stats.activeBorrows}</h3>
                 </div>
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary transition-all group-hover:bg-primary group-hover:text-white">
                   <span className="material-symbols-outlined filled">description</span>
                 </div>
               </div>
             )}
 
             {stats.overdueBooks > 0 && (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div className="bg-white p-6 rounded-[24px] shadow-sm border border-surface-dim flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-rose-500 transition-colors">Overdue Books</p>
-                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.overdueBooks}</h3>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-red-500 transition-colors">Overdue Books</p>
+                  <h3 className="text-3xl font-black text-on-surface leading-none">{stats.overdueBooks}</h3>
                 </div>
-                <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
+                <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500 transition-all group-hover:bg-red-500 group-hover:text-white">
                   <span className="material-symbols-outlined filled">warning</span>
                 </div>
               </div>
@@ -327,12 +337,12 @@ const DashboardPage = () => {
             )}
 
             {stats.totalBorrows > 0 && (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div className="bg-white p-6 rounded-[24px] shadow-sm border border-surface-dim flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-emerald-500 transition-colors">Total Borrows</p>
-                  <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.totalBorrows}</h3>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-primary transition-colors">Total Borrows</p>
+                  <h3 className="text-3xl font-black text-on-surface leading-none">{stats.totalBorrows}</h3>
                 </div>
-                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+                <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary transition-all group-hover:bg-primary group-hover:text-white">
                   <span className="material-symbols-outlined filled">leaderboard</span>
                 </div>
               </div>
@@ -341,10 +351,10 @@ const DashboardPage = () => {
         )}
 
         {/* Combined Lists Section */}
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 px-2 flex items-center gap-3">
-            <span className="w-1.5 h-8 bg-emerald-500 rounded-full"></span>
-            Library Status
+        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-surface-dim">
+          <h2 className="text-2xl font-black text-on-surface mb-8 px-2 flex items-center gap-3 tracking-tight">
+            <span className="w-1.5 h-8 bg-primary rounded-full"></span>
+            Library Activity
           </h2>
 
           <div className="space-y-12">
@@ -366,13 +376,20 @@ const DashboardPage = () => {
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                         <div>
-                          <p className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors">{item.bookId?.title || item.title}</p>
+                          <p className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                            {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
+                          </p>
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            Due: {new Date(item.dueDate).toLocaleDateString('vi-VN')}
+                            {item.dueDate ? `Due: ${new Date(item.dueDate).toLocaleDateString('vi-VN')}` :
+                              item.expiresAt ? `Pickup by: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}` :
+                                `Requested: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
                           </p>
                         </div>
                       </div>
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100/50">
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${item.status === 'waiting_for_pickup'
+                        ? 'bg-blue-50 text-blue-600 border-blue-100/50'
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'
+                        }`}>
                         {item.status === 'waiting_for_pickup' ? 'CHỜ LẤY SÁCH' : item.status === 'approved' ? 'ĐANG MƯỢN' : item.status}
                       </span>
                     </div>
@@ -397,14 +414,23 @@ const DashboardPage = () => {
                   {reservations.map((item, index) => (
                     <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                        <div className={`w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]`}></div>
                         <div>
-                          <p className="font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors">{item.bookId?.title || item.title}</p>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Reserved on: {new Date(item.createdAt).toLocaleDateString('vi-VN')}</p>
+                          <p className={`font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors`}>
+                            {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
+                          </p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                            {item.status === 'waiting_for_pickup' && item.expiresAt
+                              ? `Pickup by: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}`
+                              : `Requested on: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
+                          </p>
                         </div>
                       </div>
-                      <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-amber-100/50">
-                        {item.status}
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${['approved', 'waiting_for_pickup'].includes(item.status)
+                        ? 'bg-amber-50 text-amber-600 border-amber-100/50'
+                        : 'bg-gray-100 text-gray-600 border-gray-200'
+                        }`}>
+                        {['approved', 'waiting_for_pickup'].includes(item.status) ? 'SẴN SÀNG NHẬN SÁCH' : 'ĐANG CHỜ DUYỆT'}
                       </span>
                     </div>
                   ))}
@@ -424,11 +450,13 @@ const DashboardPage = () => {
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                         <div>
-                          <p className="font-extrabold text-gray-900">{item.bookId?.title || item.title}</p>
+                          <p className="font-extrabold text-gray-900">
+                            {item.bookId?.title || item.title || "Untitled Book"}
+                          </p>
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Completed</p>
                         </div>
                       </div>
-                      <span className="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-gray-200">
+                      <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-200">
                         {item.status === 'expired' ? 'HỦY DO QUÁ HẠN LẤY' : item.status === 'returned' ? 'ĐÃ TRẢ' : item.status === 'rejected' ? 'BỊ TỪ CHỐI' : item.status}
                       </span>
                     </div>

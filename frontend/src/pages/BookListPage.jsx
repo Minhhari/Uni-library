@@ -15,24 +15,54 @@ const BookListPage = () => {
     const [allBooks, setAllBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [categories, setCategories] = useState([]);
+    const [categories, setCategories] = useState(['All']);
+    const [rawCategories, setRawCategories] = useState([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalBooks, setTotalBooks] = useState(0);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
-        loadBooks();
+        loadCategories();
     }, []);
+
+    useEffect(() => {
+        loadBooks();
+    }, [page, selectedGenre, searchQuery, filterAuthor, filterYear, filterPublisher]);
+
+    const loadCategories = async () => {
+        try {
+            const res = await bookAPI.getCategories();
+            if (res.data?.success) {
+                setRawCategories(res.data.data);
+                setCategories(['All', ...res.data.data.map(c => c.name)]);
+            }
+        } catch (err) {
+            console.error('Error loading categories:', err);
+        }
+    };
 
     const loadBooks = async () => {
         try {
             setLoading(true);
-            const response = await bookAPI.getBooks();
-            const booksData = response.data.data || [];
-            setAllBooks(booksData);
+            const params = {
+                page,
+                limit: 12,
+                search: searchQuery,
+                category: selectedGenre === 'All' ? undefined : rawCategories.find(c => c.name === selectedGenre)?._id,
+                author: filterAuthor,
+                year_from: filterYear,
+                year_to: filterYear,
+                publisher: filterPublisher
+            };
+            const response = await bookAPI.getBooks(params);
 
-            // Extract unique categories from books
-            const uniqueCategories = [...new Set(booksData.map(book => book.category?.name).filter(Boolean))];
-            setCategories(['All', ...uniqueCategories]);
+            if (response.data?.success) {
+                setAllBooks(response.data.data || []);
+                setTotalPages(response.data.totalPages || 1);
+                setTotalBooks(response.data.total || 0);
+            }
         } catch (err) {
             setError('Failed to load books');
             console.error('Error loading books:', err);
@@ -41,16 +71,18 @@ const BookListPage = () => {
         }
     };
 
-    const filteredBooks = useMemo(() => {
-        return allBooks.filter(b => {
-            const matchGenre = selectedGenre === 'All' || b.category?.name === selectedGenre;
-            const matchTitle = !searchQuery || b.title?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchAuthor = !filterAuthor || b.author?.toLowerCase().includes(filterAuthor.toLowerCase());
-            const matchYear = !filterYear || String(b.publish_year || '').includes(filterYear);
-            const matchPublisher = !filterPublisher || (b.publisher || '').toLowerCase().includes(filterPublisher.toLowerCase());
-            return matchGenre && matchTitle && matchAuthor && matchYear && matchPublisher;
-        });
-    }, [allBooks, selectedGenre, searchQuery, filterAuthor, filterYear, filterPublisher]);
+    // We now use server-side filtering, so filteredBooks just returns allBooks
+    const filteredBooks = allBooks;
+
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+        setPage(1); // Reset to first page on search
+    };
+
+    const handleGenreChange = (genre) => {
+        setSelectedGenre(genre);
+        setPage(1);
+    };
 
     const hasAdvancedFilter = filterAuthor || filterYear || filterPublisher;
 
@@ -107,7 +139,7 @@ const BookListPage = () => {
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
+                        onChange={handleSearchChange}
                         placeholder="Tìm theo tên sách..."
                         className="flex-1 bg-transparent text-on-surface placeholder:text-on-surface-variant/40 font-medium outline-none text-sm"
                     />
@@ -201,7 +233,7 @@ const BookListPage = () => {
                 {categories.map(genre => (
                     <button
                         key={genre}
-                        onClick={() => setSelectedGenre(genre)}
+                        onClick={() => handleGenreChange(genre)}
                         className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${selectedGenre === genre
                             ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105'
                             : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -224,7 +256,7 @@ const BookListPage = () => {
             {/* ── Results count ── */}
             {(searchQuery || hasAdvancedFilter || selectedGenre !== 'All') && (
                 <p className="text-sm text-on-surface-variant font-medium">
-                    Tìm thấy <span className="font-black text-primary">{filteredBooks.length}</span> / {allBooks.length} sách
+                    Tìm thấy <span className="font-black text-primary">{totalBooks}</span> sách
                 </p>
             )}
 
@@ -286,22 +318,41 @@ const BookListPage = () => {
                 </div>
             )}
 
-            {/* Pagination Placeholder */}
-            <footer className="pt-12 flex justify-center border-t border-surface-container-low">
-                <div className="flex items-center gap-2">
-                    <button className="w-12 h-12 rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-all shadow-sm">
-                        <span className="material-symbols-outlined">chevron_left</span>
-                    </button>
-                    <div className="flex gap-1 px-4">
-                        <button className="w-10 h-10 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 border border-primary">1</button>
-                        <button className="w-10 h-10 rounded-xl bg-surface-container-low text-on-surface-variant font-bold text-sm hover:bg-surface-container-high transition-colors">2</button>
-                        <button className="w-10 h-10 rounded-xl bg-surface-container-low text-on-surface-variant font-bold text-sm hover:bg-surface-container-high transition-colors">3</button>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <footer className="pt-12 flex justify-center border-t border-surface-container-low">
+                    <div className="flex items-center gap-2">
+                        <button
+                            disabled={page === 1}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            className="w-12 h-12 rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <div className="flex gap-1 px-4">
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => setPage(i + 1)}
+                                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${page === i + 1
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/20 border border-primary'
+                                        : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+                                        }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            disabled={page === totalPages}
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            className="w-12 h-12 rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
                     </div>
-                    <button className="w-12 h-12 rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-all shadow-sm">
-                        <span className="material-symbols-outlined">chevron_right</span>
-                    </button>
-                </div>
-            </footer>
+                </footer>
+            )}
         </div>
     );
 };

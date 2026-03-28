@@ -31,6 +31,14 @@ exports.requestBorrow = async (req, res) => {
       status: "pending",
     });
 
+    // Thông báo cho Librarian khi có yêu cầu mượn sách mới
+    const borrowerName = req.user.name || req.user.email || 'Người dùng';
+    await notificationService.notifyLibrarians(
+      'Yêu cầu mượn sách mới',
+      `${borrowerName} (${userRole}) vừa gửi yêu cầu mượn sách "${book.title}".`,
+      '/admin'
+    );
+
     res.json({
       message: "Borrow request submitted",
       borrow,
