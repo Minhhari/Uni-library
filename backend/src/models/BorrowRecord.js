@@ -37,6 +37,11 @@ const borrowRecordSchema = new mongoose.Schema({
   },
   pickupDeadline: {
     type: Date
+  },
+  // Flag: record này được tạo từ Reservation (đặt trước)
+  fromReservation: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,
