@@ -64,6 +64,16 @@ const createReservation = async (req, res) => {
       { path: 'bookId', select: 'title author available' },
     ]);
 
+    // Thông báo cho Librarian khi có yêu cầu đặt sách mới
+    const rsvUser = reservation.userId;
+    const rsvBook = reservation.bookId;
+    const reserverName = rsvUser?.fullName || rsvUser?.email || 'Người dùng';
+    await notificationService.notifyLibrarians(
+      'Yêu cầu đặt trước sách mới',
+      `${reserverName} vừa đặt trước sách "${rsvBook?.title}".`,
+      '/admin'
+    );
+
     return res.status(201).json({
       success: true,
       message: `Đặt chỗ thành công! Vị trí trong hàng đợi: #${queuePosition}. Tổng sách còn lại: ${book.available}.`,
@@ -173,8 +183,8 @@ const approveReservation = async (req, res) => {
       });
     }
 
-    // Tính thời hạn lấy sách (3 ngày)
-    const expireDays = parseInt(process.env.RESERVATION_EXPIRE_DAYS || '3', 10);
+    // Tính thời hạn lấy sách (5 ngày)
+    const expireDays = parseInt(process.env.RESERVATION_EXPIRE_DAYS || '5', 10);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expireDays);
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const Topbar = ({ onSearch }) => {
     const { user } = useAuth();
@@ -35,12 +36,7 @@ const Topbar = ({ onSearch }) => {
             {/* Actions & Profile */}
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 mr-2 px-1">
-                    <button className="w-10 h-10 hover:bg-surface-container-high rounded-full flex items-center justify-center relative transition-all group overflow-hidden" title="Notifications">
-                        <span className="material-symbols-outlined text-on-surface-variant/60 group-hover:text-primary transition-colors">
-                            notifications
-                        </span>
-                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-error rounded-full border-2 border-white animate-pulse"></span>
-                    </button>
+                    <NotificationDropdown />
 
                     <button className="w-10 h-10 hover:bg-surface-container-high rounded-full flex items-center justify-center transition-all group overflow-hidden" title="Toggle Theme">
                         <span className="material-symbols-outlined text-on-surface-variant/60 group-hover:text-primary transition-colors">
