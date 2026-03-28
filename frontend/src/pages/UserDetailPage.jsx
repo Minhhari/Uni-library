@@ -3,10 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { userAPI } from '../services/api';
 
 const ROLE_LABELS = {
-    admin: 'Admin',
-    librarian: 'Librarian',
-    lecturer: 'Lecturer',
-    student: 'Student',
+    admin: 'Quản trị viên',
+    librarian: 'Thủ thư',
+    lecturer: 'Giảng viên',
+    student: 'Sinh viên',
 };
 
 const ROLE_COLORS = {
@@ -39,7 +39,7 @@ const UserDetailPage = () => {
                     setForm({ name: data.user.name, role: data.user.role });
                 }
             } catch (err) {
-                setError(err.response?.data?.message || 'Failed to load user.');
+                setError(err.response?.data?.message || 'Không thể tải thông tin người dùng.');
             } finally {
                 setLoading(false);
             }
@@ -56,11 +56,11 @@ const UserDetailPage = () => {
             if (data.success) {
                 setUser(data.user);
                 setEditMode(false);
-                setSuccessMsg('User updated successfully!');
+                setSuccessMsg('Cập nhật người dùng thành công!');
                 setTimeout(() => setSuccessMsg(''), 4000);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update user.');
+            setError(err.response?.data?.message || 'Cập nhật người dùng thất bại.');
         } finally {
             setSaving(false);
         }
@@ -69,11 +69,12 @@ const UserDetailPage = () => {
     const handleToggleStatus = async () => {
         try {
             await userAPI.toggleUserStatus(id);
-            setUser((prev) => ({ ...prev, isActive: !prev.isActive }));
-            setSuccessMsg(`Account ${user.isActive ? 'disabled' : 'enabled'} successfully.`);
+            const newStatus = !user.isActive;
+            setUser((prev) => ({ ...prev, isActive: newStatus }));
+            setSuccessMsg(`Tài khoản đã được ${newStatus ? 'kích hoạt' : 'vô hiệu hóa'} thành công.`);
             setTimeout(() => setSuccessMsg(''), 4000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update status.');
+            setError(err.response?.data?.message || 'Cập nhật trạng thái thất bại.');
         }
     };
 
@@ -81,9 +82,9 @@ const UserDetailPage = () => {
         setDeleteLoading(true);
         try {
             await userAPI.deleteUser(id);
-            navigate('/admin/users', { state: { message: 'User deleted successfully.' } });
+            navigate('/admin/users', { state: { message: 'Đã xóa người dùng thành công.' } });
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to delete user.');
+            setError(err.response?.data?.message || 'Xóa người dùng thất bại.');
             setShowDeleteConfirm(false);
         } finally {
             setDeleteLoading(false);
@@ -94,7 +95,7 @@ const UserDetailPage = () => {
         return (
             <div className="flex items-center justify-center py-32 text-on-surface-variant">
                 <span className="material-symbols-outlined animate-spin text-4xl mr-3 text-primary">progress_activity</span>
-                <span className="text-lg font-medium">Loading user...</span>
+                <span className="text-lg font-medium">Đang tải thông tin người dùng...</span>
             </div>
         );
     }
@@ -103,10 +104,10 @@ const UserDetailPage = () => {
         return (
             <div className="flex flex-col items-center justify-center py-32 gap-4">
                 <span className="material-symbols-outlined text-6xl text-error opacity-50">person_off</span>
-                <p className="text-lg font-bold text-on-surface">User not found</p>
+                <p className="text-lg font-bold text-on-surface">Không tìm thấy người dùng</p>
                 <p className="text-sm text-on-surface-variant">{error}</p>
                 <Link to="/admin/users" className="px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all">
-                    Back to Users
+                    Quay lại danh sách người dùng
                 </Link>
             </div>
         );
@@ -116,7 +117,7 @@ const UserDetailPage = () => {
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-sm text-on-surface-variant">
-                <Link to="/admin/users" className="hover:text-primary transition-colors font-medium">User Management</Link>
+                <Link to="/admin/users" className="hover:text-primary transition-colors font-medium">Quản lý người dùng</Link>
                 <span className="material-symbols-outlined text-sm">chevron_right</span>
                 <span className="text-on-surface font-semibold truncate">{user?.name}</span>
             </nav>
@@ -159,25 +160,25 @@ const UserDetailPage = () => {
                     {/* Meta Info */}
                     <div className="bg-surface-container-low p-5 rounded-2xl text-xs text-on-surface-variant space-y-3">
                         <div className="flex justify-between">
-                            <span className="font-bold uppercase tracking-widest">Account ID</span>
+                            <span className="font-bold uppercase tracking-widest">ID tài khoản</span>
                             <span className="font-mono text-on-surface">{user?._id?.slice(-8).toUpperCase()}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="font-bold uppercase tracking-widest">Joined</span>
-                            <span className="text-on-surface">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
+                            <span className="font-bold uppercase tracking-widest">Ngày tham gia</span>
+                            <span className="text-on-surface">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="font-bold uppercase tracking-widest">Last Login</span>
-                            <span className="text-on-surface">{user?.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Never'}</span>
+                            <span className="font-bold uppercase tracking-widest">Đăng nhập cuối</span>
+                            <span className="text-on-surface">{user?.lastLogin ? new Date(user.lastLogin).toLocaleDateString('vi-VN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Chưa từng'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="font-bold uppercase tracking-widest">Google</span>
-                            <span className="text-on-surface">{user?.isGoogleAccount ? 'Yes' : 'No'}</span>
+                            <span className="text-on-surface">{user?.isGoogleAccount ? 'Có' : 'Không'}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="font-bold uppercase tracking-widest">Status</span>
+                            <span className="font-bold uppercase tracking-widest">Trạng thái</span>
                             <span className={`font-bold ${user?.isActive ? 'text-emerald-600' : 'text-red-500'}`}>
-                                {user?.isActive ? 'Active' : 'Disabled'}
+                                {user?.isActive ? 'Hoạt động' : 'Bị vô hiệu hóa'}
                             </span>
                         </div>
                     </div>
@@ -192,14 +193,14 @@ const UserDetailPage = () => {
                                 }`}
                         >
                             <span className="material-symbols-outlined text-lg">{user?.isActive ? 'block' : 'check_circle'}</span>
-                            {user?.isActive ? 'Disable Account' : 'Enable Account'}
+                            {user?.isActive ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt tài khoản'}
                         </button>
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-error/5 text-error font-bold text-sm hover:bg-error/10 transition-all"
                         >
                             <span className="material-symbols-outlined text-lg">delete</span>
-                            Delete User
+                            Xóa người dùng
                         </button>
                     </div>
                 </div>
@@ -210,14 +211,14 @@ const UserDetailPage = () => {
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-bold flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary">manage_accounts</span>
-                                Account Details
+                                Chi tiết tài khoản
                             </h3>
                             {!editMode && (
                                 <button
                                     onClick={() => setEditMode(true)}
                                     className="px-5 py-2 bg-surface-container-high text-primary rounded-xl font-bold text-sm hover:bg-primary/10 transition-colors"
                                 >
-                                    Edit
+                                    Chỉnh sửa
                                 </button>
                             )}
                         </div>
@@ -225,7 +226,7 @@ const UserDetailPage = () => {
                         {editMode ? (
                             <form onSubmit={handleSave} className="space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Full Name</label>
+                                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Họ và tên</label>
                                     <input
                                         type="text"
                                         value={form.name}
@@ -235,16 +236,16 @@ const UserDetailPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Role</label>
+                                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Vai trò</label>
                                     <select
                                         value={form.role}
                                         onChange={(e) => setForm({ ...form, role: e.target.value })}
                                         className="w-full px-4 py-3 bg-surface-container-low rounded-xl border border-transparent focus:border-primary/40 focus:outline-none text-sm transition-all"
                                     >
-                                        <option value="student">Student</option>
-                                        <option value="lecturer">Lecturer</option>
-                                        <option value="librarian">Librarian</option>
-                                        <option value="admin">Admin</option>
+                                        <option value="student">Sinh viên</option>
+                                        <option value="lecturer">Giảng viên</option>
+                                        <option value="librarian">Thủ thư</option>
+                                        <option value="admin">Quản trị viên</option>
                                     </select>
                                 </div>
                                 <div className="flex gap-3 pt-2">
@@ -253,26 +254,26 @@ const UserDetailPage = () => {
                                         disabled={saving}
                                         className="px-8 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-60"
                                     >
-                                        {saving ? 'Saving...' : 'Save Changes'}
+                                        {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => { setEditMode(false); setForm({ name: user.name, role: user.role }); }}
                                         className="px-8 py-3 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm hover:bg-surface-container-highest transition-colors"
                                     >
-                                        Cancel
+                                        Hủy bỏ
                                     </button>
                                 </div>
                             </form>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {[
-                                    { label: 'Full Name', value: user?.name },
+                                    { label: 'Họ và tên', value: user?.name },
                                     { label: 'Email', value: user?.email },
-                                    { label: 'Role', value: ROLE_LABELS[user?.role] || user?.role },
-                                    { label: 'Phone', value: user?.phone || 'Not provided' },
-                                    { label: 'Department', value: user?.department || 'Not provided' },
-                                    { label: 'Student ID', value: user?.studentId || 'Not provided' },
+                                    { label: 'Vai trò', value: ROLE_LABELS[user?.role] || user?.role },
+                                    { label: 'Số điện thoại', value: user?.phone || 'Chưa cung cấp' },
+                                    { label: 'Khoa/Phòng ban', value: user?.department || 'Chưa cung cấp' },
+                                    { label: 'Mã số sinh viên', value: user?.studentId || 'Chưa cung cấp' },
                                 ].map(({ label, value }) => (
                                     <div key={label} className="space-y-1">
                                         <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">{label}</p>
@@ -287,21 +288,21 @@ const UserDetailPage = () => {
                     <div className="bg-white p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
                         <h3 className="text-xl font-bold flex items-center gap-2 mb-6">
                             <span className="material-symbols-outlined text-tertiary">security</span>
-                            Security Info
+                            Thông tin bảo mật
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1">
-                                <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Login Attempts</p>
+                                <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Số lần đăng nhập sai</p>
                                 <p className={`font-bold text-sm ${user?.loginAttempts > 0 ? 'text-error' : 'text-emerald-600'}`}>
-                                    {user?.loginAttempts || 0} failed attempt(s)
+                                    {user?.loginAttempts || 0} lần đăng nhập thất bại
                                 </p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Account Lock</p>
+                                <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Khóa tài khoản</p>
                                 <p className={`font-bold text-sm ${user?.lockUntil && new Date(user.lockUntil) > new Date() ? 'text-error' : 'text-emerald-600'}`}>
                                     {user?.lockUntil && new Date(user.lockUntil) > new Date()
-                                        ? `Locked until ${new Date(user.lockUntil).toLocaleTimeString()}`
-                                        : 'Not locked'}
+                                        ? `Bị khóa đến ${new Date(user.lockUntil).toLocaleTimeString()}`
+                                        : 'Không bị khóa'}
                                 </p>
                             </div>
                         </div>
@@ -316,23 +317,23 @@ const UserDetailPage = () => {
                         <div className="w-16 h-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
                             <span className="material-symbols-outlined text-error text-3xl">warning</span>
                         </div>
-                        <h2 className="text-xl font-extrabold mb-2">Delete User?</h2>
+                        <h2 className="text-xl font-extrabold mb-2">Xóa người dùng?</h2>
                         <p className="text-on-surface-variant text-sm mb-8">
-                            Are you sure you want to delete <strong>{user?.name}</strong>? This action cannot be undone.
+                            Bạn có chắc chắn muốn xóa <strong>{user?.name}</strong>? Hành động này không thể hoàn tác.
                         </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm hover:bg-surface-container-highest transition-colors"
                             >
-                                Cancel
+                                Hủy bỏ
                             </button>
                             <button
                                 onClick={handleDelete}
                                 disabled={deleteLoading}
                                 className="flex-1 py-3 bg-error text-white rounded-xl font-bold text-sm hover:bg-error/90 active:scale-95 transition-all disabled:opacity-60"
                             >
-                                {deleteLoading ? 'Deleting...' : 'Delete'}
+                                {deleteLoading ? 'Đang xóa...' : 'Xóa'}
                             </button>
                         </div>
                     </div>

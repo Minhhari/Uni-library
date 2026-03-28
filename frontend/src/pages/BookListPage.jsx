@@ -36,7 +36,7 @@ const BookListPage = () => {
             const res = await bookAPI.getCategories();
             if (res.data?.success) {
                 setRawCategories(res.data.data);
-                setCategories(['All', ...res.data.data.map(c => c.name)]);
+                setCategories(['Tất cả', ...res.data.data.map(c => c.name)]);
             }
         } catch (err) {
             console.error('Error loading categories:', err);
@@ -50,7 +50,7 @@ const BookListPage = () => {
                 page,
                 limit: 12,
                 search: searchQuery,
-                category: selectedGenre === 'All' ? undefined : rawCategories.find(c => c.name === selectedGenre)?._id,
+                category: selectedGenre === 'Tất cả' ? undefined : rawCategories.find(c => c.name === selectedGenre)?._id,
                 author: filterAuthor,
                 year_from: filterYear,
                 year_to: filterYear,
@@ -64,7 +64,7 @@ const BookListPage = () => {
                 setTotalBooks(response.data.total || 0);
             }
         } catch (err) {
-            setError('Failed to load books');
+            setError('Không thể tải danh sách sách');
             console.error('Error loading books:', err);
         } finally {
             setLoading(false);
@@ -87,7 +87,7 @@ const BookListPage = () => {
     const hasAdvancedFilter = filterAuthor || filterYear || filterPublisher;
 
     const clearAllFilters = () => {
-        setSelectedGenre('All');
+        setSelectedGenre('Tất cả');
         setSearchQuery('');
         setFilterAuthor('');
         setFilterYear('');
@@ -114,8 +114,8 @@ const BookListPage = () => {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Browse Collection</h1>
-                    <p className="text-on-surface-variant text-lg">Discover your next academic adventure among {allBooks.length} titles</p>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Khám phá bộ sưu tập</h1>
+                    <p className="text-on-surface-variant text-lg">Khám phá tri thức mới trong số {allBooks.length} tựa sách</p>
                 </div>
                 {user?.role === 'librarian' && (
                     <button
@@ -242,7 +242,7 @@ const BookListPage = () => {
                         {genre}
                     </button>
                 ))}
-                {(hasAdvancedFilter || searchQuery || selectedGenre !== 'All') && (
+                {(hasAdvancedFilter || searchQuery || selectedGenre !== 'Tất cả') && (
                     <button
                         onClick={clearAllFilters}
                         className="px-4 py-2 rounded-full text-sm font-bold text-on-surface-variant/60 hover:text-red-500 hover:bg-red-50 transition-all flex items-center gap-1.5 border border-outline-variant/20"
@@ -254,7 +254,7 @@ const BookListPage = () => {
             </div>
 
             {/* ── Results count ── */}
-            {(searchQuery || hasAdvancedFilter || selectedGenre !== 'All') && (
+            {(searchQuery || hasAdvancedFilter || selectedGenre !== 'Tất cả') && (
                 <p className="text-sm text-on-surface-variant font-medium">
                     Tìm thấy <span className="font-black text-primary">{totalBooks}</span> sách
                 </p>
@@ -264,13 +264,13 @@ const BookListPage = () => {
             {filteredBooks.length === 0 ? (
                 <div className="py-20 text-center">
                     <span className="material-symbols-outlined text-8xl text-on-surface-variant/20 mb-4">search_off</span>
-                    <h3 className="text-2xl font-bold text-on-surface-variant">No books found</h3>
-                    <p className="text-on-surface-variant/60 mt-2">Try adjusting your filters or search keywords.</p>
+                    <h3 className="text-2xl font-bold text-on-surface-variant">Không tìm thấy sách</h3>
+                    <p className="text-on-surface-variant/60 mt-2">Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.</p>
                     <button
                         onClick={clearAllFilters}
                         className="mt-6 px-8 py-3 bg-surface-container-high text-primary font-bold rounded-2xl hover:bg-primary/10 transition-colors"
                     >
-                        Reset All Filters
+                        Đặt lại bộ lọc
                     </button>
                 </div>
             ) : (
@@ -287,13 +287,13 @@ const BookListPage = () => {
                                     <div className="flex flex-col gap-1.5 overflow-hidden">
                                         <span className="w-1 h-3 bg-primary rounded-full mb-1"></span>
                                         <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-black text-primary tracking-widest uppercase shadow-sm">
-                                            {book.category?.name || 'GENERAL'}
+                                            {book.category?.name || 'CHUNG'}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <button className="w-full py-2 bg-white text-on-surface text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                        Quick View
+                                        Xem nhanh
                                     </button>
                                 </div>
                             </div>
@@ -310,7 +310,7 @@ const BookListPage = () => {
                                     ? 'border-emerald-500/30 text-emerald-600 bg-emerald-50'
                                     : 'border-on-surface-variant/20 text-on-surface-variant bg-surface-container-low'
                                     }`}>
-                                    {book.status}
+                                    {book.status === 'available' ? 'CÓ SẴN' : book.status === 'maintenance' ? 'BẢO TRÌ' : 'HẾT SÁCH'}
                                 </span>
                                 <span className="material-symbols-outlined text-on-surface-variant/40 text-lg group-hover:text-primary transition-colors">arrow_forward_ios</span>
                             </div>

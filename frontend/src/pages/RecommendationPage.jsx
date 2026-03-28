@@ -18,7 +18,7 @@ const RecommendationPage = () => {
 
       setBooks(response.data.data || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load recommendations');
+      setError(err.response?.data?.message || 'Không thể tải gợi ý sách');
     } finally {
       setLoading(false);
     }
@@ -33,7 +33,7 @@ const RecommendationPage = () => {
       return (
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <p className="text-gray-500 text-center py-8">
-            No recommendations available
+            Không có gợi ý nào khả dụng
           </p>
         </div>
       );
@@ -42,12 +42,12 @@ const RecommendationPage = () => {
     return (
       <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">For You</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Dành cho bạn</h2>
           <button
             onClick={loadRecommendations}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
-            Refresh
+            Làm mới
           </button>
         </div>
 
@@ -86,10 +86,10 @@ const RecommendationPage = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Recommended For You
+            Gợi ý cho bạn
           </h1>
           <p className="text-gray-600">
-            Discover books tailored to your interests
+            Khám phá những cuốn sách phù hợp với sở thích của bạn
           </p>
         </div>
 

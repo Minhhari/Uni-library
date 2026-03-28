@@ -32,7 +32,7 @@ const StudentDashboard = () => {
           .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
 
         const nextDeadline = nextDeadlineBook
-          ? new Date(nextDeadlineBook.dueDate).toLocaleDateString('en-US', { month: 'SHORT', day: 'numeric' }).toUpperCase()
+          ? new Date(nextDeadlineBook.dueDate).toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' }).toUpperCase()
           : 'None';
 
         const finesRes = await fineAPI.getMyFines();
@@ -68,10 +68,10 @@ const StudentDashboard = () => {
       <section className="text-left space-y-6">
         <div>
           <h1 className="text-5xl font-black tracking-tight text-on-surface mb-2">
-            Welcome back, {user?.name?.split(' ')[0] || 'Minh'} 👋
+            Chào mừng quay lại, {user?.name?.split(' ')[0] || 'Minh'} 👋
           </h1>
           <p className="text-on-surface-variant text-lg">
-            The digital gallery of knowledge is at your fingertips. What will you discover today?
+            Phòng triển lãm tri thức số đang trong tầm tay bạn. Bạn sẽ khám phá điều gì hôm nay?
           </p>
         </div>
 
@@ -88,7 +88,7 @@ const StudentDashboard = () => {
           <input
             name="search"
             type="text"
-            placeholder="Search your library, authors, or ISBN..."
+            placeholder="Tìm kiếm sách, tác giả hoặc mã ISBN..."
             className="w-full pl-14 pr-6 py-5 bg-surface-container-low border border-surface-dim rounded-full text-on-surface focus:ring-4 focus:ring-primary/10 focus:bg-white outline-none transition-all shadow-sm text-lg"
           />
         </form>
@@ -103,10 +103,10 @@ const StudentDashboard = () => {
                 <span className="material-symbols-outlined filled">menu_book</span>
               </div>
               <div>
-                <span className="text-[10px] font-black text-primary/60 tracking-[0.1em] uppercase block mb-1">Active Loans</span>
+                <span className="text-[10px] font-black text-primary/60 tracking-[0.1em] uppercase block mb-1">Sách đang mượn</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-black text-primary leading-none">{stats.activeLoans}</span>
-                  <span className="text-sm font-bold text-primary/80">Books Borrowed</span>
+                  <span className="text-sm font-bold text-primary/80">Cuốn sách</span>
                 </div>
               </div>
             </div>
@@ -118,10 +118,10 @@ const StudentDashboard = () => {
                 <span className="material-symbols-outlined filled">calendar_month</span>
               </div>
               <div>
-                <span className="text-[10px] font-black text-rose-700/60 tracking-[0.1em] uppercase block mb-1">Next Deadline</span>
+                <span className="text-[10px] font-black text-rose-700/60 tracking-[0.1em] uppercase block mb-1">Hạn trả tiếp theo</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-black text-rose-900 leading-none">1</span>
-                  <span className="text-sm font-bold text-rose-800">Due {stats.nextDeadline}</span>
+                  <span className="text-sm font-bold text-rose-800">Hạn {stats.nextDeadline}</span>
                 </div>
               </div>
             </div>
@@ -133,10 +133,10 @@ const StudentDashboard = () => {
                 <span className="material-symbols-outlined filled">payments</span>
               </div>
               <div>
-                <span className="text-[10px] font-black text-blue-700/60 tracking-[0.1em] uppercase block mb-1">Account Balance</span>
+                <span className="text-[10px] font-black text-blue-700/60 tracking-[0.1em] uppercase block mb-1">Số dư tài khoản</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-black text-blue-900 leading-none">{stats.accountBalance}</span>
-                  <span className="text-sm font-bold text-blue-800">VND Fine</span>
+                  <span className="text-sm font-bold text-blue-800">VND Tiền phạt</span>
                 </div>
               </div>
             </div>
@@ -148,23 +148,23 @@ const StudentDashboard = () => {
       <section className="bg-primary rounded-[40px] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-primary/20 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/10 transition-all duration-700"></div>
         <div className="relative z-10 space-y-2">
-          <h2 className="text-3xl font-black tracking-tight">Personalized Recommendations</h2>
-          <p className="text-white/70 text-lg">Based on your reading history and academic interests.</p>
+          <h2 className="text-3xl font-black tracking-tight">Gợi ý cá nhân hóa</h2>
+          <p className="text-white/70 text-lg">Dựa trên lịch sử đọc và sở thích học tập của bạn.</p>
         </div>
         <Link
           to="/recommendations"
           className="relative z-10 px-10 py-5 bg-white text-primary font-black rounded-2xl hover:bg-white/90 hover:scale-105 transition-all shadow-xl active:scale-95 flex items-center gap-3"
         >
           <span className="material-symbols-outlined">auto_awesome</span>
-          See Recommendations
+          Xem gợi ý
         </Link>
       </section>
 
       {/* Explore All Books */}
       <section>
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-black tracking-tight text-on-surface">Explore Collection</h2>
-          <Link to="/books" className="text-primary font-black text-sm hover:underline tracking-tight">View All Books</Link>
+          <h2 className="text-3xl font-black tracking-tight text-on-surface">Khám phá bộ sưu tập</h2>
+          <Link to="/books" className="text-primary font-black text-sm hover:underline tracking-tight">Xem tất cả sách</Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
           {books.map((book) => (
@@ -177,7 +177,7 @@ const StudentDashboard = () => {
                 />
                 <div className="absolute top-4 left-4">
                   <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-primary rounded-lg text-[10px] font-black tracking-widest uppercase shadow-sm">
-                    {book.category?.name || 'GENERAL'}
+                    {book.category?.name || 'CHUNG'}
                   </span>
                 </div>
               </div>
@@ -191,6 +191,7 @@ const StudentDashboard = () => {
           ))}
         </div>
       </section>
+
 
     </div>
   );

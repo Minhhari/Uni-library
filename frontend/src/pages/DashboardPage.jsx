@@ -181,7 +181,7 @@ const DashboardPage = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
-          title="Total Users"
+          title="Tổng số người dùng"
           value={stats.totalUsers || 0}
           icon={UserGroupIcon}
           color="blue"
@@ -189,7 +189,7 @@ const DashboardPage = () => {
           changeType="increase"
         />
         <DashboardCard
-          title="Total Books"
+          title="Tổng số đầu sách"
           value={stats.totalBooks || 0}
           icon={BookOpenIcon}
           color="green"
@@ -197,7 +197,7 @@ const DashboardPage = () => {
           changeType="increase"
         />
         <DashboardCard
-          title="Active Borrows"
+          title="Đang cho mượn"
           value={stats.activeBorrows || 0}
           icon={DocumentTextIcon}
           color="yellow"
@@ -205,7 +205,7 @@ const DashboardPage = () => {
           changeType="decrease"
         />
         <DashboardCard
-          title="Total Revenue"
+          title="Tổng doanh thu"
           value={`₫${((stats.totalRevenue || 0) / 1000000).toFixed(1)}M`}
           icon={CurrencyDollarIcon}
           color="purple"
@@ -220,19 +220,19 @@ const DashboardPage = () => {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <DashboardCard
-          title="Pending Requests"
+          title="Yêu cầu đang chờ"
           value={stats.pendingRequests || 0}
           icon={ClockIcon}
           color="yellow"
         />
         <DashboardCard
-          title="Overdue Returns"
+          title="Sách quá hạn trả"
           value={stats.overdueReturns || 0}
           icon={ExclamationTriangleIcon}
           color="red"
         />
         <DashboardCard
-          title="Completed Today"
+          title="Hoàn tất hôm nay"
           value={stats.processedToday || 0}
           icon={CheckCircleIcon}
           color="green"
@@ -246,19 +246,19 @@ const DashboardPage = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <DashboardCard
-          title="Pending Requests"
+          title="Yêu cầu đang chờ"
           value={stats.pendingRequests || 0}
           icon={ClockIcon}
           color="yellow"
         />
         <DashboardCard
-          title="Active Borrows"
+          title="Đang cho mượn"
           value={stats.activeBorrows || 0}
           icon={DocumentTextIcon}
           color="blue"
         />
         <DashboardCard
-          title="Due Today"
+          title="Hạn trả hôm nay"
           value={stats.dueToday || 0}
           icon={ExclamationTriangleIcon}
           color="red"
@@ -271,13 +271,13 @@ const DashboardPage = () => {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DashboardCard
-          title="Overdue Returns"
+          title="Sách quá hạn trả"
           value={stats.overdueReturns || 0}
           icon={ExclamationTriangleIcon}
           color="red"
         />
         <DashboardCard
-          title="Processed Today"
+          title="Đã xử lý hôm nay"
           value={stats.processedToday || 0}
           icon={CheckCircleIcon}
           color="green"
@@ -316,8 +316,8 @@ const DashboardPage = () => {
               key={i}
               onClick={() => onChange(i + 1)}
               className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${current === i + 1
-                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                  : 'bg-white text-gray-500 border border-gray-100 hover:border-primary/30 hover:bg-gray-50'
+                ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                : 'bg-white text-gray-500 border border-gray-100 hover:border-primary/30 hover:bg-gray-50'
                 }`}
             >
               {i + 1}
@@ -338,8 +338,8 @@ const DashboardPage = () => {
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 font-body max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-0">
-          <h1 className="text-4xl font-black tracking-tight text-on-surface mb-2">My Activity</h1>
-          <p className="text-on-surface-variant font-medium text-lg opacity-80">Welcome back, {user?.name}! Here's what's happening today.</p>
+          <h1 className="text-4xl font-black tracking-tight text-on-surface mb-2">Hoạt động của tôi</h1>
+          <p className="text-on-surface-variant font-medium text-lg opacity-80">Chào mừng quay trở lại, {user?.name}! Dưới đây là những gì đang diễn ra hôm nay.</p>
         </div>
 
         {/* Stats Row */}
@@ -348,7 +348,7 @@ const DashboardPage = () => {
             {stats.activeBorrows > 0 && (
               <div className="bg-white p-6 rounded-[24px] shadow-sm border border-surface-dim flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div>
-                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-primary transition-colors">Active Borrows</p>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-primary transition-colors">Sách đang mượn</p>
                   <h3 className="text-3xl font-black text-on-surface leading-none">{stats.activeBorrows}</h3>
                 </div>
                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary transition-all group-hover:bg-primary group-hover:text-white">
@@ -360,7 +360,7 @@ const DashboardPage = () => {
             {stats.overdueBooks > 0 && (
               <div className="bg-white p-6 rounded-[24px] shadow-sm border border-surface-dim flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div>
-                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-red-500 transition-colors">Overdue Books</p>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-red-500 transition-colors">Sách quá hạn</p>
                   <h3 className="text-3xl font-black text-on-surface leading-none">{stats.overdueBooks}</h3>
                 </div>
                 <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500 transition-all group-hover:bg-red-500 group-hover:text-white">
@@ -372,7 +372,7 @@ const DashboardPage = () => {
             {stats.reservedBooks > 0 && (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all">
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-amber-500 transition-colors">Reserved Books</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-amber-500 transition-colors">Sách đã đặt trước</p>
                   <h3 className="text-3xl font-black text-gray-900 leading-none">{stats.reservedBooks}</h3>
                 </div>
                 <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
@@ -384,7 +384,7 @@ const DashboardPage = () => {
             {stats.totalBorrows > 0 && (
               <div className="bg-white p-6 rounded-[24px] shadow-sm border border-surface-dim flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div>
-                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-primary transition-colors">Total Borrows</p>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2 group-hover:text-primary transition-colors">Tổng lượt mượn</p>
                   <h3 className="text-3xl font-black text-on-surface leading-none">{stats.totalBorrows}</h3>
                 </div>
                 <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary transition-all group-hover:bg-primary group-hover:text-white">
@@ -399,7 +399,7 @@ const DashboardPage = () => {
         <div className="bg-white p-8 rounded-[40px] shadow-sm border border-surface-dim">
           <h2 className="text-2xl font-black text-on-surface mb-8 px-2 flex items-center gap-3 tracking-tight">
             <span className="w-1.5 h-8 bg-primary rounded-full"></span>
-            Library Activity
+            Hoạt động thư viện
           </h2>
 
           <div className="space-y-12">
@@ -407,13 +407,13 @@ const DashboardPage = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                  Active Loans
+                  Sách đang mượn
                   <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{activeLoans.length}</span>
                 </h3>
               </div>
 
               {activeLoans.length === 0 ? (
-                <p className="text-gray-400 text-sm italic py-4">No active loans at this time.</p>
+                <p className="text-gray-400 text-sm italic py-4">Hiện tại không có sách nào đang mượn.</p>
               ) : (
                 <div className="space-y-3">
                   {paginate(activeLoans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.loans).map((item, index) => (
@@ -425,9 +425,9 @@ const DashboardPage = () => {
                             {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
                           </p>
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            {item.dueDate ? `Due: ${new Date(item.dueDate).toLocaleDateString('vi-VN')}` :
-                              item.expiresAt ? `Pickup by: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}` :
-                                `Requested: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
+                            {item.dueDate ? `Hạn trả: ${new Date(item.dueDate).toLocaleDateString('vi-VN')}` :
+                              item.expiresAt ? `Hạn lấy sách: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}` :
+                                `Đã yêu cầu: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
                           </p>
                         </div>
                       </div>
@@ -452,13 +452,13 @@ const DashboardPage = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                  My Reservations
+                  Sách đã đặt trước
                   <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">{reservations.length}</span>
                 </h3>
               </div>
 
               {reservations.length === 0 ? (
-                <p className="text-gray-400 text-sm italic py-4">No pending reservations.</p>
+                <p className="text-gray-400 text-sm italic py-4">Không có yêu cầu đặt trước nào.</p>
               ) : (
                 <div className="space-y-3">
                   {paginate(reservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.reservations).map((item, index) => (
@@ -471,8 +471,8 @@ const DashboardPage = () => {
                           </p>
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                             {item.status === 'waiting_for_pickup' && item.expiresAt
-                              ? `Pickup by: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}`
-                              : `Requested on: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
+                              ? `Hạn lấy sách: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}`
+                              : `Ngày yêu cầu: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
                           </p>
                         </div>
                       </div>
@@ -497,7 +497,7 @@ const DashboardPage = () => {
             {others.length > 0 && (
               <div className="space-y-6 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">Other Activity</h3>
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">Hoạt động khác</h3>
                 </div>
                 <div className="space-y-3">
                   {paginate(others.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.others).map((item, index) => (
@@ -508,7 +508,7 @@ const DashboardPage = () => {
                           <p className="font-extrabold text-gray-900">
                             {item.bookId?.title || item.title || "Untitled Book"}
                           </p>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Completed</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Đã hoàn tất</p>
                         </div>
                       </div>
                       <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-200">
@@ -532,7 +532,7 @@ const DashboardPage = () => {
 
     return (
       <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Hoạt động gần đây</h3>
         <div className="space-y-3">
           {recentActivities.map((activity) => (
             <div key={activity.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
@@ -551,7 +551,7 @@ const DashboardPage = () => {
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${activity.status === 'approved' || activity.status === 'completed' ? 'bg-green-100 text-green-800' :
                 activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                 }`}>
-                {activity.type}
+                {activity.type === 'borrow' ? 'Mượn sách' : activity.type === 'return' ? 'Trả sách' : activity.type === 'request' ? 'Yêu cầu' : activity.type}
               </span>
             </div>
           ))}
@@ -563,7 +563,7 @@ const DashboardPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -575,10 +575,10 @@ const DashboardPage = () => {
         {!(user?.role === 'student' || user?.role === 'lecturer' || user?.role === 'user' || !user?.role) && (
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {user?.role === 'admin' ? 'Admin Dashboard' : 'Librarian Dashboard'}
+              {user?.role === 'admin' ? 'Bảng Quản trị' : 'Bảng Thủ thư'}
             </h1>
             <p className="text-gray-600">
-              Welcome back, {user?.name}! Here's what's happening today.
+              Chào mừng quay trở lại, {user?.name}! Dưới đây là những gì đang diễn ra hôm nay.
             </p>
           </div>
         )}

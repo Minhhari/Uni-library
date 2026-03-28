@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'];
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n ?? 0);
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ const AdminReportsPage = () => {
                 const { data } = await adminAPI.getStats();
                 setStats(data.stats);
             } catch {
-                setError('Failed to load analytics.');
+                setError('Không thể tải dữ liệu phân tích.');
             } finally {
                 setLoading(false);
             }
@@ -88,7 +88,7 @@ const AdminReportsPage = () => {
     if (loading) return (
         <div className="flex items-center justify-center py-20 text-on-surface-variant">
             <span className="material-symbols-outlined animate-spin text-4xl mr-3 text-primary">progress_activity</span>
-            <span>Loading analytics…</span>
+            <span>Đang tải dữ liệu phân tích...</span>
         </div>
     );
 
@@ -114,62 +114,62 @@ const AdminReportsPage = () => {
                     <span className="material-symbols-outlined text-white text-2xl">analytics</span>
                 </div>
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">Reports & Analytics</h1>
-                    <p className="text-on-surface-variant text-sm mt-1">System-wide performance overview</p>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">Báo cáo & Phân tích</h1>
+                    <p className="text-on-surface-variant text-sm mt-1">Tổng quan hiệu suất toàn hệ thống</p>
                 </div>
             </div>
 
             {/* ── User Accounts ── */}
             <section>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">👥 User Accounts</p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">👥 Tài khoản người dùng</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <StatCard icon="group" label="Total Users" value={stats.users.total} color="primary" />
-                    <StatCard icon="check_circle" label="Active" value={stats.users.active} color="emerald" />
-                    <StatCard icon="school" label="Students" value={stats.users.students} color="blue" />
-                    <StatCard icon="work" label="Lecturers" value={stats.users.lecturers} color="purple" />
-                    <StatCard icon="badge" label="Librarians" value={stats.users.librarians} color="amber" />
+                    <StatCard icon="group" label="Tổng số người dùng" value={stats.users.total} color="primary" />
+                    <StatCard icon="check_circle" label="Đang hoạt động" value={stats.users.active} color="emerald" />
+                    <StatCard icon="school" label="Sinh viên" value={stats.users.students} color="blue" />
+                    <StatCard icon="work" label="Giảng viên" value={stats.users.lecturers} color="purple" />
+                    <StatCard icon="badge" label="Thủ thư" value={stats.users.librarians} color="amber" />
                 </div>
             </section>
 
             {/* ── Borrow Records ── */}
             <section>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">📚 Borrow Records</p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">📚 Hồ sơ mượn sách</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard icon="import_contacts" label="Total Borrows" value={stats.borrows.total} color="primary" />
-                    <StatCard icon="autorenew" label="Currently Active" value={stats.borrows.active} color="blue" />
-                    <StatCard icon="assignment_turned_in" label="Returned" value={stats.borrows.returned} color="emerald" />
-                    <StatCard icon="schedule" label="Overdue" value={stats.borrows.overdue} color="rose" />
+                    <StatCard icon="import_contacts" label="Tổng số lượt mượn" value={stats.borrows.total} color="primary" />
+                    <StatCard icon="autorenew" label="Đang mượn" value={stats.borrows.active} color="blue" />
+                    <StatCard icon="assignment_turned_in" label="Đã trả" value={stats.borrows.returned} color="emerald" />
+                    <StatCard icon="schedule" label="Quá hạn" value={stats.borrows.overdue} color="rose" />
                 </div>
             </section>
 
             {/* ── Fines & Revenue ── */}
             <section>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">💰 Fines & Revenue</p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">💰 Tiền phạt & Doanh thu</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard icon="account_balance" label="Total Fines Issued" value={fmt(stats.fines.total)} color="primary" />
-                    <StatCard icon="payments" label="Revenue Collected" value={fmt(stats.fines.paid)} color="emerald" />
-                    <StatCard icon="pending" label="Pending Collection" value={fmt(stats.fines.pending)} color="rose" />
+                    <StatCard icon="account_balance" label="Tổng tiền phạt đã xuất" value={fmt(stats.fines.total)} color="primary" />
+                    <StatCard icon="payments" label="Doanh thu đã thu" value={fmt(stats.fines.paid)} color="emerald" />
+                    <StatCard icon="pending" label="Chưa thu" value={fmt(stats.fines.pending)} color="rose" />
                 </div>
             </section>
 
             {/* ── Charts ── */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-6">
-                    <p className="font-bold text-on-surface mb-1">New Users</p>
-                    <p className="text-xs text-on-surface-variant mb-5">Last 6 months</p>
-                    <BarChart data={monthlyUserData} color="#6366f1" title="Monthly Registrations" />
+                    <p className="font-bold text-on-surface mb-1">Người dùng mới</p>
+                    <p className="text-xs text-on-surface-variant mb-5">6 tháng qua</p>
+                    <BarChart data={monthlyUserData} color="#6366f1" title="Đăng ký hàng tháng" />
                 </div>
                 <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-6">
-                    <p className="font-bold text-on-surface mb-1">Borrow Activity</p>
-                    <p className="text-xs text-on-surface-variant mb-5">Last 6 months</p>
-                    <BarChart data={monthlyBorrowData} color="#10b981" title="Monthly Borrows" />
+                    <p className="font-bold text-on-surface mb-1">Hoạt động mượn sách</p>
+                    <p className="text-xs text-on-surface-variant mb-5">6 tháng qua</p>
+                    <BarChart data={monthlyBorrowData} color="#10b981" title="Lượt mượn hàng tháng" />
                 </div>
             </section>
 
             {/* ── Fine collection rate ── */}
             {stats.fines.total > 0 && (
                 <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-6">
-                    <p className="font-bold text-on-surface mb-4">Fine Collection Rate</p>
+                    <p className="font-bold text-on-surface mb-4">Tỷ lệ thu tiền phạt</p>
                     <div className="flex items-center gap-4">
                         <div className="flex-1 h-3 bg-surface-container-low rounded-full overflow-hidden">
                             <div
@@ -180,7 +180,7 @@ const AdminReportsPage = () => {
                         <span className="text-2xl font-extrabold text-emerald-600 w-16 text-right">{collectionRate}%</span>
                     </div>
                     <p className="text-xs text-on-surface-variant mt-2">
-                        {fmt(stats.fines.paid)} collected of {fmt(stats.fines.total)} total
+                        {fmt(stats.fines.paid)} đã thu trên {fmt(stats.fines.total)} tổng cộng
                     </p>
                 </div>
             )}

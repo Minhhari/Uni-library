@@ -17,6 +17,29 @@ const COLOR_MAP = {
     reservationExpiryDays: { grad: 'from-amber-400 to-orange-500', bg: 'bg-amber-50', border: 'border-amber-100' },
 };
 
+const TRANSLATIONS = {
+    labels: {
+        finePerDay: 'Phí phạt quá hạn/ngày',
+        maxBooksPerUser: 'Số lượng sách mượn tối đa',
+        maxLoanDays: 'Thời gian mượn tối đa',
+        maxReservationsPerUser: 'Số lượt đặt trước tối đa',
+        reservationExpiryDays: 'Thời hạn đặt trước (ngày)',
+    },
+    descriptions: {
+        finePerDay: 'Số tiền tính trên mỗi ngày quá hạn cho mỗi cuốn sách.',
+        maxBooksPerUser: 'Số cuốn sách tối đa một người dùng có thể mượn cùng lúc.',
+        maxLoanDays: 'Số ngày tối đa một người dùng được phép giữ sách mượn.',
+        maxReservationsPerUser: 'Số lượng yêu cầu đặt trước tối đa đang chờ xử lý.',
+        reservationExpiryDays: 'Số ngày hiệu lực của yêu cầu đặt trước trước khi bị hủy bỏ.',
+    },
+    units: {
+        'VND/day': 'VND/ngày',
+        'books': 'cuốn sách',
+        'days': 'ngày',
+        'reservations': 'lượt đặt',
+    }
+};
+
 const AdminSystemSettingsPage = () => {
     const [settings, setSettings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -35,7 +58,7 @@ const AdminSystemSettingsPage = () => {
                 list.forEach((s) => { init[s.key] = s.value; });
                 setEditValues(init);
             } catch {
-                setError('Failed to load system settings.');
+                setError('Không thể tải cài đặt hệ thống.');
             } finally {
                 setLoading(false);
             }
@@ -48,11 +71,11 @@ const AdminSystemSettingsPage = () => {
         try {
             await adminAPI.updateSetting(key, editValues[key]);
             setSettings((prev) => prev.map((s) => s.key === key ? { ...s, value: editValues[key] } : s));
-            const lbl = settings.find((s) => s.key === key)?.label;
-            setSuccessMsg(`"${lbl}" updated successfully.`);
+            const lbl = TRANSLATIONS.labels[key] || settings.find((s) => s.key === key)?.label || key;
+            setSuccessMsg(`"${lbl}" đã được cập nhật thành công.`);
             setTimeout(() => setSuccessMsg(''), 4000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to save.');
+            setError(err.response?.data?.message || 'Không thể lưu thay đổi.');
         } finally {
             setSaving(null);
         }
@@ -66,8 +89,8 @@ const AdminSystemSettingsPage = () => {
                     <span className="material-symbols-outlined text-white text-2xl">tune</span>
                 </div>
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">System Settings</h1>
-                    <p className="text-on-surface-variant text-sm mt-1">Configure global parameters for the library system</p>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">Cài đặt hệ thống</h1>
+                    <p className="text-on-surface-variant text-sm mt-1">Cấu hình các tham số toàn cục cho hệ thống thư viện</p>
                 </div>
             </div>
 
@@ -87,7 +110,7 @@ const AdminSystemSettingsPage = () => {
             {loading ? (
                 <div className="flex items-center justify-center py-20 text-on-surface-variant">
                     <span className="material-symbols-outlined animate-spin text-4xl mr-3 text-primary">progress_activity</span>
-                    <span>Loading settings…</span>
+                    <span>Đang tải cài đặt…</span>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -102,8 +125,8 @@ const AdminSystemSettingsPage = () => {
                                         <span className="material-symbols-outlined text-white text-xl">{ICONS[s.key] || 'settings'}</span>
                                     </div>
                                     <div className="min-w-0 flex-1 pt-1">
-                                        <p className="font-bold text-on-surface">{s.label}</p>
-                                        <p className="text-xs text-on-surface-variant mt-0.5 leading-relaxed">{s.description}</p>
+                                        <p className="font-bold text-on-surface">{TRANSLATIONS.labels[s.key] || s.label}</p>
+                                        <p className="text-xs text-on-surface-variant mt-0.5 leading-relaxed">{TRANSLATIONS.descriptions[s.key] || s.description}</p>
                                     </div>
                                 </div>
 
@@ -117,17 +140,17 @@ const AdminSystemSettingsPage = () => {
                                         min={0}
                                     />
                                     {s.unit && (
-                                        <span className="text-xs font-bold text-on-surface-variant bg-white px-3 py-3 rounded-xl border border-outline-variant/20 whitespace-nowrap shadow-sm">
-                                            {s.unit}
+                                        <span className="text-xs font-bold text-on-surface-variant bg-white px-3 py-3 rounded-xl border border-outline-variant/20 whitespace-nowrap shadow-sm min-w-[70px] text-center">
+                                            {TRANSLATIONS.units[s.unit] || s.unit}
                                         </span>
                                     )}
                                     <button
                                         onClick={() => handleSave(s.key)}
                                         disabled={saving === s.key || !changed}
-                                        title={changed ? 'Save' : 'No changes'}
+                                        title={changed ? 'Lưu' : 'Không có thay đổi'}
                                         className={`p-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm ${changed
-                                                ? 'bg-primary text-white hover:bg-primary/90'
-                                                : 'bg-white text-on-surface-variant border border-outline-variant/20'
+                                            ? 'bg-primary text-white hover:bg-primary/90'
+                                            : 'bg-white text-on-surface-variant border border-outline-variant/20'
                                             }`}
                                     >
                                         {saving === s.key
@@ -141,7 +164,7 @@ const AdminSystemSettingsPage = () => {
                                 {changed && (
                                     <p className="text-xs text-amber-600 font-medium flex items-center gap-1">
                                         <span className="material-symbols-outlined text-sm">edit</span>
-                                        Unsaved — was <b>{s.value}</b>
+                                        Chưa lưu — giá trị cũ là <b>{s.value}</b>
                                     </p>
                                 )}
                             </div>
@@ -154,12 +177,13 @@ const AdminSystemSettingsPage = () => {
             <div className="flex items-start gap-3 p-5 bg-amber-50 border border-amber-100 rounded-2xl">
                 <span className="material-symbols-outlined text-amber-500 text-xl mt-0.5">warning</span>
                 <div>
-                    <p className="text-sm font-bold text-amber-700">Important</p>
+                    <p className="text-sm font-bold text-amber-700">Lưu ý quan trọng</p>
                     <p className="text-sm text-amber-600 mt-0.5">
-                        Changes take effect immediately for new transactions. Existing borrow records will not be retroactively affected.
+                        Các thay đổi có hiệu lực ngay lập tức cho các giao dịch mới. Các bản ghi mượn hiện có sẽ không bị ảnh hưởng hồi tố.
                     </p>
                 </div>
             </div>
+
         </div>
     );
 };

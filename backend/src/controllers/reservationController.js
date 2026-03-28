@@ -1,6 +1,7 @@
 const Reservation = require('../models/Reservation');
 const Book = require('../models/Book');
 const BorrowRecord = require('../models/BorrowRecord');
+const SystemSetting = require('../models/SystemSetting');
 const notificationService = require('../services/notificationService');
 const {
   canReserve,
@@ -19,11 +20,18 @@ const createReservation = async (req, res) => {
     const userId = req.user._id;
     const userRole = req.user.role;
 
-    // Check if user has accepted terms (students/lecturers only)
-    if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
-      return res.status(403).json({ 
+    // 1. Phân quyền cơ bản
+    if (['librarian', 'admin'].includes(userRole)) {
+      return res.status(403).json({
         success: false,
-        message: "You must accept the Terms & Policies before reserving books." 
+        message: "Librarians and Admins are not allowed to reserve books."
+      });
+    }
+
+    if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
+      return res.status(403).json({
+        success: false,
+        message: "You must accept the Terms & Policies before reserving books."
       });
     }
 
@@ -31,22 +39,46 @@ const createReservation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'bookId is required.' });
     }
 
-    // Kiểm tra điều kiện sách còn ít
+    // 2. 🔥 ƯU TIÊN: Kiểm tra xem chính user đang mượn hoặc đã đặt cuốn này chưa
+    const [existingRes, existingBorrow] = await Promise.all([
+      Reservation.findOne({
+        userId,
+        bookId,
+        status: { $in: ['pending', 'approved'] },
+      }),
+      BorrowRecord.findOne({
+        userId,
+        bookId,
+        status: { $in: ['pending', 'approved', 'waiting_for_pickup'] },
+      })
+    ]);
+
+    if (existingRes || existingBorrow) {
+      return res.status(409).json({
+        success: false,
+        message: `Bạn đang mượn hoặc đã có yêu cầu đặt chỗ cho cuốn sách này rồi.`,
+      });
+    }
+
+    // 3. Kiểm tra điều kiện sách còn ít (LOW_STOCK_THRESHOLD)
     const { allowed, book, message } = await canReserve(bookId);
     if (!allowed) {
       return res.status(400).json({ success: false, message });
     }
 
-    // Không cho phép đặt chỗ 2 lần cùng 1 cuốn sách
-    const existing = await Reservation.findOne({
+    // 4. Kiểm tra giới hạn tổng số lượng đặt chỗ (System Settings)
+    const maxResSetting = await SystemSetting.findOne({ key: 'maxReservationsPerUser' });
+    const maxRes = maxResSetting ? Number(maxResSetting.value) : 3;
+
+    const activeReservationsCount = await Reservation.countDocuments({
       userId,
-      bookId,
-      status: { $in: ['pending', 'approved'] },
+      status: { $in: ['pending', 'approved'] }
     });
-    if (existing) {
-      return res.status(409).json({
+
+    if (activeReservationsCount >= maxRes) {
+      return res.status(400).json({
         success: false,
-        message: `Bạn đã có reservation ${existing.status} cho cuốn sách này.`,
+        message: `Bạn đã đạt giới hạn đặt trước sách (${maxRes} lượt). Vui lòng hủy yêu cầu cũ hoặc chờ nhận sách.`
       });
     }
 
@@ -184,8 +216,10 @@ const approveReservation = async (req, res) => {
       });
     }
 
-    // Tính thời hạn lấy sách (5 ngày)
-    const expireDays = parseInt(process.env.RESERVATION_EXPIRE_DAYS || '5', 10);
+    // Tính thời hạn lấy sách (từ settings)
+    const expireSetting = await SystemSetting.findOne({ key: 'reservationExpiryDays' });
+    const expireDays = expireSetting ? Number(expireSetting.value) : 3;
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expireDays);
 
@@ -301,9 +335,13 @@ const handoverReservation = async (req, res) => {
     }
 
     // Tạo BorrowRecord – sách đã được trừ ở bước approveReservation nên KHÔNG trừ thêm
+    // Fetch loan duration from settings
+    const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
+    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 14;
+
     const borrowDate = new Date();
     const dueDate = new Date();
-    dueDate.setDate(borrowDate.getDate() + 70); // 10 tuần
+    dueDate.setDate(borrowDate.getDate() + maxDays);
 
     const borrowRecord = await BorrowRecord.create({
       userId: reservation.userId._id || reservation.userId,

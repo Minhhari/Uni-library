@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ROLE_LABELS = {
-  admin: 'Admin',
+  admin: 'Quản trị viên',
   librarian: 'Thủ thư',
   lecturer: 'Giảng viên',
   student: 'Sinh viên',
