@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bookAPI } from '../services/api';
+import { bookAPI, uploadAPI } from '../services/api';
 import { toast } from 'react-toastify';
 
 const CreateBookModal = ({ onClose, onSuccess }) => {
@@ -11,10 +11,12 @@ const CreateBookModal = ({ onClose, onSuccess }) => {
         publisher: '',
         publish_year: new Date().getFullYear(),
         description: '',
-        cover_image: '',
         quantity: 1,
         location: ''
     });
+    const [coverFile, setCoverFile] = useState(null);
+    const [previewFiles, setPreviewFiles] = useState([]);
+
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetchingCats, setFetchingCats] = useState(true);
@@ -48,7 +50,34 @@ const CreateBookModal = ({ onClose, onSuccess }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await bookAPI.addBook(formData);
+            const processedData = { ...formData };
+
+            // 1. Upload Cover Image (if selected)
+            if (coverFile) {
+                const coverData = new FormData();
+                coverData.append('image', coverFile);
+                const coverRes = await uploadAPI.uploadSingle(coverData);
+                if (coverRes.data.success) {
+                    processedData.cover_image = coverRes.data.data;
+                }
+            }
+
+            // 2. Upload Preview Images (if selected)
+            if (previewFiles.length > 0) {
+                const previewData = new FormData();
+                previewFiles.forEach(file => {
+                    previewData.append('images', file);
+                });
+                const previewRes = await uploadAPI.uploadMultiple(previewData);
+                if (previewRes.data.success) {
+                    processedData.previewImages = previewRes.data.data;
+                }
+            } else {
+                processedData.previewImages = [];
+            }
+
+            // 3. Create Book
+            const res = await bookAPI.addBook(processedData);
             if (res.data.success) {
                 toast.success('Thêm sách mới thành công!');
                 onSuccess && onSuccess(res.data.data);
@@ -166,13 +195,31 @@ const CreateBookModal = ({ onClose, onSuccess }) => {
                     </div>
 
                     <div className="md:col-span-2 space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Ảnh bìa</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ảnh bìa (Tùy chọn)</label>
                         <input
-                            name="cover_image"
-                            value={formData.cover_image}
-                            onChange={handleChange}
-                            placeholder="https://..."
-                            className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all text-sm font-medium"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setCoverFile(e.target.files[0])}
+                            className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all text-sm font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                        />
+                    </div>
+
+                    <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ảnh Đọc Thử (Tối đa 5 ảnh)</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files);
+                                if (files.length > 5) {
+                                    toast.warning('Chỉ được chọn tối đa 5 ảnh!');
+                                    e.target.value = ''; // Reset
+                                } else {
+                                    setPreviewFiles(files);
+                                }
+                            }}
+                            className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all text-sm font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
                         />
                     </div>
 

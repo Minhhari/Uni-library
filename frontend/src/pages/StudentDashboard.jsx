@@ -36,7 +36,8 @@ const StudentDashboard = () => {
           : 'None';
 
         const finesRes = await fineAPI.getMyFines();
-        const totalFine = (finesRes.data || []).reduce((acc, f) => acc + (f.amount || 0), 0);
+        // fineController returns { success: true, data: { fines: [...], summary: {...} } }
+        const totalFine = finesRes.data?.data?.summary?.totalOutstanding || 0;
 
         setStats({
           activeLoans,
