@@ -1,5 +1,6 @@
 const Reservation = require('../models/Reservation');
 const Book = require('../models/Book');
+const BorrowRecord = require('../models/BorrowRecord');
 const notificationService = require('../services/notificationService');
 const {
   canReserve,
@@ -270,10 +271,82 @@ const rejectReservation = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/reservation/handover/:id
+// Thủ thư giao sách cho user khi họ đến lấy sách đặt trước
+// Reservation phải ở trạng thái 'approved'
+// Tạo BorrowRecord mới và đánh dấu reservation là 'fulfilled'
+// ─────────────────────────────────────────────────────────────────────────────
+const handoverReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id)
+      .populate('userId', 'name email studentId')
+      .populate('bookId', 'title author available');
+
+    if (!reservation) {
+      return res.status(404).json({ success: false, message: 'Reservation not found.' });
+    }
+
+    if (reservation.status !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: `Chỉ có thể giao sách cho reservation ở trạng thái 'approved'. Trạng thái hiện tại: "${reservation.status}".`,
+      });
+    }
+
+    // Kiểm tra sách tồn tại
+    const book = await Book.findById(reservation.bookId);
+    if (!book) {
+      return res.status(404).json({ success: false, message: 'Book not found.' });
+    }
+
+    // Tạo BorrowRecord – sách đã được trừ ở bước approveReservation nên KHÔNG trừ thêm
+    const borrowDate = new Date();
+    const dueDate = new Date();
+    dueDate.setDate(borrowDate.getDate() + 70); // 10 tuần
+
+    const borrowRecord = await BorrowRecord.create({
+      userId: reservation.userId._id || reservation.userId,
+      bookId: reservation.bookId._id || reservation.bookId,
+      status: 'approved',          // Đang mượn (bỏ qua pending/waiting vì reservation đã xử lý)
+      borrowDate,
+      dueDate,
+      fromReservation: true,       // Flag đánh dấu nguồn gốc từ reservation
+    });
+
+    // Đánh dấu reservation là fulfilled
+    reservation.status = 'fulfilled';
+    reservation.adminNote = `Đã giao sách ngày ${borrowDate.toLocaleDateString('vi-VN')} bởi ${req.user.name || req.user.email}.`;
+    await reservation.save();
+
+    // Gửi thông báo cho user
+    const bookTitle = book.title || reservation.bookId?.title || 'sách đặt trước';
+    await notificationService.createNotification(
+      reservation.userId._id || reservation.userId,
+      '📚 Đã nhận sách đặt trước thành công!',
+      `Bạn đã nhận được sách "${bookTitle}". Hạn trả: ${dueDate.toLocaleDateString('vi-VN')}. Vui lòng trả đúng hạn!`,
+      '/my-activity'
+    );
+
+    return res.json({
+      success: true,
+      message: 'Đã giao sách thành công. Bản ghi mượn trả đã được tạo.',
+      data: {
+        reservation,
+        borrowRecord,
+      },
+    });
+  } catch (error) {
+    console.error('[handoverReservation]', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createReservation,
   getMyReservations,
   getAllReservations,
   approveReservation,
   rejectReservation,
+  handoverReservation,
 };

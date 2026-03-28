@@ -29,6 +29,7 @@ const STATUS_CONFIG = {
   overdue: { label: 'QUÁ HẠN', bg: 'bg-red-100 text-red-600 font-bold' },
   waiting_for_pickup: { label: 'CHỜ LẤY SÁCH', bg: 'bg-blue-100 text-blue-700' },
   expired: { label: 'ĐÃ HỦY (QUÁ HẠN)', bg: 'bg-slate-200 text-slate-500' },
+  fulfilled: { label: 'ĐÃ GIAO SÁCH', bg: 'bg-teal-100 text-teal-700' },
 };
 
 const CONDITION_LABEL = {
@@ -315,6 +316,32 @@ const LibrarianDashboard = () => {
     }
   };
 
+  const handleHandoverReservation = async (id) => {
+    setActionLoading(p => ({ ...p, [id]: true }));
+    try {
+      await api.put(`/reservation/handover/${id}`);
+      toast.success('Đã giao sách! Bản ghi mượn trả đã được tạo trong tab Mượn & Trả.');
+      fetchData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Lỗi giao sách');
+    } finally {
+      setActionLoading(p => ({ ...p, [id]: false }));
+    }
+  };
+
+  const handleRejectReservation = async (id) => {
+    setActionLoading(p => ({ ...p, [id]: true }));
+    try {
+      await api.put(`/reservation/reject/${id}`);
+      toast.success('Đã từ chối yêu cầu đặt trước');
+      fetchData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Lỗi');
+    } finally {
+      setActionLoading(p => ({ ...p, [id]: false }));
+    }
+  };
+
   const handleUpdateRequestStatus = async (id, status) => {
     try {
       await api.put(`/book-requests/${id}/status`, { status });
@@ -473,6 +500,12 @@ const LibrarianDashboard = () => {
                   </td>
                   <td className="px-4 py-5">
                     <div className="font-semibold text-slate-700 max-w-[200px] truncate">{rec.bookId?.title}</div>
+                    {rec.fromReservation && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-[9px] font-black uppercase tracking-widest">
+                        <span className="material-symbols-outlined text-[10px]">bookmark</span>
+                        Đặt Trước
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-5">
                     <div className={`font-black text-[11px] ${isOverdue(rec.dueDate, rec.status) ? 'text-rose-500' : 'text-slate-500'}`}>
@@ -540,9 +573,19 @@ const LibrarianDashboard = () => {
 
   const renderReservations = () => (
     <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-      <div className="p-8 border-b border-slate-50">
-        <h3 className="text-xl font-black text-indigo-900 tracking-tighter uppercase">Danh sách đặt chỗ (Reservations)</h3>
-        <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">Xử lý khi sách về hoặc cho phép mượn ưu tiên</p>
+      <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-black text-indigo-900 tracking-tighter uppercase">Danh sách đặt trước (Reservations)</h3>
+          <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">Xử lý khi sách về hoặc cho phép mượn ưu tiên</p>
+        </div>
+        <div className="flex gap-3 text-xs font-bold">
+          <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-xl">
+            {data.reservations.filter(r => r.status === 'pending').length} Chờ duyệt
+          </span>
+          <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-xl">
+            {data.reservations.filter(r => r.status === 'approved').length} Chờ giao
+          </span>
+        </div>
       </div>
       <div className="p-8">
         {data.reservations.length === 0 ? (
@@ -552,39 +595,139 @@ const LibrarianDashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.reservations.map(res => (
-              <div key={res._id} className="p-6 rounded-3xl border border-slate-100 hover:border-indigo-200 transition bg-white shadow-sm flex flex-col gap-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
-                      #{res.queuePosition || 0}
+            {data.reservations.slice().sort((a, b) => {
+              // Sắp xếp: pending -> approved -> còn lại
+              const order = { pending: 0, approved: 1, rejected: 2, fulfilled: 3, cancelled: 4 };
+              return (order[a.status] ?? 5) - (order[b.status] ?? 5);
+            }).map(res => {
+              const isFulfilled = res.status === 'fulfilled';
+              const isApproved = res.status === 'approved';
+              const isPending = res.status === 'pending';
+              const isExpired = res.expiresAt && new Date(res.expiresAt) < new Date() && isApproved;
+
+              return (
+                <div
+                  key={res._id}
+                  className={`p-6 rounded-3xl border transition bg-white shadow-sm flex flex-col gap-4
+                    ${ isFulfilled ? 'border-teal-200 bg-teal-50/30'
+                      : isApproved ? 'border-blue-200 bg-blue-50/30 hover:border-blue-300'
+                      : isPending ? 'border-amber-200 hover:border-indigo-200'
+                      : 'border-slate-100 opacity-60'}`}
+                >
+                  {/* Header */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm
+                        ${isFulfilled ? 'bg-teal-100 text-teal-700'
+                          : isApproved ? 'bg-blue-100 text-blue-700'
+                          : 'bg-indigo-50 text-indigo-600'}`}>
+                        #{res.queuePosition || 0}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-800 truncate max-w-[160px]">{res.bookId?.title}</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                          {res.bookId?.author}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-slate-800 truncate max-w-[150px]">{res.bookId?.title}</div>
-                      <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Hạng {res.queuePosition} trong hàng đợi</div>
+                    <span className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest
+                      ${res.status === 'fulfilled' ? 'bg-teal-100 text-teal-700'
+                        : res.status === 'approved' ? 'bg-blue-100 text-blue-700'
+                        : res.status === 'pending' ? 'bg-amber-100 text-amber-700'
+                        : res.status === 'rejected' ? 'bg-red-100 text-red-600'
+                        : 'bg-slate-100 text-slate-500'}`}>
+                      {res.status === 'fulfilled' ? 'Đã Giao Sách'
+                        : res.status === 'approved' ? 'Chờ Giao'
+                        : res.status === 'pending' ? 'Chờ Duyệt'
+                        : res.status === 'rejected' ? 'Từ Chối'
+                        : res.status}
+                    </span>
+                  </div>
+
+                  {/* User info */}
+                  <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">
+                      {res.userId?.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-700 truncate">{res.userId?.name || 'Unknown User'}</div>
+                      <div className="text-[10px] text-slate-400 font-bold">{res.userId?.studentId || res.userId?.email || ''}</div>
                     </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${res.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {res.status}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">
-                    {res.userId?.name?.charAt(0)?.toUpperCase() || '?'}
+
+                  {/* Dates */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                      <div className="text-slate-400 font-black uppercase tracking-wider mb-0.5">Ngày đặt</div>
+                      <div className="font-bold text-slate-700">
+                        {res.reservationDate ? new Date(res.reservationDate).toLocaleDateString('vi-VN') : '—'}
+                      </div>
+                    </div>
+                    {isApproved && res.expiresAt && (
+                      <div className={`rounded-xl p-2.5 border ${ isExpired ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'}`}>
+                        <div className={`font-black uppercase tracking-wider mb-0.5 ${ isExpired ? 'text-red-400' : 'text-blue-400'}`}>
+                          Hạn lấy sách
+                        </div>
+                        <div className={`font-bold ${ isExpired ? 'text-red-600' : 'text-blue-700'}`}>
+                          {new Date(res.expiresAt).toLocaleDateString('vi-VN')}
+                          {isExpired && <span className="block text-[9px] font-black">QUÁ HẠN!</span>}
+                        </div>
+                      </div>
+                    )}
+                    {isFulfilled && (
+                      <div className="bg-teal-50 rounded-xl p-2.5 border border-teal-100">
+                        <div className="text-teal-400 font-black uppercase tracking-wider mb-0.5">Đã giao</div>
+                        <div className="font-bold text-teal-700">Xem tab Mượn & Trả</div>
+                      </div>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-700 truncate">{res.userId?.name || 'Unknown User'}</div>
-                    <div className="text-[10px] text-slate-400 font-bold">{res.userId?.studentId || res.userId?.email || ''}</div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-auto">
+                    {isPending && (
+                      <>
+                        <button
+                          onClick={() => handleApproveReservation(res._id)}
+                          className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition flex items-center justify-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">check</span>
+                          Phê duyệt
+                        </button>
+                        <button
+                          onClick={() => handleRejectReservation(res._id)}
+                          disabled={actionLoading[res._id]}
+                          className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50"
+                        >
+                          Từ chối
+                        </button>
+                      </>
+                    )}
+                    {isApproved && (
+                      <button
+                        onClick={() => handleHandoverReservation(res._id)}
+                        disabled={actionLoading[res._id]}
+                        className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:from-teal-600 hover:to-emerald-600 transition shadow-lg shadow-teal-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {actionLoading[res._id] ? (
+                          <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-[16px]">front_hand</span>
+                            Giao Sách
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {isFulfilled && (
+                      <div className="flex-1 py-3 bg-teal-50 text-teal-600 border border-teal-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                        Đã hoàn tất
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex gap-2 mt-auto">
-                  {res.status === 'pending' && (
-                    <button onClick={() => handleApproveReservation(res._id)} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition">Phê duyệt</button>
-                  )}
-                  <button className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition">Hủy bỏ</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

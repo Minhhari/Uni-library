@@ -6,6 +6,7 @@ const {
   getAllReservations,
   approveReservation,
   rejectReservation,
+  handoverReservation,
 } = require('../controllers/reservationController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -23,5 +24,8 @@ router.put('/approve/:id', protect, authorize('admin', 'librarian'), approveRese
 
 // PUT  /api/reservation/reject/:id   – Admin / Librarian từ chối
 router.put('/reject/:id', protect, authorize('admin', 'librarian'), rejectReservation);
+
+// PUT  /api/reservation/handover/:id – Admin / Librarian giao sách khi user đến nhận
+router.put('/handover/:id', protect, authorize('admin', 'librarian'), handoverReservation);
 
 module.exports = router;
