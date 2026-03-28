@@ -149,7 +149,7 @@ exports.approveBorrow = async (req, res) => {
 
     // Fetch loan duration from settings
     const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
-    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 14;
+    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 70;
 
     const borrowDate = new Date();
     const pickupDeadline = new Date();
