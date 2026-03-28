@@ -105,6 +105,15 @@ export const borrowAPI = {
   returnBook: (id) => api.put(`/borrow/return/${id}`),
 };
 
+// ─── Reservation APIs ────────────────────────────────────
+export const reservationAPI = {
+  createReservation: (data) => api.post('/reservation', data),
+  getMyReservations: (params) => api.get('/reservation/my', { params }),
+  getAllReservations: (params) => api.get('/reservation/all', { params }),
+  approveReservation: (id, note) => api.put(`/reservation/approve/${id}`, { note }),
+  rejectReservation: (id, note) => api.put(`/reservation/reject/${id}`, { note }),
+};
+
 // ─── Fine APIs ───────────────────────────────────────────
 export const fineAPI = {
   getMyFines: () => api.get('/fines/my'),

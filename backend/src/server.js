@@ -54,7 +54,7 @@ app.use(helmet());
 // Apply Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
+  max: process.env.NODE_ENV === 'development' ? 5000 : 100, // Higher limit for development
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -75,7 +75,7 @@ if (process.env.NODE_ENV !== 'test') {
 app.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'Uni Library API is running 🚀',
+    message: 'Uni Library API is running ',
     env: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });
@@ -127,9 +127,9 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📚 API Base: http://localhost:${PORT}`);
+  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(` API Base: http://localhost:${PORT}`);
 });
 
 module.exports = app;

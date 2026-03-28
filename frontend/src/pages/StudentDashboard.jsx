@@ -67,10 +67,10 @@ const StudentDashboard = () => {
       {/* Hero Section */}
       <section className="text-left space-y-6">
         <div>
-          <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-5xl font-black tracking-tight text-on-surface mb-2">
             Welcome back, {user?.name?.split(' ')[0] || 'Minh'} 👋
           </h1>
-          <p className="text-gray-500 text-lg">
+          <p className="text-on-surface-variant text-lg">
             The digital gallery of knowledge is at your fingertips. What will you discover today?
           </p>
         </div>
@@ -84,12 +84,12 @@ const StudentDashboard = () => {
           }}
           className="relative max-w-3xl"
         >
-          <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+          <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant/40">search</span>
           <input
             name="search"
             type="text"
             placeholder="Search your library, authors, or ISBN..."
-            className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-gray-100 rounded-full text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white outline-none transition-all shadow-sm text-lg"
+            className="w-full pl-14 pr-6 py-5 bg-surface-container-low border border-surface-dim rounded-full text-on-surface focus:ring-4 focus:ring-primary/10 focus:bg-white outline-none transition-all shadow-sm text-lg"
           />
         </form>
       </section>
@@ -98,15 +98,15 @@ const StudentDashboard = () => {
       {(stats.activeLoans > 0 || stats.nextDeadline !== 'None' || stats.accountBalance !== '0') && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {stats.activeLoans > 0 && (
-            <div className="bg-[#E7F5F2] border border-emerald-100/50 p-8 rounded-[32px] flex items-start gap-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+            <div className="bg-primary/10 border border-primary/20 p-8 rounded-[32px] flex items-start gap-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm">
                 <span className="material-symbols-outlined filled">menu_book</span>
               </div>
               <div>
-                <span className="text-[10px] font-black text-emerald-700/60 tracking-[0.1em] uppercase block mb-1">Active Loans</span>
+                <span className="text-[10px] font-black text-primary/60 tracking-[0.1em] uppercase block mb-1">Active Loans</span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-black text-emerald-900 leading-none">{stats.activeLoans}</span>
-                  <span className="text-sm font-bold text-emerald-800">Books Borrowed</span>
+                  <span className="text-5xl font-black text-primary leading-none">{stats.activeLoans}</span>
+                  <span className="text-sm font-bold text-primary/80">Books Borrowed</span>
                 </div>
               </div>
             </div>
@@ -145,15 +145,15 @@ const StudentDashboard = () => {
       )}
 
       {/* Recommendation Row */}
-      <section className="bg-emerald-600 rounded-[40px] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
+      <section className="bg-primary rounded-[40px] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-primary/20 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/10 transition-all duration-700"></div>
         <div className="relative z-10 space-y-2">
           <h2 className="text-3xl font-black tracking-tight">Personalized Recommendations</h2>
-          <p className="text-emerald-100 text-lg opacity-80">Based on your reading history and academic interests.</p>
+          <p className="text-white/70 text-lg">Based on your reading history and academic interests.</p>
         </div>
         <Link
           to="/recommendations"
-          className="relative z-10 px-10 py-5 bg-white text-emerald-600 font-black rounded-2xl hover:bg-emerald-50 hover:scale-105 transition-all shadow-xl active:scale-95 flex items-center gap-3"
+          className="relative z-10 px-10 py-5 bg-white text-primary font-black rounded-2xl hover:bg-white/90 hover:scale-105 transition-all shadow-xl active:scale-95 flex items-center gap-3"
         >
           <span className="material-symbols-outlined">auto_awesome</span>
           See Recommendations
@@ -163,37 +163,33 @@ const StudentDashboard = () => {
       {/* Explore All Books */}
       <section>
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Explore Collection</h2>
-          <Link to="/books" className="text-emerald-600 font-bold text-sm hover:underline">View All Books</Link>
+          <h2 className="text-3xl font-black tracking-tight text-on-surface">Explore Collection</h2>
+          <Link to="/books" className="text-primary font-black text-sm hover:underline tracking-tight">View All Books</Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
           {books.map((book) => (
             <Link to={`/books/${book._id}`} key={book._id} className="group cursor-pointer">
-              <div className="relative aspect-[2/3] rounded-[24px] overflow-hidden mb-4 shadow-sm group-hover:shadow-2xl transition-all duration-500 border border-gray-100">
+              <div className="relative aspect-[2/3] rounded-[24px] overflow-hidden mb-4 shadow-sm group-hover:shadow-2xl transition-all duration-500 border border-surface-dim">
                 <img
                   src={book.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2574&auto=format&fit=crop'}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   alt={book.title}
                 />
                 <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-emerald-600 rounded-lg text-[10px] font-black tracking-widest uppercase shadow-sm">
+                  <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-primary rounded-lg text-[10px] font-black tracking-widest uppercase shadow-sm">
                     {book.category?.name || 'GENERAL'}
                   </span>
                 </div>
               </div>
-              <h4 className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors leading-tight mb-1 line-clamp-2">
+              <h4 className="font-black text-on-surface group-hover:text-primary transition-colors leading-tight mb-1 line-clamp-2">
                 {book.title}
               </h4>
-              <p className="text-gray-400 text-xs font-bold truncate">{book.author}</p>
+              <p className="text-on-surface-variant/60 text-xs font-bold truncate">{book.author}</p>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Contextual FAB */}
-      <button className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl shadow-2xl flex items-center justify-center hover:scale-110 hover:rotate-3 transition-all active:scale-95 group z-50">
-        <span className="material-symbols-outlined text-3xl group-hover:rotate-12 transition-transform filled">qr_code_scanner</span>
-      </button>
     </div>
   );
 };

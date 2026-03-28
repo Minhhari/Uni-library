@@ -16,7 +16,7 @@ import BookListPage from './pages/BookListPage';
 import BookDetailPage from './pages/BookDetailPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
-import StudentDashboard from './pages/StudentDashboard';
+import HomeDashboard from './pages/HomeDashboard';
 import RecommendationPage from './pages/RecommendationPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -57,7 +57,7 @@ const AppLayout = ({ children }) => {
 
   if (isStudent) {
     return (
-      <div className="bg-white min-h-screen font-body text-gray-900">
+      <div className="bg-surface min-h-screen font-body text-on-surface">
         <StudentNavbar />
         <main className="pt-20 min-h-screen">
           <div className="p-10 max-w-[1400px] mx-auto">
@@ -71,7 +71,7 @@ const AppLayout = ({ children }) => {
 
   if (isLecturer) {
     return (
-      <div className="bg-white min-h-screen font-body text-gray-900">
+      <div className="bg-surface min-h-screen font-body text-on-surface">
         <LecturerNavbar />
         <main className="pt-20 min-h-screen">
           <div className="p-10 max-w-[1400px] mx-auto">
@@ -102,8 +102,8 @@ const DashboardSelector = () => {
   const { user } = useAuth();
   if (user?.role === 'admin') return <AdminDashboardPage />;
   if (user?.role === 'librarian') return <LibrarianDashboard />;
-  if (user?.role === 'lecturer') return <LecturerBookRequestPage />;
-  return <StudentDashboard />;
+  if (user?.role === 'lecturer') return <HomeDashboard />;
+  return <HomeDashboard />;
 };
 
 function App() {
