@@ -77,9 +77,9 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 overflow-hidden group">
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 overflow-hidden group h-full flex flex-col">
       {/* Book Cover */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
+      <div className="relative h-48 bg-gray-100 overflow-hidden flex-shrink-0">
         {coverImage ? (
           <img
             src={coverImage}
@@ -110,9 +110,9 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
       </div>
 
       {/* Book Info */}
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2">
+        <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2 flex-shrink-0">
           <Link
             to={`/books/${_id}`}
             className="hover:text-blue-600 transition-colors duration-200"
@@ -122,14 +122,14 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
         </h3>
 
         {/* Author */}
-        <p className="text-sm text-gray-600 mb-2 flex items-center">
+        <p className="text-sm text-gray-600 mb-2 flex items-center flex-shrink-0">
           <UserIcon className="h-4 w-4 mr-1" />
           {author}
         </p>
 
         {/* Category */}
         {category && (
-          <p className="text-sm text-gray-600 mb-2">
+          <p className="text-sm text-gray-600 mb-2 flex-shrink-0">
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
               {category.name || category}
             </span>
@@ -138,7 +138,7 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
 
         {/* Publish Year */}
         {publishYear && (
-          <p className="text-sm text-gray-500 mb-2 flex items-center">
+          <p className="text-sm text-gray-500 mb-2 flex items-center flex-shrink-0">
             <CalendarIcon className="h-4 w-4 mr-1" />
             {publishYear}
           </p>
@@ -146,7 +146,7 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
 
         {/* Academic Info */}
         {(semester || academicLevel) && (
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-2 flex-shrink-0">
             {semester && (
               <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
                 <AcademicCapIcon className="h-3 w-3 mr-1" />
@@ -162,24 +162,27 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
           </div>
         )}
 
-        {/* Description */}
+        {/* Description - with consistent height */}
         {description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-shrink-0">
             {description}
           </p>
         )}
 
         {/* Recommendation Reason */}
         {showRecommendationReason && recommendationReason && (
-          <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md flex-shrink-0">
             <p className="text-xs text-blue-800">
               <span className="font-medium">Why this book?</span> {recommendationReason}
             </p>
           </div>
         )}
 
+        {/* Spacer to push content to bottom */}
+        <div className="flex-1"></div>
+
         {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-3 flex-shrink-0">
           {borrowCount !== undefined && (
             <span className="flex items-center">
               <StarIcon className="h-4 w-4 mr-1" />
@@ -195,7 +198,7 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
         </div>
 
         {/* Action Button */}
-        <div className="mt-4">
+        <div className="flex-shrink-0">
           <Link
             to={`/books/${_id}`}
             className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
