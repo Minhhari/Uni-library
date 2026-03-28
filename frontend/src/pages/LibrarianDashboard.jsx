@@ -414,7 +414,7 @@ const LibrarianDashboard = () => {
                       <div className="text-xs text-emerald-700">Cần xem xét nhập thêm</div>
                     </div>
                   </div>
-                  <button onClick={() => setActiveTab('requests')} className="px-4 py-2 bg-white text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-emerald-100 transition">Xem</button>
+                  <button onClick={() => setActiveTab('requests')} className="px-4 py-2 bg-white text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-emerald-100 transition">Xử lý</button>
                 </div>
               )}
               {pendingBor === 0 && data.reservations.filter(r => r.status === 'pending').length === 0 && (
@@ -522,18 +522,21 @@ const LibrarianDashboard = () => {
                     <div className="flex items-center justify-end gap-2">
                       {rec.status === 'pending' && (
                         <>
-                          <button onClick={() => handleApproveBorrow(rec._id)} className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition shadow-lg shadow-emerald-100">
-                            <span className="material-symbols-outlined text-[16px]">check</span>
+                          <button
+                            onClick={() => handleApproveBorrow(rec._id)}
+                            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center hover:shadow-lg hover:shadow-emerald-500/30 transition shadow-md shadow-emerald-500/20 active:scale-90"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">check</span>
                           </button>
                           <button
                             onClick={() => handleRejectBorrow(rec._id)}
                             disabled={actionLoading[rec._id]}
-                            className="w-8 h-8 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-300 transition disabled:opacity-50"
+                            className="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition disabled:opacity-50 active:scale-90"
                           >
                             {actionLoading[rec._id] ? (
-                              <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
+                              <span className="material-symbols-outlined animate-spin text-[18px]">autorenew</span>
                             ) : (
-                              <span className="material-symbols-outlined text-[16px]">close</span>
+                              <span className="material-symbols-outlined text-[18px]">close</span>
                             )}
                           </button>
                         </>
@@ -542,7 +545,7 @@ const LibrarianDashboard = () => {
                         <button
                           onClick={() => handlePickupBorrow(rec._id)}
                           disabled={actionLoading[rec._id]}
-                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50"
+                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-sky-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-blue-500/30 transition shadow-md shadow-blue-500/20 disabled:opacity-50 active:scale-95"
                         >
                           {actionLoading[rec._id] ? (
                             <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
@@ -553,7 +556,10 @@ const LibrarianDashboard = () => {
                         </button>
                       )}
                       {rec.status === 'approved' && (
-                        <button onClick={() => setReturnTarget(rec)} className="flex items-center gap-2 px-4 py-1.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition shadow-lg shadow-slate-200">
+                        <button
+                          onClick={() => setReturnTarget(rec)}
+                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl hover:shadow-slate-900/40 transition shadow-md shadow-slate-900/20 active:scale-95"
+                        >
                           <span className="material-symbols-outlined text-[16px]">assignment_return</span>
                           Nhận sách
                         </button>
@@ -689,9 +695,9 @@ const LibrarianDashboard = () => {
                       <>
                         <button
                           onClick={() => handleApproveReservation(res._id)}
-                          className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition flex items-center justify-center gap-1.5"
+                          className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-indigo-500/30 transition flex items-center justify-center gap-1.5 active:scale-95"
                         >
-                          <span className="material-symbols-outlined text-[14px]">check</span>
+                          <span className="material-symbols-outlined text-[16px]">check_circle</span>
                           Phê duyệt
                         </button>
                         <button
@@ -820,11 +826,23 @@ const LibrarianDashboard = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   {req.status === 'Pending' && (
                     <>
-                      <button onClick={() => handleUpdateRequestStatus(req._id, 'Approved')} className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition shadow-xl shadow-emerald-500/20 active:scale-95">Duyệt nhập</button>
-                      <button onClick={() => handleUpdateRequestStatus(req._id, 'Rejected')} className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest text-xs transition active:scale-95">Từ chối</button>
+                      <button
+                        onClick={() => handleUpdateRequestStatus(req._id, 'Approved')}
+                        className="whitespace-nowrap px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        Duyệt nhập
+                      </button>
+                      <button
+                        onClick={() => handleUpdateRequestStatus(req._id, 'Rejected')}
+                        className="whitespace-nowrap px-6 py-3.5 bg-white/5 hover:bg-rose-500/20 text-white border border-white/20 hover:border-rose-500/30 rounded-2xl font-black uppercase tracking-widest text-[10px] transition active:scale-95 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">cancel</span>
+                        Từ chối
+                      </button>
                     </>
                   )}
                   {req.status !== 'Pending' && (
@@ -956,14 +974,14 @@ const LibrarianDashboard = () => {
                   <div className="flex items-center justify-end gap-2">
                     <Link
                       to={`/books/${book._id}`}
-                      className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-slate-800 hover:text-slate-900 transition active:scale-95"
+                      className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 hover:border-slate-400 transition active:scale-95 shadow-sm"
                     >
                       <span className="material-symbols-outlined text-[16px]">visibility</span>
                       Xem
                     </Link>
                     <button
                       onClick={() => setEditTarget(book)}
-                      className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-900 text-white border border-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition active:scale-95 shadow-lg shadow-slate-200"
+                      className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-slate-900/30 transition active:scale-95 shadow-md shadow-slate-900/10"
                     >
                       <span className="material-symbols-outlined text-[16px]">edit</span>
                       Sửa
