@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middlewares/uploadMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 const { protect, authorize } = require('../middleware/authMiddleware'); // Notice it's 'middleware' without 's' based on previous findings
 
 // @desc    Upload image(s) to Cloudinary
