@@ -156,16 +156,7 @@ const BookDetailPage = () => {
                 <div className="relative z-20 flex flex-col md:flex-row items-center gap-12 max-w-7xl px-8 w-full">
                     <div className="shrink-0 transform -rotate-3 hover:rotate-0 transition-all duration-500 shadow-2xl p-2 bg-white rounded-3xl group relative">
                         <img src={coverImage} className="w-56 h-80 object-cover rounded-2xl shadow-inner group-hover:scale-105 transition-transform" alt={book.title} />
-                        {/* Look Inside Button */}
-                        {book.previewImages && book.previewImages.length > 0 && (
-                            <button
-                                onClick={() => { setShowLookInside(true); setCurrentPreviewIndex(0); }}
-                                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur text-primary font-black px-4 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-2 hover:scale-110 active:scale-95 transition-all whitespace-nowrap z-30 opacity-0 group-hover:opacity-100"
-                            >
-                                <span className="material-symbols-outlined text-xl">menu_book</span>
-                                Đọc thử
-                            </button>
-                        )}
+
                     </div>
                     <div className="flex-1 space-y-6 text-center md:text-left">
                         <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap">
@@ -203,7 +194,17 @@ const BookDetailPage = () => {
                             </>
                         )}
                     </div>
-                    <div className="flex items-center gap-4 w-full lg:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                        {/* More Info / Look Inside */}
+                        {book.previewImages && book.previewImages.length > 0 && (
+                            <button
+                                onClick={() => { setShowLookInside(true); setCurrentPreviewIndex(0); }}
+                                className="flex-1 sm:flex-none items-center gap-2 px-8 py-5 text-primary font-black rounded-3xl bg-primary/5 hover:bg-primary/10 transition-all w-full sm:w-44 justify-center flex border-2 border-primary/20"
+                            >
+                                <span className="material-symbols-outlined text-xl">menu_book</span>
+                                Xem thêm
+                            </button>
+                        )}
                         {/* Borrow Now */}
                         <button
                             onClick={() => {

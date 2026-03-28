@@ -185,6 +185,8 @@ const StudentDashboard = () => {
                 {book.title}
               </h4>
               <p className="text-on-surface-variant/60 text-xs font-bold truncate">{book.author}</p>
+              <p className="text-on-surface-variant/40 text-[10px] truncate opacity-80">{book.publisher}</p>
+              <p className="text-on-surface-variant/30 text-[10px] truncate">{book.publish_year}</p>
             </Link>
           ))}
         </div>

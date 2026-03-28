@@ -301,6 +301,7 @@ const BookListPage = () => {
                                 {book.title}
                             </h4>
                             <p className="text-on-surface-variant text-xs truncate px-1 opacity-70 mb-1">{book.author}</p>
+                            <p className="text-on-surface-variant/60 text-[10px] truncate px-1 mb-1 font-medium italic uppercase tracking-wider">{book.publisher}</p>
                             {book.publish_year && (
                                 <p className="text-on-surface-variant/50 text-[10px] truncate px-1 mb-2">{book.publish_year}</p>
                             )}

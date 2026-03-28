@@ -21,6 +21,8 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState([]);
   const [myBooks, setMyBooks] = useState([]);
+  const [pages, setPages] = useState({ loans: 1, reservations: 1, others: 1 });
+  const itemsPerPage = 5;
 
   const isLoansPage = location.pathname === '/loans';
   const isReservationsPage = location.pathname === '/reservations';
@@ -103,8 +105,10 @@ const DashboardPage = () => {
       const borrowsList = (borrowsResponse.data || []).map(b => ({ ...b, itemType: 'borrow' }));
       const reservationsList = (reservationsResponse.data?.data || reservationsResponse.data || []).map(r => ({ ...r, itemType: 'reservation' }));
 
-      // Combine them
-      const fullList = [...borrowsList, ...reservationsList];
+      // Combine them and sort by newest first
+      const fullList = [...borrowsList, ...reservationsList].sort((a, b) =>
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
       setMyBooks(fullList);
 
       const activeBorrows = fullList.filter(item =>
@@ -289,6 +293,47 @@ const DashboardPage = () => {
     const reservations = myBooks.filter(b => b.itemType === 'reservation' && ['pending', 'approved', 'waiting_for_pickup'].includes(b.status));
     const others = myBooks.filter(b => b.status === 'returned' || b.status === 'rejected' || b.status === 'expired' || b.status === 'cancelled');
 
+    const paginate = (items, page) => {
+      const startIndex = (page - 1) * itemsPerPage;
+      return items.slice(startIndex, startIndex + itemsPerPage);
+    };
+
+    const Pagination = ({ total, current, onChange }) => {
+      const totalPages = Math.ceil(total / itemsPerPage);
+      if (totalPages <= 1) return null;
+
+      return (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            disabled={current === 1}
+            onClick={() => onChange(current - 1)}
+            className="p-2 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">chevron_left</span>
+          </button>
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i}
+              onClick={() => onChange(i + 1)}
+              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${current === i + 1
+                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                  : 'bg-white text-gray-500 border border-gray-100 hover:border-primary/30 hover:bg-gray-50'
+                }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            disabled={current === totalPages}
+            onClick={() => onChange(current + 1)}
+            className="p-2 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">chevron_right</span>
+          </button>
+        </div>
+      );
+    };
+
     return (
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 font-body max-w-7xl mx-auto">
         {/* Header Section */}
@@ -371,7 +416,7 @@ const DashboardPage = () => {
                 <p className="text-gray-400 text-sm italic py-4">No active loans at this time.</p>
               ) : (
                 <div className="space-y-3">
-                  {activeLoans.map((item, index) => (
+                  {paginate(activeLoans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.loans).map((item, index) => (
                     <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
@@ -394,6 +439,11 @@ const DashboardPage = () => {
                       </span>
                     </div>
                   ))}
+                  <Pagination
+                    total={activeLoans.length}
+                    current={pages.loans}
+                    onChange={(p) => setPages(prev => ({ ...prev, loans: p }))}
+                  />
                 </div>
               )}
             </div>
@@ -411,7 +461,7 @@ const DashboardPage = () => {
                 <p className="text-gray-400 text-sm italic py-4">No pending reservations.</p>
               ) : (
                 <div className="space-y-3">
-                  {reservations.map((item, index) => (
+                  {paginate(reservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.reservations).map((item, index) => (
                     <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className={`w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]`}></div>
@@ -434,6 +484,11 @@ const DashboardPage = () => {
                       </span>
                     </div>
                   ))}
+                  <Pagination
+                    total={reservations.length}
+                    current={pages.reservations}
+                    onChange={(p) => setPages(prev => ({ ...prev, reservations: p }))}
+                  />
                 </div>
               )}
             </div>
@@ -445,7 +500,7 @@ const DashboardPage = () => {
                   <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">Other Activity</h3>
                 </div>
                 <div className="space-y-3">
-                  {others.slice(0, 3).map((item, index) => (
+                  {paginate(others.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.others).map((item, index) => (
                     <div key={index} className="p-4 rounded-2xl flex items-center justify-between border border-transparent">
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-gray-400"></div>

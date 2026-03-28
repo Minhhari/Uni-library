@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
+import {
   BookOpenIcon,
   StarIcon,
   CalendarIcon,
@@ -17,9 +17,9 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
     isbn,
     description,
     category,
-    publishYear,
+    publish_year,
     status,
-    coverImage,
+    cover_image,
     borrowCount,
     recommendationReason,
     strategy,
@@ -30,11 +30,13 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-50 text-emerald-600 border border-emerald-500/20';
       case 'borrowed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-blue-50 text-blue-600 border border-blue-500/20';
       case 'reserved':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-50 text-amber-600 border border-amber-500/20';
+      case 'maintenance':
+        return 'bg-red-50 text-red-600 border border-red-500/20';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -43,32 +45,33 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 'available':
-        return 'Available';
+        return 'SẴN SÀNG';
       case 'borrowed':
-        return 'Borrowed';
+        return 'ĐANG MƯỢN';
       case 'reserved':
-        return 'Reserved';
+        return 'ĐÃ ĐẶT';
+      case 'maintenance':
+        return 'BẢO TRÌ';
       default:
-        return 'Unknown';
+        return 'KHÔNG XÁC ĐỊNH';
     }
   };
 
   const renderStars = (rating) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
-    
+
     return (
       <div className="flex items-center">
         {[...Array(5)].map((_, index) => (
           <StarSolidIcon
             key={index}
-            className={`h-4 w-4 ${
-              index < fullStars
+            className={`h-4 w-4 ${index < fullStars
                 ? 'text-yellow-400'
                 : index === fullStars && hasHalfStar
-                ? 'text-yellow-400'
-                : 'text-gray-300'
-            }`}
+                  ? 'text-yellow-400'
+                  : 'text-gray-300'
+              }`}
           />
         ))}
         <span className="ml-1 text-sm text-gray-600">({rating || 0})</span>
@@ -79,19 +82,19 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 overflow-hidden group">
       {/* Book Cover */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {coverImage ? (
+      <div className="relative h-48 bg-gray-50 overflow-hidden">
+        {cover_image ? (
           <img
-            src={coverImage}
+            src={cover_image}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <BookOpenIcon className="h-12 w-12 text-gray-400" />
+          <div className="w-full h-full flex items-center justify-center opacity-20">
+            <BookOpenIcon className="h-16 w-16 text-primary" />
           </div>
         )}
-        
+
         {/* Status Badge */}
         <div className="absolute top-2 right-2">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
@@ -137,10 +140,10 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
         )}
 
         {/* Publish Year */}
-        {publishYear && (
-          <p className="text-sm text-gray-500 mb-2 flex items-center">
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            {publishYear}
+        {publish_year && (
+          <p className="text-sm text-gray-500 mb-2 flex items-center font-medium">
+            <CalendarIcon className="h-4 w-4 mr-1 opacity-40" />
+            {publish_year}
           </p>
         )}
 
@@ -186,7 +189,7 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
               {borrowCount} {borrowCount === 1 ? 'borrow' : 'borrows'}
             </span>
           )}
-          
+
           {isbn && (
             <span className="text-xs text-gray-400">
               ISBN: {isbn}

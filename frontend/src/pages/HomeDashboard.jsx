@@ -75,7 +75,7 @@ const HomeDashboard = () => {
                     </p>
                 </div>
 
-                {/* Big Search Bar */}
+                {/* Big Search Bar
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -91,7 +91,7 @@ const HomeDashboard = () => {
                         placeholder="Search your library, authors, or ISBN..."
                         className="w-full pl-14 pr-6 py-5 bg-surface-container-low border border-surface-dim rounded-full text-on-surface focus:ring-4 focus:ring-primary/10 focus:bg-white outline-none transition-all shadow-sm text-lg"
                     />
-                </form>
+                </form> */}
             </section>
 
             {/* Stats Row */}
@@ -185,6 +185,8 @@ const HomeDashboard = () => {
                                 {book.title}
                             </h4>
                             <p className="text-on-surface-variant/60 text-xs font-bold truncate">{book.author}</p>
+                            <p className="text-on-surface-variant/40 text-[10px] truncate opacity-80">{book.publisher}</p>
+                            <p className="text-on-surface-variant/30 text-[10px] truncate">{book.publish_year}</p>
                         </Link>
                     ))}
                 </div>

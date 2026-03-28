@@ -5,7 +5,7 @@ const User = require('../models/User');
 const { ObjectId } = require('mongoose').Types;
 
 class RecommendationService {
-  
+
   /**
    * Get comprehensive recommendations combining all strategies
    * @param {string} userId - User ID
@@ -24,7 +24,7 @@ class RecommendationService {
       } = options;
 
       const recommendations = {};
-      
+
       // Get user information
       const user = await User.findById(userId);
       const currentSemester = this.getCurrentSemester();
@@ -97,31 +97,34 @@ class RecommendationService {
   async getRecommendationsForUser(userId, limit = 10) {
     try {
       // Get user's borrowing history
-      const borrowHistory = await BorrowRecord.find({ 
+      const borrowHistory = await BorrowRecord.find({
         userId: userId,
         status: 'returned'
       })
-      .populate('bookId')
-      .sort({ returnDate: -1 })
-      .limit(20);
+        .populate('bookId')
+        .sort({ returnDate: -1 })
+        .limit(20);
 
-      if (borrowHistory.length === 0) {
+      // Filter out records where bookId might be null (e.g., if a book was deleted)
+      const validHistory = borrowHistory.filter(record => record.bookId);
+
+      if (validHistory.length === 0) {
         return await this.getPopularBooks(limit);
       }
 
       // Extract categories from user's borrowing history
-      const userCategories = borrowHistory.map(record => record.bookId.category);
-      const uniqueCategories = [...new Set(userCategories)];
+      const userCategories = validHistory.map(record => record.bookId.category).filter(cat => cat);
+      const uniqueCategories = [...new Set(userCategories.map(cat => cat.toString()))];
 
       // Get books from same categories
       const recommendations = await Book.find({
         category: { $in: uniqueCategories },
-        _id: { $nin: borrowHistory.map(record => record.bookId._id) },
+        _id: { $nin: validHistory.map(record => record.bookId._id) },
         status: 'available'
       })
-      .populate('category', 'name code')
-      .limit(limit)
-      .sort({ createdAt: -1 });
+        .populate('category', 'name code')
+        .limit(limit)
+        .sort({ createdAt: -1 });
 
       return recommendations.map(book => ({
         ...book.toObject(),
@@ -269,9 +272,9 @@ class RecommendationService {
         _id: { $nin: userBorrowedBooks },
         status: 'available'
       })
-      .populate('category', 'name code')
-      .limit(limit)
-      .sort({ createdAt: -1 });
+        .populate('category', 'name code')
+        .limit(limit)
+        .sort({ createdAt: -1 });
 
       return recommendations.map(book => ({
         ...book.toObject(),
@@ -293,13 +296,13 @@ class RecommendationService {
   async getCollaborativeRecommendations(userId, limit = 10) {
     try {
       console.log('getCollaborativeRecommendations called with userId:', userId);
-      
+
       // Get user's borrowed books
       const userBooks = await BorrowRecord.find({
         userId: userId,
         status: 'returned'
       }).distinct('bookId');
-      
+
       console.log('User borrowed books:', userBooks);
 
       if (userBooks.length === 0) {
@@ -421,9 +424,9 @@ class RecommendationService {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1; // 1-12
-    
+
     let semester, semesterName;
-    
+
     if (month >= 1 && month <= 5) {
       semester = 'Spring';
       semesterName = 'Spring Semester';
@@ -434,7 +437,7 @@ class RecommendationService {
       semester = 'Fall';
       semesterName = 'Fall Semester';
     }
-    
+
     return {
       semester,
       semesterName,
@@ -453,26 +456,26 @@ class RecommendationService {
     try {
       const user = await User.findById(userId);
       const currentSemester = this.getCurrentSemester();
-      
+
       // Get user's department and estimated year based on account creation
       const userDepartment = user?.department || 'General';
       const accountAge = this.calculateUserYear(user.createdAt);
-      
+
       // Define semester-specific categories
       const semesterCategoryNames = this.getSemesterCategories(currentSemester.semester);
-      
+
       // Find category IDs by names
       const categories = await Category.find({ name: { $in: semesterCategoryNames } });
       const categoryIds = categories.map(cat => cat._id);
-      
+
       // Get books from semester-appropriate categories
       const recommendations = await Book.find({
         category: { $in: categoryIds },
         status: 'available'
       })
-      .populate('category', 'name code')
-      .limit(limit)
-      .sort({ createdAt: -1 });
+        .populate('category', 'name code')
+        .limit(limit)
+        .sort({ createdAt: -1 });
 
       // Add semester context to recommendations
       return recommendations.map(book => ({
@@ -496,7 +499,7 @@ class RecommendationService {
   getSemesterCategories(semester) {
     const categoryMap = {
       'Spring': [
-        'Computer Science', 'Mathematics', 'Physics', 'Chemistry', 
+        'Computer Science', 'Mathematics', 'Physics', 'Chemistry',
         'Engineering', 'Business', 'Economics'
       ],
       'Summer': [
@@ -508,7 +511,7 @@ class RecommendationService {
         'Psychology', 'Education', 'Research'
       ]
     };
-    
+
     return categoryMap[semester] || categoryMap['Fall'];
   }
 
@@ -519,12 +522,12 @@ class RecommendationService {
    */
   calculateUserYear(createdAt) {
     if (!createdAt) return 1;
-    
+
     const now = new Date();
     const created = new Date(createdAt);
-    const monthsDiff = (now.getFullYear() - created.getFullYear()) * 12 + 
-                      (now.getMonth() - created.getMonth());
-    
+    const monthsDiff = (now.getFullYear() - created.getFullYear()) * 12 +
+      (now.getMonth() - created.getMonth());
+
     // Approximate: 4 months = 1 semester, 2 semesters = 1 year
     const year = Math.min(Math.floor(monthsDiff / 8) + 1, 4);
     return year;
@@ -542,28 +545,28 @@ class RecommendationService {
       const currentSemester = this.getCurrentSemester();
       const userYear = this.calculateUserYear(user.createdAt);
       const userDepartment = user?.department || 'General';
-      
+
       // Get user's borrowing history to understand their interests
       const borrowHistory = await BorrowRecord.find({
         userId: userId,
         status: 'returned'
       })
-      .populate('bookId')
-      .sort({ returnDate: -1 })
-      .limit(10);
+        .populate('bookId')
+        .sort({ returnDate: -1 })
+        .limit(10);
 
       // Get categories based on user's year and department
       const appropriateCategories = this.getYearBasedCategories(userYear, userDepartment);
-      
+
       // Get recommendations
       const recommendations = await Book.find({
         category: { $in: appropriateCategories },
         status: 'available',
         _id: { $nin: borrowHistory.map(record => record.bookId._id) }
       })
-      .populate('category', 'name code')
-      .limit(limit)
-      .sort({ createdAt: -1 });
+        .populate('category', 'name code')
+        .limit(limit)
+        .sort({ createdAt: -1 });
 
       return recommendations.map(book => ({
         ...book.toObject(),
@@ -591,17 +594,17 @@ class RecommendationService {
       3: ['Specialized', 'Professional', 'Research', 'Analysis'],
       4: ['Thesis', 'Capstone', 'Advanced Research', 'Professional Development']
     };
-    
+
     const departmentCategories = {
       'Computer Science': ['Programming', 'Algorithms', 'Data Structures', 'Software Engineering'],
       'Business': ['Management', 'Marketing', 'Finance', 'Accounting'],
       'Engineering': ['Mathematics', 'Physics', 'Design', 'Systems'],
       'General': ['General Education', 'Liberal Arts', 'Science', 'Humanities']
     };
-    
+
     const baseCategories = yearCategories[year] || yearCategories[1];
     const deptCategories = departmentCategories[department] || departmentCategories['General'];
-    
+
     return [...baseCategories, ...deptCategories];
   }
 }
