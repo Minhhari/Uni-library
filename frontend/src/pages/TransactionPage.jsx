@@ -35,10 +35,13 @@ const formatDate = (d) => {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
+const formatVND = (amount) => {
+  return (amount || 0).toLocaleString("vi-VN") + " VND";
+};
+
 const PAYMENT_METHODS = [
   { id: "payos", label: "VNPay QR", icon: "qr_code_2", badge: "Recommended" },
   { id: "cash", label: "Cash at Counter", icon: "payments", badge: null },
-  { id: "bank", label: "Bank Transfer", icon: "account_balance", badge: null },
 ];
 
 // ─── Book Cover ──────────────────────────────────────────────────────────
@@ -121,7 +124,7 @@ const TransactionPage = () => {
 
   const handlePayItem = async (fine) => {
     if (selectedMethod !== "payos") {
-      showToast(`Please go to the counter/bank to pay $${fine.amount.toFixed(2)}.`, "info");
+      showToast(`Please go to the counter to pay ${formatVND(fine.amount)}.`, "info");
       return;
     }
     try {
@@ -141,7 +144,7 @@ const TransactionPage = () => {
   const handleConfirmAll = () => {
     if (!pendingFines.length) return;
     if (selectedMethod !== "payos") {
-      showToast("Please visit the counter or bank to settle all fines.", "info");
+      showToast("Please visit the counter to settle all fines.", "info");
       return;
     }
     handlePayItem(pendingFines[0]);
@@ -175,7 +178,7 @@ const TransactionPage = () => {
             <div className="h-10 w-32 bg-red-100 rounded-lg animate-pulse ml-auto" />
           ) : (
             <p className="text-4xl font-black text-red-500">
-              ${summary.totalOutstanding.toFixed(2)}
+              {formatVND(summary.totalOutstanding)}
             </p>
           )}
         </div>
@@ -274,9 +277,9 @@ const TransactionPage = () => {
                   </div>
 
                   <div className="text-right flex-shrink-0 flex flex-col items-end">
-                    <p className="text-2xl font-black text-on-surface">${fine.amount.toFixed(2)}</p>
+                    <p className="text-2xl font-black text-on-surface">{formatVND(fine.amount)}</p>
                     <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-3">
-                      {fine.reason === "damaged" || fine.reason === "lost" ? "Fixed Penalty" : "$1.50/Day"}
+                      {fine.reason === "damaged" || fine.reason === "lost" ? "Fixed Penalty" : "5.000 VND/Ngày"}
                     </p>
                     {fine.status === "pending" ? (
                       <button
@@ -338,7 +341,7 @@ const TransactionPage = () => {
                             {fine.orderCode ? "VNPAY" : "CASH"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-on-surface font-black">${fine.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-on-surface font-black">{formatVND(fine.amount)}</td>
                         <td className="px-6 py-4">
                           <button className="flex items-center gap-1.5 text-primary text-xs font-bold hover:underline">
                             <span className="material-symbols-outlined text-sm">download</span>
@@ -368,19 +371,19 @@ const TransactionPage = () => {
                 {loading ? (
                   <div className="h-4 w-16 bg-surface-container rounded animate-pulse" />
                 ) : (
-                  <span className="text-on-surface font-bold">${summary.totalOutstanding.toFixed(2)}</span>
+                  <span className="text-on-surface font-bold">{formatVND(summary.totalOutstanding)}</span>
                 )}
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-on-surface-variant">Processing Fee</span>
-                <span className="text-primary font-bold">$0.00</span>
+                <span className="text-primary font-bold">{formatVND(0)}</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-surface-dim mt-2">
                 <span className="font-black text-on-surface">Total Due</span>
                 {loading ? (
                   <div className="h-7 w-20 bg-surface-container rounded animate-pulse" />
                 ) : (
-                  <span className="text-2xl font-black text-on-surface">${summary.totalOutstanding.toFixed(2)}</span>
+                  <span className="text-2xl font-black text-on-surface">{formatVND(summary.totalOutstanding)}</span>
                 )}
               </div>
             </div>

@@ -248,15 +248,6 @@ const ProfilePage = () => {
             </div>
           )}
 
-          <div className="flex justify-end">
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 text-error font-bold hover:bg-error/10 px-6 py-3 rounded-xl transition-colors"
-            >
-              <span className="material-symbols-outlined">logout</span>
-              Sign out from all devices
-            </button>
-          </div>
         </div>
       </div>
     </div>
