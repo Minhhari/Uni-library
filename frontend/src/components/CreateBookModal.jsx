@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { bookAPI, uploadAPI } from '../services/api';
 import { toast } from 'react-toastify';
+import LibraryMap from './LibraryMap';
 
 const CreateBookModal = ({ onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const CreateBookModal = ({ onClose, onSuccess }) => {
     });
     const [coverFile, setCoverFile] = useState(null);
     const [previewFiles, setPreviewFiles] = useState([]);
+    const [showMapPicker, setShowMapPicker] = useState(false);
 
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -235,6 +237,50 @@ const CreateBookModal = ({ onClose, onSuccess }) => {
                         />
                     </div>
 
+                    <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vị trí kệ</label>
+                        {/* Text display + toggle */}
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 flex items-center gap-3 px-5 py-3 bg-slate-50 rounded-2xl border border-transparent focus-within:border-emerald-400 transition-all">
+                                <span className="material-symbols-outlined text-slate-400 text-base">map</span>
+                                <span className={`flex-1 text-sm font-bold ${formData.location ? 'text-slate-800' : 'text-slate-400'}`}>
+                                    {formData.location || 'Chưa chọn vị trí kệ...'}
+                                </span>
+                                {formData.location && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(p => ({ ...p, location: '' }))}
+                                        className="text-slate-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-base">close</span>
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowMapPicker(v => !v)}
+                                className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${showMapPicker
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                    : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
+                                    }`}
+                            >
+                                <span className="material-symbols-outlined text-base">{showMapPicker ? 'expand_less' : 'map'}</span>
+                                {showMapPicker ? 'Thu gọn' : 'Chọn từ sơ đồ'}
+                            </button>
+                        </div>
+                        {showMapPicker && (
+                            <div className="animate-in slide-in-from-top-2 duration-200">
+                                <LibraryMap
+                                    location={formData.location}
+                                    compact
+                                    onSelect={(loc) => {
+                                        setFormData(p => ({ ...p, location: loc }));
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+
                     <div className="md:col-span-2 flex gap-4 mt-4">
                         <button
                             type="button"
@@ -252,8 +298,8 @@ const CreateBookModal = ({ onClose, onSuccess }) => {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

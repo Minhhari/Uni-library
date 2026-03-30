@@ -12,3 +12,4 @@ export { default as Topbar } from './Topbar';
 export { default as CreateBookModal } from './CreateBookModal';
 export { default as EditBookModal } from './EditBookModal';
 export { default as TermsModal } from './TermsModal';
+export { default as LibraryMap } from './LibraryMap';
