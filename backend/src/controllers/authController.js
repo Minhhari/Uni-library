@@ -40,7 +40,7 @@ const register = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Dữ liệu không hợp lệ',
+        message: 'Validation failed',
         errors: errors.array(),
       });
     }
@@ -53,10 +53,11 @@ const register = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'Email này đã được đăng ký.',
+        message: 'Email already registered.',
       });
     }
 
+    // cho phép student / lecturer / admin / librarian đăng ký
     const allowedRoles = ['student', 'lecturer'];
     const assignedRole = allowedRoles.includes(role) ? role : 'student';
 
@@ -72,7 +73,7 @@ const register = async (req, res) => {
     // KHÔNG login sau khi register
     return res.status(201).json({
       success: true,
-      message: 'Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.',
+      message: 'Registration successful. Please login to continue.',
       user: user.toPublicJSON(),
     });
 
@@ -81,7 +82,7 @@ const register = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ trong quá trình đăng ký.',
+      message: 'Server error during registration.',
     });
   }
 };
@@ -97,7 +98,7 @@ const login = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Dữ liệu không hợp lệ',
+        message: 'Validation failed',
         errors: errors.array(),
       });
     }
@@ -109,7 +110,7 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Email hoặc mật khẩu không chính xác.',
+        message: 'Invalid email or password.',
       });
     }
 
@@ -117,14 +118,14 @@ const login = async (req, res) => {
     if (user.isGoogleAccount && !user.password) {
       return res.status(401).json({
         success: false,
-        message: 'Tài khoản này sử dụng đăng nhập Google. Vui lòng đăng nhập bằng Google.',
+        message: 'This account uses Google login. Please sign in with Google.',
       });
     }
 
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.',
+        message: 'Your account has been deactivated. Please contact admin.',
       });
     }
 
@@ -133,7 +134,7 @@ const login = async (req, res) => {
       const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
       return res.status(423).json({
         success: false,
-        message: `Tài khoản tạm thời bị khóa. Vui lòng thử lại sau ${remainingMinutes} phút.`,
+        message: `Account is temporarily locked. Please try again in ${remainingMinutes} minutes.`,
       });
     }
 
@@ -149,7 +150,7 @@ const login = async (req, res) => {
         await user.save({ validateBeforeSave: false });
         return res.status(423).json({
           success: false,
-          message: 'Quá nhiều lần thử thất bại. Tài khoản bị khóa trong 1 giờ.',
+          message: 'Too many failed attempts. Account locked for 1 hour.',
         });
       }
 
@@ -157,14 +158,14 @@ const login = async (req, res) => {
 
       return res.status(401).json({
         success: false,
-        message: `Email hoặc mật khẩu không chính xác. Lần thử ${user.loginAttempts}/${MAX_ATTEMPTS}`,
+        message: `Invalid email or password. Attempt ${user.loginAttempts}/${MAX_ATTEMPTS}`,
       });
     }
 
-    return await sendTokenResponse(user, 200, res, 'Đăng nhập thành công.');
+    return await sendTokenResponse(user, 200, res, 'Login successful.');
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ trong quá trình đăng nhập.' });
+    return res.status(500).json({ success: false, message: 'Server error during login.' });
   }
 };
 
@@ -199,12 +200,12 @@ const googleLogin = async (req, res) => {
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Yêu cầu access_token hoặc credential.',
+        message: 'access_token or credential is required.',
       });
     }
 
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Không thể lấy email từ Google.' });
+      return res.status(400).json({ success: false, message: 'Could not retrieve email from Google.' });
     }
 
     let user = await User.findOne({ email });
@@ -230,16 +231,16 @@ const googleLogin = async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.',
+        message: 'Your account has been deactivated. Please contact admin.',
       });
     }
 
-    return await sendTokenResponse(user, 200, res, 'Đăng nhập Google thành công.');
+    return await sendTokenResponse(user, 200, res, 'Google login successful.');
   } catch (error) {
     console.error('Google login error:', error.message);
     return res.status(401).json({
       success: false,
-      message: 'Xác thực Google thất bại. Token không hợp lệ.',
+      message: 'Google authentication failed. Invalid token.',
     });
   }
 };
@@ -254,18 +255,18 @@ const refreshToken = async (req, res) => {
     const { refreshToken: token } = req.body;
 
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Yêu cầu refresh token.' });
+      return res.status(401).json({ success: false, message: 'Refresh token required.' });
     }
 
     const decoded = verifyRefreshToken(token);
     const user = await User.findById(decoded.id).select('+refreshToken');
 
     if (!user || user.refreshToken !== token) {
-      return res.status(401).json({ success: false, message: 'Refresh token không hợp lệ.' });
+      return res.status(401).json({ success: false, message: 'Invalid refresh token.' });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ success: false, message: 'Tài khoản bị vô hiệu hóa.' });
+      return res.status(403).json({ success: false, message: 'Account deactivated.' });
     }
 
     const newAccessToken = generateAccessToken(user._id, user.role);
@@ -280,7 +281,7 @@ const refreshToken = async (req, res) => {
       refreshToken: newRefreshToken,
     });
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Refresh token không hợp lệ hoặc đã hết hạn.' });
+    return res.status(401).json({ success: false, message: 'Refresh token invalid or expired.' });
   }
 };
 
@@ -292,9 +293,9 @@ const refreshToken = async (req, res) => {
 const logout = async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
-    return res.status(200).json({ success: true, message: 'Đăng xuất thành công.' });
+    return res.status(200).json({ success: true, message: 'Logged out successfully.' });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+    return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 
