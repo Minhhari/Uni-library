@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { bookAPI, borrowAPI } from '../services/api';
-import { EditBookModal } from '../components';
+import { EditBookModal, LibraryMap } from '../components';
+import { parseLocation } from '../components/LibraryMap';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -20,6 +21,9 @@ const BookDetailPage = () => {
     // Look Inside state
     const [showLookInside, setShowLookInside] = useState(false);
     const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+
+    // Map modal state
+    const [showMapModal, setShowMapModal] = useState(false);
 
     // Borrow state
     const [showEditModal, setShowEditModal] = useState(false);
@@ -189,10 +193,14 @@ const BookDetailPage = () => {
                         {book.location && (
                             <>
                                 <div className="h-10 w-[1px] bg-outline-variant/20 hidden md:block"></div>
-                                <div className="flex items-center gap-2 text-on-surface-variant font-bold group-hover:text-primary transition-colors">
-                                    <span className="material-symbols-outlined text-[20px]">location_on</span>
-                                    <span>{book.location}</span>
-                                </div>
+                                <button
+                                    onClick={() => setShowMapModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold hover:bg-indigo-100 transition-all group-hover:shadow-md active:scale-95"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">map</span>
+                                    <span className="font-black">{book.location}</span>
+                                    <span className="text-xs opacity-60 font-medium">— Xem sơ đồ</span>
+                                </button>
                             </>
                         )}
                     </div>
@@ -298,7 +306,22 @@ const BookDetailPage = () => {
                         <MetaRow icon="business" label="Nhà xuất bản" value={book.publisher} />
                         <MetaRow icon="calendar_today" label="Năm xuất bản" value={book.publish_year} />
                         <MetaRow icon="category" label="Thể loại" value={categoryName} />
-                        {book.location && <MetaRow icon="location_on" label="Vị trí" value={book.location} />}
+                        {book.location && (
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center shrink-0" style={{ color: '#6366f1' }}>
+                                    <span className="material-symbols-outlined text-2xl">map</span>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-on-surface-variant opacity-50 font-black uppercase tracking-widest mb-0.5">Vị trí kệ</p>
+                                    <button
+                                        onClick={() => setShowMapModal(true)}
+                                        className="font-bold text-indigo-600 hover:text-indigo-700 underline underline-offset-2 decoration-dotted transition-colors text-sm"
+                                    >
+                                        {book.location} — Xem sơ đồ →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         <MetaRow
                             icon={isAvailable ? 'check_circle' : 'cancel'}
                             label="Trạng thái kho"
@@ -329,7 +352,7 @@ const BookDetailPage = () => {
                                 <img src={coverImage} className="w-20 h-28 object-cover rounded-2xl shadow-xl transform -rotate-2" alt="Book Thumbnail" />
                                 <div className="flex flex-col justify-center gap-2">
                                     <p className="text-xl font-black text-on-surface tracking-tight">{book.title}</p>
-                                    <p className="text-on-surface-variant font-bold opacity-60">By {book.author}</p>
+                                    <p className="text-on-surface-variant font-bold opacity-60">Tác giả: {book.author}</p>
                                     <span className={`text-xs font-bold px-2 py-1 rounded-lg w-fit ${isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
                                         {book.available} cuốn còn lại
                                     </span>
@@ -431,6 +454,46 @@ const BookDetailPage = () => {
                         setShowEditModal(false);
                     }}
                 />
+            )}
+
+            {/* Library Map Modal */}
+            {showMapModal && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-on-background/50 backdrop-blur-xl animate-in fade-in"
+                        onClick={() => setShowMapModal(false)}
+                    />
+                    <div
+                        className="relative w-full max-w-3xl bg-surface-container-lowest rounded-[32px] shadow-[0_32px_128px_rgba(0,0,0,0.25)] animate-in zoom-in-95 duration-400 border border-white/60 flex flex-col"
+                        style={{ maxHeight: '90vh' }}
+                    >
+                        {/* Fixed header */}
+                        <div className="flex-shrink-0 p-5 pr-6 border-b border-surface-container-low flex justify-between items-center bg-white/80 backdrop-blur-sm rounded-t-[32px]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#eef2ff', color: '#6366f1' }}>
+                                    <span className="material-symbols-outlined text-lg">map</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-black tracking-tight text-on-surface">Sơ đồ vị trí sách</h2>
+                                    <p className="text-xs text-on-surface-variant/60 font-medium truncate max-w-[320px]">{book.title}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowMapModal(false)}
+                                className="w-9 h-9 rounded-xl hover:bg-surface-container-high transition-all flex items-center justify-center text-on-surface-variant"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        {/* Scrollable body */}
+                        <div className="flex-1 overflow-y-auto p-5">
+                            <LibraryMap location={book.location} />
+                            <p className="text-xs text-center text-on-surface-variant/40 font-medium mt-4 pb-2">
+                                Đến quầy thư viện hoặc hỏi thủ thư nếu bạn cần hỗ trợ tìm sách.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

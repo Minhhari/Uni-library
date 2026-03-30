@@ -14,6 +14,30 @@ exports.getCategories = async (req, res) => {
   }
 };
 
+// @desc    Get book counts grouped by shelf location
+// @route   GET /api/books/shelf-stats
+// @access  Public
+exports.getShelfStats = async (req, res) => {
+  try {
+    const stats = await Book.aggregate([
+      { $match: { location: { $exists: true, $ne: null, $ne: '' } } },
+      {
+        $group: {
+          _id: '$location',
+          bookCount: { $sum: 1 },
+          totalQuantity: { $sum: '$quantity' }
+        }
+      }
+    ]);
+    const map = {};
+    stats.forEach(s => { map[s._id] = { bookCount: s.bookCount, totalQuantity: s.totalQuantity }; });
+    res.status(200).json({ success: true, data: map });
+  } catch (error) {
+    console.error('Error getting shelf stats:', error);
+    res.status(500).json({ success: false, message: 'Server error when fetching shelf stats' });
+  }
+};
+
 // @desc    Get all books with pagination, search, and filter
 // @route   GET /api/books
 // @access  Public
@@ -51,6 +75,11 @@ exports.getBooks = async (req, res) => {
       query.publish_year = {};
       if (req.query.year_from) query.publish_year.$gte = parseInt(req.query.year_from);
       if (req.query.year_to) query.publish_year.$lte = parseInt(req.query.year_to);
+    }
+
+    // Filter by location (shelf) — used by LibraryMap ShelfPanel
+    if (req.query.location) {
+      query.location = req.query.location;
     }
 
     // Filter by availability

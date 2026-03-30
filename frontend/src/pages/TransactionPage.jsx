@@ -232,7 +232,7 @@ const TransactionPage = () => {
                   {activeTab === "pending" ? "check_circle" : "receipt_long"}
                 </span>
                 <p className="text-on-surface-variant font-semibold">
-                  {activeTab === "pending" ? "Không có khoản phạt nào — Bạn đã hoàn tất! 🎉" : "Chưa có khoản phạt nào đã thanh toán."}
+                  {activeTab === "pending" ? "Không có khoản phạt nào — Bạn đã hoàn tất!" : "Chưa có khoản phạt nào đã thanh toán."}
                 </p>
               </div>
             ) : (

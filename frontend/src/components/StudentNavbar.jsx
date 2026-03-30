@@ -19,9 +19,9 @@ const StudentNavbar = () => {
             {/* Nav Links */}
             <div className="flex items-center gap-10">
                 {[
-                    { to: '/books', label: 'Explore' },
-                    { to: '/my-activity', label: 'My Activity' },
-                    { to: '/transactions', label: 'Transaction' }
+                    { to: '/books', label: 'Khám phá' },
+                    { to: '/my-activity', label: 'Hoạt động' },
+                    { to: '/transactions', label: 'Giao dịch' }
                 ].map((item) => (
                     <NavLink
                         key={item.to}
@@ -51,10 +51,10 @@ const StudentNavbar = () => {
                 <button
                     onClick={logout}
                     className="flex items-center gap-2 text-on-surface-variant/60 hover:text-red-600 font-black text-xs uppercase tracking-widest transition-all px-4 py-2 rounded-xl hover:bg-red-50/50"
-                    title="Logout"
+                    title="Đăng xuất"
                 >
                     <span className="material-symbols-outlined text-lg">logout</span>
-                    Logout
+                    Đăng xuất
                 </button>
 
                 <div className="h-8 w-[1px] bg-surface-dim mx-2"></div>
