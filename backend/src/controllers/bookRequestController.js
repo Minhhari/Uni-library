@@ -12,7 +12,7 @@ exports.createRequest = async (req, res) => {
         if (!books || !Array.isArray(books) || books.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Must provide an array of books to request.',
+                message: 'Phải cung cấp danh sách sách cần yêu cầu.',
             });
         }
 
@@ -28,14 +28,14 @@ exports.createRequest = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Book request submitted successfully',
+            message: 'Yêu cầu sách đã được gửi thành công',
             data: bookRequest,
         });
     } catch (error) {
         console.error('Error creating book request:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to create book request',
+            message: 'Gửi yêu cầu sách thất bại',
         });
     }
 };
@@ -46,7 +46,7 @@ exports.createRequest = async (req, res) => {
 exports.uploadExcel = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ success: false, message: 'Please upload an Excel file.' });
+            return res.status(400).json({ success: false, message: 'Vui lòng tải lên file Excel.' });
         }
 
         const xlsx = require('xlsx');
@@ -55,7 +55,7 @@ exports.uploadExcel = async (req, res) => {
         const xlData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
         if (!xlData || xlData.length === 0) {
-            return res.status(400).json({ success: false, message: 'File is empty or invalid format.' });
+            return res.status(400).json({ success: false, message: 'File trống hoặc sai định dạng.' });
         }
 
         const books = xlData.map(row => ({
@@ -67,7 +67,7 @@ exports.uploadExcel = async (req, res) => {
         if (books.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Could not extract any valid book data from the file. Please ensure columns exist like Title, Major, Quantity.',
+                message: 'Không thể trích xuất dữ liệu sách hợp lệ. Vui lòng đảm bảo file có các cột như: Title/Tên sách, Major/Ngành, Quantity/Số lượng.',
             });
         }
 
@@ -85,12 +85,12 @@ exports.uploadExcel = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Book request submitted successfully from file',
+            message: 'Yêu cầu sách từ file đã được gửi thành công',
             data: bookRequest,
         });
     } catch (error) {
         console.error('Error uploading excel request:', error);
-        res.status(500).json({ success: false, message: 'Failed to parse and save book request', error: error.message });
+        res.status(500).json({ success: false, message: 'Lỗi khi đọc và lưu yêu cầu sách', error: error.message });
     }
 };
 
@@ -109,7 +109,7 @@ exports.getMyRequests = async (req, res) => {
         console.error('Error fetching my book requests:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch your book requests',
+            message: 'Không thể tải danh sách yêu cầu của bạn',
         });
     }
 };
@@ -135,7 +135,7 @@ exports.getAllRequests = async (req, res) => {
         console.error('Error fetching all book requests:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch book requests',
+            message: 'Không thể tải danh sách yêu cầu',
         });
     }
 };
@@ -151,7 +151,7 @@ exports.updateRequestStatus = async (req, res) => {
         if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid status. Must be Pending, Approved, or Rejected.',
+                message: 'Trạng thái không hợp lệ. Phải là Pending, Approved, hoặc Rejected.',
             });
         }
 
@@ -164,7 +164,7 @@ exports.updateRequestStatus = async (req, res) => {
         if (!request) {
             return res.status(404).json({
                 success: false,
-                message: 'Book request not found',
+                message: 'Không tìm thấy yêu cầu sách',
             });
         }
 
@@ -175,14 +175,14 @@ exports.updateRequestStatus = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: `Book request marked as ${status}`,
+            message: `Trạng thái yêu cầu đã được cập nhật thành ${status}`,
             data: request,
         });
     } catch (error) {
         console.error('Error updating request status:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to update request status',
+            message: 'Cập nhật trạng thái thất bại',
         });
     }
 };

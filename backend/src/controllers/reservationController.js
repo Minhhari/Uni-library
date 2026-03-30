@@ -24,19 +24,19 @@ const createReservation = async (req, res) => {
     if (['librarian', 'admin'].includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: "Librarians and Admins are not allowed to reserve books."
+        message: "Thủ thư và Quản trị viên không được phép đặt trước sách."
       });
     }
 
     if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
       return res.status(403).json({
         success: false,
-        message: "You must accept the Terms & Policies before reserving books."
+        message: "Bạn phải chấp nhận Điều khoản & Chính sách trước khi đặt trước sách."
       });
     }
 
     if (!bookId) {
-      return res.status(400).json({ success: false, message: 'bookId is required.' });
+      return res.status(400).json({ success: false, message: 'Yêu cầu bookId.' });
     }
 
     // 2. 🔥 ƯU TIÊN: Kiểm tra xem chính user đang mượn hoặc đã đặt cuốn này chưa
@@ -194,7 +194,7 @@ const approveReservation = async (req, res) => {
   try {
     const reservation = await Reservation.findById(req.params.id);
     if (!reservation) {
-      return res.status(404).json({ success: false, message: 'Reservation not found.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy yêu cầu đặt trước.' });
     }
 
     if (reservation.status !== 'pending') {
@@ -207,7 +207,7 @@ const approveReservation = async (req, res) => {
     // Kiểm tra sách còn available không
     const book = await Book.findById(reservation.bookId);
     if (!book) {
-      return res.status(404).json({ success: false, message: 'Book not found.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy sách.' });
     }
     if (book.available <= 0) {
       return res.status(400).json({
@@ -218,7 +218,7 @@ const approveReservation = async (req, res) => {
 
     // Tính thời hạn lấy sách (từ settings)
     const expireSetting = await SystemSetting.findOne({ key: 'reservationExpiryDays' });
-    const expireDays = expireSetting ? Number(expireSetting.value) : 3;
+    const expireDays = expireSetting ? Number(expireSetting.value) : 5;
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expireDays);
@@ -247,7 +247,7 @@ const approveReservation = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Reservation đã được duyệt.',
+      message: 'Đặt trước đã được phê duyệt.',
       data: reservation,
     });
   } catch (error) {
@@ -264,7 +264,7 @@ const rejectReservation = async (req, res) => {
   try {
     const reservation = await Reservation.findById(req.params.id);
     if (!reservation) {
-      return res.status(404).json({ success: false, message: 'Reservation not found.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy yêu cầu đặt trước.' });
     }
 
     if (reservation.status !== 'pending') {
@@ -296,7 +296,7 @@ const rejectReservation = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Reservation đã bị từ chối.',
+      message: 'Đặt trước đã bị từ chối.',
       data: reservation,
     });
   } catch (error) {
@@ -318,7 +318,7 @@ const handoverReservation = async (req, res) => {
       .populate('bookId', 'title author available');
 
     if (!reservation) {
-      return res.status(404).json({ success: false, message: 'Reservation not found.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy yêu cầu đặt trước.' });
     }
 
     if (reservation.status !== 'approved') {
@@ -331,13 +331,13 @@ const handoverReservation = async (req, res) => {
     // Kiểm tra sách tồn tại
     const book = await Book.findById(reservation.bookId);
     if (!book) {
-      return res.status(404).json({ success: false, message: 'Book not found.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy sách.' });
     }
 
     // Tạo BorrowRecord – sách đã được trừ ở bước approveReservation nên KHÔNG trừ thêm
     // Fetch loan duration from settings
     const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
-    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 14;
+    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 70;
 
     const borrowDate = new Date();
     const dueDate = new Date();

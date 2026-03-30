@@ -11,7 +11,7 @@ const getProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng.' });
     }
 
     return res.status(200).json({
@@ -20,7 +20,7 @@ const getProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Get profile error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -35,7 +35,7 @@ const updateProfile = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: 'Dữ liệu không hợp lệ',
         errors: errors.array(),
       });
     }
@@ -61,12 +61,12 @@ const updateProfile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Profile updated successfully.',
+      message: 'Cập nhật hồ sơ thành công.',
       user: user.toPublicJSON(),
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -80,11 +80,11 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: 'Current and new password are required.' });
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới.' });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+      return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
     }
 
     const user = await User.findById(req.user._id).select('+password');
@@ -92,22 +92,22 @@ const changePassword = async (req, res) => {
     if (user.isGoogleAccount && !user.password) {
       return res.status(400).json({
         success: false,
-        message: 'Google accounts cannot change password here. Please set a password first via forgot password.',
+        message: 'Tài khoản Google không thể đổi mật khẩu tại đây. Vui lòng đặt mật khẩu qua tính năng quên mật khẩu.',
       });
     }
 
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+      return res.status(401).json({ success: false, message: 'Mật khẩu hiện tại không chính xác.' });
     }
 
     user.password = newPassword;
     await user.save();
 
-    return res.status(200).json({ success: true, message: 'Password changed successfully.' });
+    return res.status(200).json({ success: true, message: 'Đổi mật khẩu thành công.' });
   } catch (error) {
     console.error('Change password error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -147,7 +147,7 @@ const getAllUsers = async (req, res) => {
     });
   } catch (error) {
     console.error('Get all users error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -165,7 +165,7 @@ const getUserById = async (req, res) => {
     return res.status(200).json({ success: true, user: user.toPublicJSON() });
   } catch (error) {
     console.error('Get user by ID error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -180,12 +180,12 @@ const updateUserRole = async (req, res) => {
     const allowedRoles = ['admin', 'librarian', 'lecturer', 'student'];
 
     if (!role || !allowedRoles.includes(role)) {
-      return res.status(400).json({ success: false, message: 'Invalid role.' });
+      return res.status(400).json({ success: false, message: 'Vai trò không hợp lệ.' });
     }
 
     // Không cho tự đổi role của chính mình
     if (req.params.id === req.user._id.toString()) {
-      return res.status(400).json({ success: false, message: 'Cannot update your own role.' });
+      return res.status(400).json({ success: false, message: 'Không thể tự thay đổi vai trò của chính mình.' });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -200,12 +200,12 @@ const updateUserRole = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `User role updated to ${role}.`,
+      message: `Quyền hạn người dùng đã được cập nhật thành ${role}.`,
       user: user.toPublicJSON(),
     });
   } catch (error) {
     console.error('Update user role error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -217,7 +217,7 @@ const updateUserRole = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
   try {
     if (req.params.id === req.user._id.toString()) {
-      return res.status(400).json({ success: false, message: 'Cannot deactivate your own account.' });
+      return res.status(400).json({ success: false, message: 'Không thể vô hiệu hóa tài khoản của chính mình.' });
     }
 
     const user = await User.findById(req.params.id);
@@ -230,12 +230,12 @@ const toggleUserStatus = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully.`,
+      message: `Người dùng đã được ${user.isActive ? 'kích hoạt' : 'vô hiệu hóa'} thành công.`,
       user: user.toPublicJSON(),
     });
   } catch (error) {
     console.error('Toggle user status error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
 };
 
@@ -250,7 +250,7 @@ const createLibrarian = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: 'Dữ liệu không hợp lệ',
         errors: errors.array(),
       });
     }
@@ -259,7 +259,7 @@ const createLibrarian = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ success: false, message: 'Email already registered.' });
+      return res.status(409).json({ success: false, message: 'Email này đã được đăng ký.' });
     }
 
     const user = await User.create({
@@ -272,7 +272,7 @@ const createLibrarian = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Librarian created successfully.',
+      message: 'Tạo tài khoản thủ thư thành công.',
       user: user.toPublicJSON(),
     });
   } catch (error) {
@@ -292,7 +292,7 @@ const editUser = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: 'Dữ liệu không hợp lệ',
         errors: errors.array(),
       });
     }
@@ -320,7 +320,7 @@ const editUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'User updated successfully.',
+      message: 'Cập nhật người dùng thành công.',
       user: user.toPublicJSON(),
     });
   } catch (error) {
@@ -332,7 +332,7 @@ const editUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     if (req.params.id === req.user._id.toString()) {
-      return res.status(400).json({ success: false, message: 'Cannot delete your own account.' });
+      return res.status(400).json({ success: false, message: 'Không thể xóa tài khoản của chính mình.' });
     }
 
     const user = await User.findByIdAndDelete(req.params.id);
@@ -340,7 +340,7 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    return res.status(200).json({ success: true, message: 'User deleted successfully.' });
+    return res.status(200).json({ success: true, message: 'Xóa người dùng thành công.' });
   } catch (error) {
     console.error('Delete user error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -366,7 +366,7 @@ const acceptTerms = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Terms and policies accepted successfully.',
+      message: 'Đã chấp nhận điều khoản và chính sách.',
       user: user.toPublicJSON(),
     });
   } catch (error) {

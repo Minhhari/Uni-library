@@ -12,15 +12,15 @@ exports.createPayment = async (req, res) => {
     const fine = await Fine.findById(fineId);
 
     if (!fine) {
-      return res.status(404).json({ message: "Fine not found" });
+      return res.status(404).json({ message: "Không tìm thấy khoản phạt" });
     }
 
     if (fine.status === "paid") {
-      return res.status(400).json({ message: "Fine already paid" });
+      return res.status(400).json({ message: "Khoản phạt đã được thanh toán" });
     }
 
     if (fine.amount <= 0) {
-      return res.status(400).json({ message: "Invalid fine amount" });
+      return res.status(400).json({ message: "Số tiền phạt không hợp lệ" });
     }
 
     // 🔥 tránh tạo nhiều orderCode
@@ -58,7 +58,7 @@ exports.createPayment = async (req, res) => {
   } catch (err) {
     console.error("Create payment error:", err?.response?.data || err.message || err);
     res.status(500).json({
-      message: "Create payment failed",
+      message: "Tạo giao dịch thanh toán thất bại",
       error: err?.response?.data?.desc || err.message,
     });
   }
@@ -74,14 +74,14 @@ exports.handleWebhook = async (req, res) => {
     const isValid = payOS.webhooks.verifySignature(webhookData);
 
     if (!isValid) {
-      return res.status(400).json({ message: "Invalid webhook signature" });
+      return res.status(400).json({ message: "Chữ ký webhook không hợp lệ" });
     }
 
     const { code, data } = webhookData;
     const orderCode = data?.orderCode;
 
     if (!orderCode) {
-      return res.status(400).json({ message: "Missing orderCode" });
+      return res.status(400).json({ message: "Thiếu mã đơn hàng (orderCode)" });
     }
 
     const fine = await Fine.findOne({ orderCode });
@@ -138,7 +138,7 @@ exports.getPaymentStatus = async (req, res) => {
   } catch (err) {
     console.error("Get payment status error:", err);
     res.status(500).json({
-      message: "Cannot get payment status",
+      message: "Không thể lấy trạng thái thanh toán",
     });
   }
 };
@@ -154,12 +154,12 @@ exports.verifyPayment = async (req, res) => {
     // 1. Find the fine in our DB
     const fine = await Fine.findOne({ orderCode: Number(orderCode) });
     if (!fine) {
-      return res.status(404).json({ message: "Fine not found for this orderCode" });
+      return res.status(404).json({ message: "Không tìm thấy khoản phạt cho mã đơn hàng này" });
     }
 
     // Already paid — return success immediately
     if (fine.status === "paid") {
-      return res.json({ success: true, status: "paid", message: "Fine already marked as paid." });
+      return res.json({ success: true, status: "paid", message: "Khoản phạt đã được xác nhận thanh toán trước đó." });
     }
 
     // 2. Ask PayOS for the real payment status
@@ -184,7 +184,7 @@ exports.verifyPayment = async (req, res) => {
       }
 
       console.log(`✅ Payment VERIFIED & CONFIRMED: orderCode=${orderCode}`);
-      return res.json({ success: true, status: "paid", message: "Payment confirmed successfully!" });
+      return res.json({ success: true, status: "paid", message: "Xác nhận thanh toán thành công!" });
     } else {
       return res.json({ success: false, status: paymentInfo.status, message: `Payment status: ${paymentInfo.status}` });
     }
@@ -192,7 +192,7 @@ exports.verifyPayment = async (req, res) => {
   } catch (err) {
     console.error("Verify payment error:", err?.response?.data || err.message || err);
     res.status(500).json({
-      message: "Failed to verify payment",
+      message: "Không thể xác minh thanh toán",
       error: err?.response?.data?.desc || err.message,
     });
   }

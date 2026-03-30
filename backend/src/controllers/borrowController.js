@@ -16,13 +16,13 @@ exports.requestBorrow = async (req, res) => {
     // 1. Phân quyền
     if (['librarian', 'admin'].includes(userRole)) {
       return res.status(403).json({
-        message: "Librarians and Admins are not allowed to borrow books."
+        message: "Thủ thư và Quản trị viên không được phép mượn sách."
       });
     }
 
     if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
       return res.status(403).json({
-        message: "You must accept the Terms & Policies before borrowing books."
+        message: "Bạn phải chấp nhận Điều khoản & Chính sách trước khi mượn sách."
       });
     }
 
@@ -82,7 +82,7 @@ exports.requestBorrow = async (req, res) => {
     );
 
     res.json({
-      message: "Borrow request submitted",
+      message: "Yêu cầu mượn sách đã được gửi thành công",
       borrow,
     });
 
@@ -131,20 +131,20 @@ exports.approveBorrow = async (req, res) => {
     const record = await BorrowRecord.findById(req.params.id);
 
     if (!record) {
-      return res.status(404).json({ message: "Borrow record not found" });
+      return res.status(404).json({ message: "Không tìm thấy hồ sơ mượn sách" });
     }
 
     // 🔥 chỉ approve khi pending
     if (record.status !== "pending") {
       return res.status(400).json({
-        message: "Only pending requests can be approved",
+        message: "Chỉ các yêu cầu đang chờ duyệt mới có thể phê duyệt",
       });
     }
 
     const book = await Book.findById(record.bookId);
 
     if (!book || book.available <= 0) {
-      return res.status(400).json({ message: "Book not available" });
+      return res.status(400).json({ message: "Sách hiện không khả dụng" });
     }
 
     // Fetch loan duration from settings
@@ -178,7 +178,7 @@ exports.approveBorrow = async (req, res) => {
     );
 
     res.json({
-      message: "Borrow approved",
+      message: "Đã phê duyệt yêu cầu mượn sách",
       record,
     });
 
@@ -195,12 +195,12 @@ exports.pickupBook = async (req, res) => {
     const record = await BorrowRecord.findById(req.params.id);
 
     if (!record) {
-      return res.status(404).json({ message: "Borrow record not found" });
+      return res.status(404).json({ message: "Không tìm thấy hồ sơ mượn sách" });
     }
 
     if (record.status !== "waiting_for_pickup") {
       return res.status(400).json({
-        message: "Only requests waiting for pickup can be picked up",
+        message: "Chỉ các yêu cầu đang chờ lấy sách mới có thể xác nhận nhận sách",
       });
     }
 
@@ -217,7 +217,7 @@ exports.pickupBook = async (req, res) => {
     );
 
     res.json({
-      message: "Book picked up successfully",
+      message: "Xác nhận nhận sách thành công",
       record,
     });
   } catch (err) {
@@ -233,12 +233,12 @@ exports.rejectBorrow = async (req, res) => {
     const record = await BorrowRecord.findById(req.params.id);
 
     if (!record) {
-      return res.status(404).json({ message: "Borrow record not found" });
+      return res.status(404).json({ message: "Không tìm thấy hồ sơ mượn sách" });
     }
 
     if (record.status !== "pending") {
       return res.status(400).json({
-        message: "Only pending requests can be rejected",
+        message: "Chỉ các yêu cầu đang chờ duyệt mới có thể bị từ chối",
       });
     }
 
@@ -255,7 +255,7 @@ exports.rejectBorrow = async (req, res) => {
     );
 
     res.json({
-      message: "Borrow rejected",
+      message: "Đã từ chối yêu cầu mượn sách",
     });
 
   } catch (err) {
@@ -276,21 +276,21 @@ exports.returnBook = async (req, res) => {
 
     if (record.status === "returned") {
       return res.status(400).json({
-        message: "Book already returned",
+        message: "Sách đã được trả trước đó",
       });
     }
 
     // chỉ return khi đã approve
     if (record.status !== "approved") {
       return res.status(400).json({
-        message: "Only approved records can be returned",
+        message: "Chỉ những hồ sơ đã duyệt mới có thể trả sách",
       });
     }
 
     const book = await Book.findById(record.bookId);
 
     if (!book) {
-      return res.status(404).json({ message: "Book not found" });
+      return res.status(404).json({ message: "Không tìm thấy sách" });
     }
 
     // bookCondition do Librarian truyền lên: "good" | "damaged" | "lost"
@@ -299,7 +299,7 @@ exports.returnBook = async (req, res) => {
 
     if (!["good", "damaged", "lost"].includes(bookCondition)) {
       return res.status(400).json({
-        message: "bookCondition must be one of: good, damaged, lost",
+        message: "Tình trạng sách phải là một trong các giá trị: good, damaged, lost",
       });
     }
 
@@ -395,7 +395,7 @@ exports.returnBook = async (req, res) => {
     );
 
     res.json({
-      message: "Book returned successfully",
+      message: "Trả sách thành công",
       bookCondition,
       isLate,
       daysLate,
@@ -406,7 +406,7 @@ exports.returnBook = async (req, res) => {
   } catch (err) {
     console.error("Return book error:", err);
     res.status(500).json({
-      message: "Return book failed",
+      message: "Trả sách thất bại",
       error: err.message,
     });
   }

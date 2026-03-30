@@ -12,7 +12,7 @@ exports.getMyNotifications = async (req, res) => {
             unreadCount: notifications.filter(n => !n.isRead).length
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
+        res.status(500).json({ success: false, message: 'Không thể tải thông báo' });
     }
 };
 
@@ -27,11 +27,11 @@ exports.markAsRead = async (req, res) => {
             { new: true }
         );
         if (!notification) {
-            return res.status(404).json({ success: false, message: 'Notification not found' });
+            return res.status(404).json({ success: false, message: 'Không tìm thấy thông báo' });
         }
         res.status(200).json({ success: true, data: notification });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to mark as read' });
+        res.status(500).json({ success: false, message: 'Không thể đánh dấu đã đọc' });
     }
 };
 
@@ -44,9 +44,9 @@ exports.markAllAsRead = async (req, res) => {
             { userId: req.user._id, isRead: false },
             { isRead: true }
         );
-        res.status(200).json({ success: true, message: 'All notifications marked as read' });
+        res.status(200).json({ success: true, message: 'Đã đánh dấu tất cả thông báo là đã đọc' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to mark all as read' });
+        res.status(500).json({ success: false, message: 'Không thể đánh dấu tất cả đã đọc' });
     }
 };
 
@@ -57,10 +57,10 @@ exports.deleteNotification = async (req, res) => {
     try {
         const notification = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
         if (!notification) {
-            return res.status(404).json({ success: false, message: 'Notification not found' });
+            return res.status(404).json({ success: false, message: 'Không tìm thấy thông báo' });
         }
-        res.status(200).json({ success: true, message: 'Notification deleted' });
+        res.status(200).json({ success: true, message: 'Đã xóa thông báo' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to delete notification' });
+        res.status(500).json({ success: false, message: 'Xóa thông báo thất bại' });
     }
 };

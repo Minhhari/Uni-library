@@ -10,7 +10,34 @@ exports.getCategories = async (req, res) => {
     const categories = await Category.find({ status: 'active' }).sort({ name: 1 });
     res.status(200).json({ success: true, count: categories.length, data: categories });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error when fetching categories' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ khi tải danh mục.' });
+  }
+};
+
+// @desc    Get book counts grouped by shelf location
+// @route   GET /api/books/shelf-stats
+// @access  Public
+exports.getShelfStats = async (req, res) => {
+  try {
+    const stats = await Book.aggregate([
+      { $match: { location: { $exists: true, $ne: null, $ne: '' } } },
+      {
+        $group: {
+          _id: '$location',
+          bookCount: { $sum: 1 },          // number of distinct titles
+          totalQuantity: { $sum: '$quantity' } // total physical copies
+        }
+      }
+    ]);
+
+    // Convert to a map { "Kệ A1": { bookCount, totalQuantity }, ... }
+    const map = {};
+    stats.forEach(s => { map[s._id] = { bookCount: s.bookCount, totalQuantity: s.totalQuantity }; });
+
+    res.status(200).json({ success: true, data: map });
+  } catch (error) {
+    console.error('Error getting shelf stats:', error);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ khi tải thống kê kệ.' });
   }
 };
 
@@ -51,6 +78,11 @@ exports.getBooks = async (req, res) => {
       query.publish_year = {};
       if (req.query.year_from) query.publish_year.$gte = parseInt(req.query.year_from);
       if (req.query.year_to) query.publish_year.$lte = parseInt(req.query.year_to);
+    }
+
+    // Filter by location (shelf)
+    if (req.query.location) {
+      query.location = req.query.location;
     }
 
     // Filter by availability
@@ -98,7 +130,7 @@ exports.getBooks = async (req, res) => {
     console.error('Error getting books:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error when fetching books',
+      message: 'Lỗi máy chủ khi tải danh sách sách.',
       error: error.message
     });
   }
@@ -114,7 +146,7 @@ exports.getBookById = async (req, res) => {
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: 'Không tìm thấy sách'
       });
     }
 
@@ -126,7 +158,7 @@ exports.getBookById = async (req, res) => {
     console.error('Error getting book:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error when fetching book',
+      message: 'Lỗi máy chủ khi tải thông tin sách.',
       error: error.message
     });
   }
@@ -141,7 +173,7 @@ exports.createBook = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation errors',
+        message: 'Dữ liệu không hợp lệ',
         errors: errors.array()
       });
     }
@@ -198,14 +230,14 @@ exports.createBook = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Book created successfully',
+      message: 'Thêm sách thành công',
       data: populatedBook
     });
   } catch (error) {
     console.error('Error creating book:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error when creating book',
+      message: 'Lỗi máy chủ khi thêm sách.',
       error: error.message
     });
   }
@@ -220,7 +252,7 @@ exports.updateBook = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation errors',
+        message: 'Dữ liệu không hợp lệ',
         errors: errors.array()
       });
     }
@@ -230,7 +262,7 @@ exports.updateBook = async (req, res) => {
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: 'Không tìm thấy sách'
       });
     }
 
@@ -255,7 +287,7 @@ exports.updateBook = async (req, res) => {
       if (existingBook) {
         return res.status(400).json({
           success: false,
-          message: 'Book with this ISBN already exists'
+          message: 'Sách với mã ISBN này đã tồn tại'
         });
       }
     }
@@ -266,7 +298,7 @@ exports.updateBook = async (req, res) => {
       if (!categoryExists) {
         return res.status(400).json({
           success: false,
-          message: 'Category not found'
+          message: 'Không tìm thấy danh mục'
         });
       }
     }
@@ -301,14 +333,14 @@ exports.updateBook = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Book updated successfully',
+      message: 'Cập nhật thông tin sách thành công',
       data: book
     });
   } catch (error) {
     console.error('Error updating book:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error when updating book',
+      message: 'Lỗi máy chủ khi cập nhật sách.',
       error: error.message
     });
   }
@@ -324,7 +356,7 @@ exports.deleteBook = async (req, res) => {
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: 'Không tìm thấy sách'
       });
     }
 
@@ -332,7 +364,7 @@ exports.deleteBook = async (req, res) => {
     if (book.available < book.quantity) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot delete book. Some copies are currently borrowed.'
+        message: 'Không thể xóa sách. Một số bản sao hiện đang được mượn.'
       });
     }
 
@@ -340,13 +372,13 @@ exports.deleteBook = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Book deleted successfully'
+      message: 'Xóa sách thành công'
     });
   } catch (error) {
     console.error('Error deleting book:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error when deleting book',
+      message: 'Lỗi máy chủ khi xóa sách.',
       error: error.message
     });
   }
@@ -362,7 +394,7 @@ exports.updateBookQuantity = async (req, res) => {
     if (!quantity || quantity < 0) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid quantity'
+        message: 'Số lượng không hợp lệ'
       });
     }
 
@@ -394,7 +426,7 @@ exports.updateBookQuantity = async (req, res) => {
       default:
         return res.status(400).json({
           success: false,
-          message: 'Invalid operation. Use: add, subtract, or set'
+          message: 'Thao tác không hợp lệ. Sử dụng: add, subtract, hoặc set'
         });
     }
 
@@ -404,14 +436,14 @@ exports.updateBookQuantity = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Book quantity updated successfully',
+      message: 'Cập nhật số lượng sách thành công',
       data: book
     });
   } catch (error) {
     console.error('Error updating book quantity:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error when updating book quantity',
+      message: 'Lỗi máy chủ khi cập nhật số lượng sách.',
       error: error.message
     });
   }

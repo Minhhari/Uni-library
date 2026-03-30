@@ -7,7 +7,7 @@ const Fine = require('../models/Fine');
 const DEFAULT_SETTINGS = [
     {
         key: 'maxLoanDays',
-        value: 14,
+        value: 70,
         label: 'Max Loan Duration',
         description: 'Maximum number of days a user can borrow a book',
         type: 'number',
@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS = [
     },
     {
         key: 'reservationExpiryDays',
-        value: 3,
+        value: 5,
         label: 'Reservation Expiry',
         description: 'Days before an unclaimed reservation expires',
         type: 'number',
@@ -60,7 +60,7 @@ const getSettings = async (req, res) => {
         return res.status(200).json({ success: true, settings });
     } catch (error) {
         console.error('Get settings error:', error);
-        return res.status(500).json({ success: false, message: 'Server error.' });
+        return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
     }
 };
 
@@ -71,7 +71,7 @@ const upsertSetting = async (req, res) => {
         const { value } = req.body;
 
         if (value === undefined || value === null) {
-            return res.status(400).json({ success: false, message: 'Value is required.' });
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập giá trị.' });
         }
 
         const setting = await SystemSetting.findOneAndUpdate(
@@ -82,12 +82,12 @@ const upsertSetting = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: 'Setting updated.',
+            message: 'Cập nhật cài đặt thành công.',
             setting,
         });
     } catch (error) {
         console.error('Upsert setting error:', error);
-        return res.status(500).json({ success: false, message: 'Server error.' });
+        return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
     }
 };
 
@@ -195,7 +195,7 @@ const getAdminStats = async (req, res) => {
         });
     } catch (error) {
         console.error('Get admin stats error:', error);
-        return res.status(500).json({ success: false, message: 'Server error.' });
+        return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
     }
 };
 
