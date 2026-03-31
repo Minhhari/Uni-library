@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { AuthProvider } from './context/AuthContext';
+import { BorrowCartProvider } from './context/BorrowCartContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { ToastContainer } from 'react-toastify';
@@ -23,6 +24,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminSystemSettingsPage from './pages/AdminSystemSettingsPage';
 import AdminReportsPage from './pages/AdminReportsPage';
 import LibrarianDashboard from './pages/LibrarianDashboard';
+import BorrowCartPage from './pages/BorrowCartPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -110,6 +112,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
+        <BorrowCartProvider>
         <Router>
           <AppLayout>
             <Routes>
@@ -136,6 +139,7 @@ function App() {
 
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/book-requests" element={<ProtectedRoute><LecturerBookRequestPage /></ProtectedRoute>} />
+              <Route path="/cart" element={<ProtectedRoute><BorrowCartPage /></ProtectedRoute>} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
@@ -149,6 +153,7 @@ function App() {
             </Routes>
           </AppLayout>
         </Router>
+        </BorrowCartProvider>
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </AuthProvider>
     </GoogleOAuthProvider>

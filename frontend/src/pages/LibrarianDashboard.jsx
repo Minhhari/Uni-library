@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -214,6 +214,175 @@ const ResultModal = ({ result, onClose }) => (
     </div>
   </div>
 );
+
+// ─── BorrowSlip Component ──────────────────────────────────────────────────────
+const BorrowSlip = ({ group, slipIdx, actionLoading, onApprove, onReject, onPickup, onReturn }) => {
+  const [expanded, setExpanded] = useState(true);
+  const user = group[0]?.userId;
+  const createdAt = group[0]?.createdAt;
+
+  // Tổng hợp trạng thái của phiếu
+  const allReturned = group.every(r => r.status === 'returned');
+  const hasPending = group.some(r => r.status === 'pending');
+  const hasActive = group.some(r => r.status === 'approved' || r.status === 'waiting_for_pickup');
+
+  const slipStatus = allReturned ? 'returned'
+    : hasPending ? 'pending'
+      : hasActive ? 'active'
+        : 'mixed';
+
+  const slipBadge = {
+    returned: { label: 'Hoàn tất', bg: 'bg-slate-100 text-slate-500' },
+    pending: { label: `${group.filter(r => r.status === 'pending').length} chờ duyệt`, bg: 'bg-amber-100 text-amber-700' },
+    active: { label: 'Đang mượn', bg: 'bg-emerald-100 text-emerald-700' },
+    mixed: { label: 'Đang xử lý', bg: 'bg-blue-100 text-blue-700' },
+  }[slipStatus];
+
+  return (
+    <div className="border-b border-slate-50 last:border-0">
+      {/* Slip Header */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full px-8 py-5 flex items-center gap-5 hover:bg-slate-50/60 transition text-left group"
+      >
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-black flex-shrink-0">
+          {user?.name?.charAt(0)?.toUpperCase() || '?'}
+        </div>
+
+        {/* User info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-black text-slate-800 text-sm">{user?.name || 'Người dùng'}</span>
+            <span className="text-[10px] text-slate-400 font-bold">{user?.email}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Phiếu #{String(slipIdx + 1).padStart(3, '0')} · {group.length} quyển · {fmtDate(createdAt)}
+            </span>
+          </div>
+        </div>
+
+        {/* Book thumbnails preview */}
+        <div className="hidden sm:flex items-center -space-x-3 flex-shrink-0">
+          {group.slice(0, 3).map((rec, i) => (
+            <img
+              key={rec._id}
+              src={rec.bookId?.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=100'}
+              className="w-8 h-11 object-cover rounded-lg border-2 border-white shadow-sm"
+              style={{ zIndex: 3 - i }}
+              alt=""
+            />
+          ))}
+          {group.length > 3 && (
+            <div className="w-8 h-11 rounded-lg bg-slate-200 border-2 border-white flex items-center justify-center text-[9px] font-black text-slate-500">
+              +{group.length - 3}
+            </div>
+          )}
+        </div>
+
+        {/* Slip status badge */}
+        <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest flex-shrink-0 ${slipBadge.bg}`}>
+          {slipBadge.label}
+        </span>
+
+        {/* Expand chevron */}
+        <span className={`material-symbols-outlined text-slate-300 group-hover:text-slate-500 transition-transform flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}>
+          expand_more
+        </span>
+      </button>
+
+      {/* Slip Body — book rows */}
+      {expanded && (
+        <div className="px-8 pb-6 space-y-3">
+          {group.map((rec) => {
+            const statusKey = isOverdue(rec.dueDate, rec.status) ? 'overdue' : rec.status;
+            const cfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.pending;
+            const isLoading = actionLoading[rec._id];
+
+            return (
+              <div key={rec._id} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition group/row">
+                {/* Cover */}
+                <img
+                  src={rec.bookId?.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=100'}
+                  className="w-10 h-14 object-cover rounded-lg shadow-sm flex-shrink-0"
+                  alt=""
+                />
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-slate-800 text-sm truncate">{rec.bookId?.title}</div>
+                  <div className="text-[10px] text-slate-400 font-bold mt-0.5">{rec.bookId?.author}</div>
+                  {rec.requestedDueDate || rec.dueDate ? (
+                    <div className={`text-[10px] font-black mt-1 ${isOverdue(rec.dueDate, rec.status) ? 'text-rose-500' : 'text-slate-400'}`}>
+                      Trả: {fmtDate(rec.dueDate || rec.requestedDueDate)}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Status */}
+                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest flex-shrink-0 ${cfg.bg}`}>
+                  {cfg.label}
+                </span>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {rec.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => onApprove(rec._id)}
+                        disabled={isLoading}
+                        title="Duyệt"
+                        className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center hover:shadow-lg hover:shadow-emerald-500/30 transition shadow-md shadow-emerald-500/20 active:scale-90 disabled:opacity-50"
+                      >
+                        {isLoading ? <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
+                          : <span className="material-symbols-outlined text-[18px]">check</span>}
+                      </button>
+                      <button
+                        onClick={() => onReject(rec._id)}
+                        disabled={isLoading}
+                        title="Từ chối"
+                        className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition disabled:opacity-50 active:scale-90"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                      </button>
+                    </>
+                  )}
+                  {rec.status === 'waiting_for_pickup' && (
+                    <button
+                      onClick={() => onPickup(rec._id)}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-blue-500/30 transition disabled:opacity-50 active:scale-95"
+                    >
+                      {isLoading ? <span className="material-symbols-outlined animate-spin text-[14px]">autorenew</span>
+                        : <span className="material-symbols-outlined text-[14px]">front_hand</span>}
+                      Giao sách
+                    </button>
+                  )}
+                  {rec.status === 'approved' && (
+                    <button
+                      onClick={() => onReturn(rec)}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">assignment_return</span>
+                      Nhận lại
+                    </button>
+                  )}
+                  {rec.status === 'returned' && (
+                    <span className="text-[10px] font-black text-slate-300 uppercase italic px-2">Hoàn tất</span>
+                  )}
+                  {rec.status === 'rejected' && (
+                    <span className="text-[10px] font-black text-red-300 uppercase italic px-2">Đã từ chối</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Main Dashboard Page ───────────────────────────────────────────────────────
 const LibrarianDashboard = () => {
@@ -455,128 +624,70 @@ const LibrarianDashboard = () => {
     );
   };
 
-  const renderBorrows = () => (
-    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-      <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-black text-slate-900 italic tracking-tighter uppercase">Nhật ký mượn & trả</h3>
-          <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">{data.borrows.length} lượt giao dịch</p>
+  const renderBorrows = () => {
+    // Group borrows into "phiếu mượn" — same user, submitted within 5 minutes of each other
+    const sorted = data.borrows.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const slips = [];
+    const visited = new Set();
+
+    for (const rec of sorted) {
+      if (visited.has(rec._id)) continue;
+      const userId = rec.userId?._id;
+      const recTime = new Date(rec.createdAt).getTime();
+
+      // Find all records from same user within ±5 min
+      const group = sorted.filter(r => {
+        if (visited.has(r._id)) return false;
+        if (r.userId?._id !== userId) return false;
+        const diff = Math.abs(new Date(r.createdAt).getTime() - recTime);
+        return diff <= 5 * 60 * 1000;
+      });
+
+      group.forEach(r => visited.add(r._id));
+      slips.push(group);
+    }
+
+    return (
+      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-black text-slate-900 italic tracking-tighter uppercase">Nhật ký mượn & trả</h3>
+            <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">{slips.length} phiếu mượn — {data.borrows.length} lượt sách</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="p-2.5 rounded-xl border border-slate-100 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition">
+              <span className="material-symbols-outlined text-[20px]">filter_list</span>
+            </button>
+            <button className="p-2.5 rounded-xl border border-slate-100 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition">
+              <span className="material-symbols-outlined text-[20px]">download</span>
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button className="p-2.5 rounded-xl border border-slate-100 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition">
-            <span className="material-symbols-outlined text-[20px]">filter_list</span>
-          </button>
-          <button className="p-2.5 rounded-xl border border-slate-100 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition">
-            <span className="material-symbols-outlined text-[20px]">download</span>
-          </button>
+
+        <div className="divide-y divide-slate-50">
+          {slips.map((group, slipIdx) => (
+            <BorrowSlip
+              key={slipIdx}
+              group={group}
+              slipIdx={slipIdx}
+              actionLoading={actionLoading}
+              onApprove={handleApproveBorrow}
+              onReject={handleRejectBorrow}
+              onPickup={handlePickupBorrow}
+              onReturn={(rec) => setReturnTarget(rec)}
+            />
+          ))}
+          {slips.length === 0 && (
+            <div className="py-20 text-center text-slate-300">
+              <span className="material-symbols-outlined text-[64px] block mb-4">import_contacts</span>
+              <p className="font-bold uppercase tracking-widest text-xs">Chưa có phiếu mượn nào</p>
+            </div>
+          )}
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-slate-50/50 text-left">
-              <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Người mượn</th>
-              <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sách</th>
-              <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dự kiến trả</th>
-              <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trạng thái</th>
-              <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {data.borrows.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(rec => {
-              const statusKey = isOverdue(rec.dueDate, rec.status) ? 'overdue' : rec.status;
-              const cfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.pending;
-              return (
-                <tr key={rec._id} className="hover:bg-slate-50/50 transition">
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-[11px] font-black">
-                        {rec.userId?.name?.charAt(0)?.toUpperCase() || '?'}
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-800 text-sm">{rec.userId?.name}</div>
-                        <div className="text-[10px] text-slate-400 font-bold">{rec.userId?.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className="font-semibold text-slate-700 max-w-[200px] truncate">{rec.bookId?.title}</div>
-                    {rec.fromReservation && (
-                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-[9px] font-black uppercase tracking-widest">
-                        <span className="material-symbols-outlined text-[10px]">bookmark</span>
-                        Đặt Trước
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className={`font-black text-[11px] ${isOverdue(rec.dueDate, rec.status) ? 'text-rose-500' : 'text-slate-500'}`}>
-                      {fmtDate(rec.dueDate || rec.requestedDueDate)}
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest ${cfg.bg}`}>
-                      {cfg.label}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {rec.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleApproveBorrow(rec._id)}
-                            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center hover:shadow-lg hover:shadow-emerald-500/30 transition shadow-md shadow-emerald-500/20 active:scale-90"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">check</span>
-                          </button>
-                          <button
-                            onClick={() => handleRejectBorrow(rec._id)}
-                            disabled={actionLoading[rec._id]}
-                            className="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition disabled:opacity-50 active:scale-90"
-                          >
-                            {actionLoading[rec._id] ? (
-                              <span className="material-symbols-outlined animate-spin text-[18px]">autorenew</span>
-                            ) : (
-                              <span className="material-symbols-outlined text-[18px]">close</span>
-                            )}
-                          </button>
-                        </>
-                      )}
-                      {rec.status === 'waiting_for_pickup' && (
-                        <button
-                          onClick={() => handlePickupBorrow(rec._id)}
-                          disabled={actionLoading[rec._id]}
-                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-sky-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-blue-500/30 transition shadow-md shadow-blue-500/20 disabled:opacity-50 active:scale-95"
-                        >
-                          {actionLoading[rec._id] ? (
-                            <span className="material-symbols-outlined animate-spin text-[16px]">autorenew</span>
-                          ) : (
-                            <span className="material-symbols-outlined text-[16px]">front_hand</span>
-                          )}
-                          Giao Sách
-                        </button>
-                      )}
-                      {rec.status === 'approved' && (
-                        <button
-                          onClick={() => setReturnTarget(rec)}
-                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl hover:shadow-slate-900/40 transition shadow-md shadow-slate-900/20 active:scale-95"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">assignment_return</span>
-                          Nhận sách
-                        </button>
-                      )}
-                      {rec.status === 'returned' && (
-                        <span className="text-[10px] font-black text-slate-300 uppercase italic">Hoàn tất</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderReservations = () => (
     <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">

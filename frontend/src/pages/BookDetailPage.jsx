@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBorrowCart } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
 import { bookAPI, borrowAPI } from '../services/api';
 import { EditBookModal, LibraryMap } from '../components';
@@ -11,6 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BookDetailPage = () => {
     const { id } = useParams();
     const { isAuthenticated, user, showTermsModal, setShowTermsModal } = useAuth();
+    const { addToCart, cartItems } = useBorrowCart();
     const isTermsAccepted = (['student', 'lecturer'].includes(user?.role) ? user?.hasAcceptedTerms : true);
 
     const [book, setBook] = useState(null);
@@ -436,24 +438,56 @@ const BookDetailPage = () => {
                             <p className="text-[10px] text-center text-on-surface-variant/60 font-medium px-4">
                                 Bằng cách xác nhận, bạn đồng ý với chính sách của thư viện.
                             </p>
-                            {((actionModal === 'borrow' && !borrowResult?.success) || (actionModal === 'reserve' && !reserveResult?.success)) ? (
-                                <button
-                                    disabled={borrowLoading || reserveLoading}
-                                    onClick={handleActionSubmit}
-                                    className="w-full py-6 bg-gradient-to-r from-primary to-primary-container text-white font-black rounded-[28px] shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.95] transition-all text-xl tracking-tight flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
-                                >
-                                    {borrowLoading || reserveLoading
-                                        ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        : <span className="material-symbols-outlined text-2xl">{actionModal === 'borrow' ? 'auto_stories' : 'bookmark_add'}</span>}
-                                    {(borrowLoading || reserveLoading) ? 'Đang gửi yêu cầu...' : (actionModal === 'borrow' ? 'Xác nhận mượn sách' : 'Xác nhận đặt trước')}
-                                </button>
+                            {actionModal === 'borrow' ? (
+                                (() => {
+                                    const alreadyInCart = cartItems.some(item => item._id === book._id);
+                                    return alreadyInCart ? (
+                                        <button
+                                            onClick={() => { setActionModal(null); setBorrowResult(null); setReserveResult(null); setRequestedDate(''); }}
+                                            className="w-full py-6 bg-emerald-50 text-emerald-700 border border-emerald-200 font-black rounded-[28px] text-xl tracking-tight flex items-center justify-center gap-3"
+                                        >
+                                            <span className="material-symbols-outlined text-2xl">check_circle</span>
+                                            Đã có trong giỏ mượn
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                const added = addToCart(book, requestedDate || null);
+                                                if (added) {
+                                                    setActionModal(null);
+                                                    setBorrowResult(null);
+                                                    setRequestedDate('');
+                                                }
+                                            }}
+                                            className="w-full py-6 bg-gradient-to-r from-primary to-primary-container text-white font-black rounded-[28px] shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.95] transition-all text-xl tracking-tight flex items-center justify-center gap-3"
+                                        >
+                                            <span className="material-symbols-outlined text-2xl">shopping_cart</span>
+                                            Thêm vào giỏ mượn
+                                        </button>
+                                    );
+                                })()
                             ) : (
-                                <button
-                                    onClick={() => { setActionModal(null); setBorrowResult(null); setReserveResult(null); setRequestedDate(''); }}
-                                    className="w-full py-6 bg-surface-container-low text-on-surface font-black rounded-[28px] hover:bg-surface-container-high transition-all text-xl tracking-tight"
-                                >
-                                    Đóng
-                                </button>
+                                <>
+                                    {!reserveResult?.success ? (
+                                        <button
+                                            disabled={reserveLoading}
+                                            onClick={handleActionSubmit}
+                                            className="w-full py-6 bg-gradient-to-r from-primary to-primary-container text-white font-black rounded-[28px] shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.95] transition-all text-xl tracking-tight flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                                        >
+                                            {reserveLoading
+                                                ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                : <span className="material-symbols-outlined text-2xl">bookmark_add</span>}
+                                            {reserveLoading ? 'Đang gửi yêu cầu...' : 'Xác nhận đặt trước'}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => { setActionModal(null); setBorrowResult(null); setReserveResult(null); setRequestedDate(''); }}
+                                            className="w-full py-6 bg-surface-container-low text-on-surface font-black rounded-[28px] hover:bg-surface-container-high transition-all text-xl tracking-tight"
+                                        >
+                                            Đóng
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
