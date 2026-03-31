@@ -16,7 +16,9 @@ const BookDetailPage = () => {
     const [book, setBook] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showBorrowModal, setShowBorrowModal] = useState(false);
+    const [actionModal, setActionModal] = useState(null); // 'borrow' | 'reserve' | null
+    const [requestedDate, setRequestedDate] = useState('');
+    const [maxLoanDays, setMaxLoanDays] = useState(70);
 
     // Look Inside state
     const [showLookInside, setShowLookInside] = useState(false);
@@ -56,6 +58,42 @@ const BookDetailPage = () => {
         fetchBook();
     }, [id]);
 
+    useEffect(() => {
+        const fetchSettings = async () => {
+            if (isAuthenticated) {
+                try {
+                    const token = localStorage.getItem('lms_token');
+                    if (token) {
+                        const res = await fetch(`${API_URL}/users/settings/public`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        const data = await res.json();
+                        if (data.success && data.settings?.maxLoanDays) {
+                            setMaxLoanDays(Number(data.settings.maxLoanDays));
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch public settings');
+                }
+            }
+        };
+        fetchSettings();
+    }, [isAuthenticated]);
+
+    const getLocalDateString = (daysOffset = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + daysOffset);
+        return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    };
+
+    const handleActionSubmit = async () => {
+        if (actionModal === 'borrow') {
+            await handleBorrow();
+        } else if (actionModal === 'reserve') {
+            await handleReserve();
+        }
+    };
+
     // Borrow Now → POST /api/borrow/request
     const handleBorrow = async () => {
         if (!isAuthenticated) {
@@ -72,7 +110,7 @@ const BookDetailPage = () => {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ bookId: id }),
+                body: JSON.stringify({ bookId: id, requestedDueDate: requestedDate || null }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -103,7 +141,7 @@ const BookDetailPage = () => {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ bookId: id }),
+                body: JSON.stringify({ bookId: id, requestedDueDate: requestedDate || null }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -234,7 +272,8 @@ const BookDetailPage = () => {
                                         return;
                                     }
                                     setBorrowResult(null);
-                                    setShowBorrowModal(true);
+                                    setRequestedDate('');
+                                    setActionModal('borrow');
                                 }}
                                 disabled={!isAvailable}
                                 className={`flex-1 lg:flex-none px-12 py-5 font-black rounded-3xl shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${isAvailable
@@ -254,7 +293,9 @@ const BookDetailPage = () => {
                                         setShowTermsModal(true);
                                         return;
                                     }
-                                    handleReserve();
+                                    setReserveResult(null);
+                                    setRequestedDate('');
+                                    setActionModal('reserve');
                                 }}
                                 disabled={reserveLoading}
                                 className={`hidden sm:flex items-center gap-2 px-8 py-5 text-on-surface font-bold rounded-3xl transition-all w-44 justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isTermsAccepted ? 'bg-surface-container-low hover:bg-primary/5' : 'bg-amber-100/50 hover:bg-amber-100 text-amber-900 border border-amber-200'}`}
@@ -332,17 +373,17 @@ const BookDetailPage = () => {
                 </div>
             </div>
 
-            {/* Borrow Modal */}
-            {showBorrowModal && (
+            {/* Action Modal */}
+            {actionModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div
                         className="absolute inset-0 bg-on-background/40 backdrop-blur-xl animate-in fade-in"
-                        onClick={() => { setShowBorrowModal(false); setBorrowResult(null); }}
+                        onClick={() => { setActionModal(null); setBorrowResult(null); setReserveResult(null); setRequestedDate(''); }}
                     ></div>
                     <div className="relative w-full max-w-lg bg-surface-container-lowest rounded-[40px] shadow-[0_32px_128px_rgba(0,0,0,0.2)] overflow-hidden animate-in zoom-in duration-500 border border-white/60">
                         <div className="p-8 border-b border-surface-container-low flex justify-between items-center bg-surface-container-low/20">
-                            <h2 className="text-2xl font-black tracking-tight">Xác nhận mượn sách</h2>
-                            <button onClick={() => { setShowBorrowModal(false); setBorrowResult(null); }} className="w-12 h-12 rounded-2xl hover:bg-surface-container-high transition-all flex items-center justify-center text-on-surface-variant">
+                            <h2 className="text-2xl font-black tracking-tight">{actionModal === 'borrow' ? 'Xác nhận mượn sách' : 'Xác nhận đặt trước'}</h2>
+                            <button onClick={() => { setActionModal(null); setBorrowResult(null); setReserveResult(null); setRequestedDate(''); }} className="w-12 h-12 rounded-2xl hover:bg-surface-container-high transition-all flex items-center justify-center text-on-surface-variant">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
@@ -359,40 +400,56 @@ const BookDetailPage = () => {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-6 bg-surface-container-low/60 rounded-[28px] border border-white/60">
+                            <div className="flex flex-col p-6 bg-surface-container-low/60 rounded-[28px] border border-white/60 gap-4">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
                                         <span className="material-symbols-outlined filled">calendar_today</span>
                                     </div>
-                                    <span className="font-bold text-on-surface">Thời hạn mượn: 10 tuần (70 ngày)</span>
+                                    <span className="font-bold text-on-surface">Chọn ngày muốn trả (Tùy chọn)</span>
                                 </div>
+                                <input
+                                    type="date"
+                                    value={requestedDate}
+                                    onChange={(e) => setRequestedDate(e.target.value)}
+                                    min={getLocalDateString(0)} // Today
+                                    max={getLocalDateString(maxLoanDays)} // + maxLoanDays
+                                    className="w-full px-4 py-3 bg-surface rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-on-surface"
+                                />
+                                <p className="text-xs text-on-surface-variant font-medium mt-1">
+                                    * Nếu để trống, hạn mặc định sẽ là {maxLoanDays} ngày.
+                                </p>
                             </div>
 
-                            {borrowResult && (
+                            {borrowResult && actionModal === 'borrow' && (
                                 <div className={`px-6 py-4 rounded-2xl text-sm font-bold ${borrowResult.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                                     {borrowResult.success ? '✓ ' : '✗ '}{borrowResult.message}
+                                </div>
+                            )}
+                            {reserveResult && actionModal === 'reserve' && (
+                                <div className={`px-6 py-4 rounded-2xl text-sm font-bold ${reserveResult.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                    {reserveResult.success ? '✓ ' : '✗ '}{reserveResult.message}
                                 </div>
                             )}
                         </div>
 
                         <div className="p-10 bg-surface-container-low/40 flex flex-col gap-5 border-t border-surface-container-low">
                             <p className="text-[10px] text-center text-on-surface-variant/60 font-medium px-4">
-                                Bằng cách xác nhận, bạn đồng ý với chính sách mượn sách của thư viện.
+                                Bằng cách xác nhận, bạn đồng ý với chính sách của thư viện.
                             </p>
-                            {!borrowResult?.success ? (
+                            {((actionModal === 'borrow' && !borrowResult?.success) || (actionModal === 'reserve' && !reserveResult?.success)) ? (
                                 <button
-                                    disabled={borrowLoading}
-                                    onClick={handleBorrow}
+                                    disabled={borrowLoading || reserveLoading}
+                                    onClick={handleActionSubmit}
                                     className="w-full py-6 bg-gradient-to-r from-primary to-primary-container text-white font-black rounded-[28px] shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.95] transition-all text-xl tracking-tight flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
                                 >
-                                    {borrowLoading
+                                    {borrowLoading || reserveLoading
                                         ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        : <span className="material-symbols-outlined text-2xl">auto_stories</span>}
-                                    {borrowLoading ? 'Đang gửi yêu cầu...' : 'Xác nhận mượn sách'}
+                                        : <span className="material-symbols-outlined text-2xl">{actionModal === 'borrow' ? 'auto_stories' : 'bookmark_add'}</span>}
+                                    {(borrowLoading || reserveLoading) ? 'Đang gửi yêu cầu...' : (actionModal === 'borrow' ? 'Xác nhận mượn sách' : 'Xác nhận đặt trước')}
                                 </button>
                             ) : (
                                 <button
-                                    onClick={() => { setShowBorrowModal(false); setBorrowResult(null); }}
+                                    onClick={() => { setActionModal(null); setBorrowResult(null); setReserveResult(null); setRequestedDate(''); }}
                                     className="w-full py-6 bg-surface-container-low text-on-surface font-black rounded-[28px] hover:bg-surface-container-high transition-all text-xl tracking-tight"
                                 >
                                     Đóng

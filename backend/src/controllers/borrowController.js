@@ -9,7 +9,7 @@ const notificationService = require("../services/notificationService");
 // =======================
 exports.requestBorrow = async (req, res) => {
   try {
-    const { bookId } = req.body;
+    const { bookId, requestedDueDate } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -67,10 +67,36 @@ exports.requestBorrow = async (req, res) => {
       });
     }
 
+    let parsedRequestedDueDate = null;
+    if (requestedDueDate) {
+      parsedRequestedDueDate = new Date(requestedDueDate);
+      if (isNaN(parsedRequestedDueDate.getTime())) {
+        return res.status(400).json({ message: "Invalid requested date." });
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (parsedRequestedDueDate < today) {
+        return res.status(400).json({ message: "Requested due date cannot be in the past." });
+      }
+
+      const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
+      const currentMaxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 70;
+      
+      const maxAllowedDate = new Date();
+      maxAllowedDate.setDate(maxAllowedDate.getDate() + currentMaxDays);
+      maxAllowedDate.setHours(23, 59, 59, 999);
+      
+      if (parsedRequestedDueDate > maxAllowedDate) {
+        return res.status(400).json({ message: `Requested due date exceeds maximum loan duration of ${currentMaxDays} days.` });
+      }
+    }
+
     const borrow = await BorrowRecord.create({
       userId,
       bookId,
       status: "pending",
+      requestedDueDate: parsedRequestedDueDate
     });
 
     // Thông báo cho Librarian khi có yêu cầu mượn sách mới
@@ -155,8 +181,19 @@ exports.approveBorrow = async (req, res) => {
     const pickupDeadline = new Date();
     pickupDeadline.setDate(pickupDeadline.getDate() + 3); // 3 ngày để lấy sách
 
-    const dueDate = new Date();
+    let dueDate = new Date();
     dueDate.setDate(borrowDate.getDate() + maxDays);
+
+    // Nếu user có yêu cầu due date thì dùng ngày đó, nếu không lấy maxDays
+    if (record.requestedDueDate) {
+      // Có thể ngày duyệt bị trễ nên cần đảm bảo requestedDueDate chưa trôi qua
+      // Nếu đã trôi qua, fallback về maxDays
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (record.requestedDueDate >= today) {
+         dueDate = record.requestedDueDate;
+      }
+    }
 
     // 🔥 Chuyển sang waiting_for_pickup và trừ sách ngay
     record.status = "waiting_for_pickup";

@@ -64,6 +64,27 @@ const getSettings = async (req, res) => {
     }
 };
 
+// ─── GET /api/users/settings/public ──────────────────────────────────────
+const getPublicSettings = async (req, res) => {
+    try {
+        const settings = await SystemSetting.find({ key: { $in: ['maxLoanDays', 'reservationExpiryDays', 'maxBooksPerUser', 'maxReservationsPerUser'] } });
+        
+        const publicConfig = {};
+        settings.forEach(s => {
+            publicConfig[s.key] = s.value;
+        });
+
+        // Add defaults if missing
+        if (!publicConfig.maxLoanDays) publicConfig.maxLoanDays = 70; // 10 weeks
+        if (!publicConfig.reservationExpiryDays) publicConfig.reservationExpiryDays = 3;
+
+        return res.status(200).json({ success: true, settings: publicConfig });
+    } catch (error) {
+        console.error('Get public settings error:', error);
+        return res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
 // ─── PUT /admin/settings/:key ────────────────────────────────────────────
 const upsertSetting = async (req, res) => {
     try {
@@ -199,4 +220,4 @@ const getAdminStats = async (req, res) => {
     }
 };
 
-module.exports = { getSettings, upsertSetting, getAdminStats };
+module.exports = { getSettings, upsertSetting, getAdminStats, getPublicSettings };
