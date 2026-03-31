@@ -13,6 +13,7 @@ const {
   editUser,
   acceptTerms,
 } = require('../controllers/userController');
+const { getPublicSettings } = require('../controllers/systemSettingController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -21,6 +22,12 @@ const router = express.Router();
 router.use(protect);
 
 // ─── Current User Routes ───────────────────────────────────────────────
+
+/**
+ * GET /api/users/settings/public
+ * Expose general settings to authenticated users
+ */
+router.get('/settings/public', getPublicSettings);
 
 /**
  * GET /api/users/profile

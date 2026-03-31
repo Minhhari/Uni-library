@@ -21,6 +21,10 @@ const reservationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    requestedDueDate: {
+      type: Date,
+      default: null,
+    },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'cancelled', 'fulfilled'],

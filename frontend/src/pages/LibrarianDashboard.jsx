@@ -510,7 +510,7 @@ const LibrarianDashboard = () => {
                   </td>
                   <td className="px-4 py-5">
                     <div className={`font-black text-[11px] ${isOverdue(rec.dueDate, rec.status) ? 'text-rose-500' : 'text-slate-500'}`}>
-                      {fmtDate(rec.dueDate)}
+                      {fmtDate(rec.dueDate || rec.requestedDueDate)}
                     </div>
                   </td>
                   <td className="px-4 py-5">
@@ -678,6 +678,14 @@ const LibrarianDashboard = () => {
                         <div className={`font-bold ${isExpired ? 'text-red-600' : 'text-blue-700'}`}>
                           {new Date(res.expiresAt).toLocaleDateString('vi-VN')}
                           {isExpired && <span className="block text-[9px] font-black">QUÁ HẠN!</span>}
+                        </div>
+                      </div>
+                    )}
+                    {(isPending || isApproved) && res.requestedDueDate && (
+                      <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-100">
+                        <div className="text-amber-500 font-black uppercase tracking-wider mb-0.5">Dự kiến trả</div>
+                        <div className="font-bold text-amber-700">
+                          {new Date(res.requestedDueDate).toLocaleDateString('vi-VN')}
                         </div>
                       </div>
                     )}
