@@ -118,6 +118,124 @@ exports.requestBorrow = async (req, res) => {
 };
 
 // =======================
+// BATCH BORROW REQUEST (Cart)
+// =======================
+exports.requestBorrowBatch = async (req, res) => {
+  try {
+    const { items } = req.body; // [{ bookId, requestedDueDate }]
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // 1. Phân quyền
+    if (['librarian', 'admin'].includes(userRole)) {
+      return res.status(403).json({ message: "Librarians and Admins are not allowed to borrow books." });
+    }
+    if (['student', 'lecturer'].includes(userRole) && !req.user.hasAcceptedTerms) {
+      return res.status(403).json({ message: "You must accept the Terms & Policies before borrowing books." });
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Danh sách sách không hợp lệ." });
+    }
+
+    // 2. Kiểm tra giới hạn tổng số lượng
+    const maxBooksSetting = await SystemSetting.findOne({ key: 'maxBooksPerUser' });
+    const maxBooks = maxBooksSetting ? Number(maxBooksSetting.value) : 5;
+    const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
+    const maxLoanDays = maxDaysSetting ? Number(maxDaysSetting.value) : 70;
+
+    const activeBorrowsCount = await BorrowRecord.countDocuments({
+      userId,
+      status: { $in: ["pending", "approved", "waiting_for_pickup"] }
+    });
+
+    if (activeBorrowsCount + items.length > maxBooks) {
+      return res.status(400).json({
+        message: `Tổng số sách mượn (${activeBorrowsCount + items.length}) vượt quá giới hạn cho phép (${maxBooks} cuốn).`
+      });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const item of items) {
+      const { bookId, requestedDueDate } = item;
+      try {
+        // Kiểm tra đã mượn chưa
+        const alreadyBorrowing = await BorrowRecord.findOne({
+          userId, bookId,
+          status: { $in: ["pending", "approved", "waiting_for_pickup"] }
+        });
+        if (alreadyBorrowing) {
+          errors.push({ bookId, message: "Bạn đang có yêu cầu mượn cuốn sách này rồi." });
+          continue;
+        }
+
+        // Kiểm tra tồn kho
+        const book = await Book.findById(bookId);
+        if (!book || book.available <= 0) {
+          errors.push({ bookId, title: book?.title, message: `Sách "${book?.title || bookId}" không còn sẵn để mượn.` });
+          continue;
+        }
+
+        // Validate ngày trả
+        let parsedDueDate = null;
+        if (requestedDueDate) {
+          parsedDueDate = new Date(requestedDueDate);
+          if (isNaN(parsedDueDate.getTime())) {
+            errors.push({ bookId, message: "Ngày trả không hợp lệ." });
+            continue;
+          }
+          const today = new Date(); today.setHours(0, 0, 0, 0);
+          if (parsedDueDate < today) {
+            errors.push({ bookId, message: "Ngày trả không được ở trong quá khứ." });
+            continue;
+          }
+          const maxAllowedDate = new Date();
+          maxAllowedDate.setDate(maxAllowedDate.getDate() + maxLoanDays);
+          if (parsedDueDate > maxAllowedDate) {
+            errors.push({ bookId, message: `Ngày trả vượt quá ${maxLoanDays} ngày.` });
+            continue;
+          }
+        }
+
+        const borrow = await BorrowRecord.create({
+          userId, bookId,
+          status: "pending",
+          requestedDueDate: parsedDueDate
+        });
+
+        const borrowerName = req.user.name || req.user.email || 'Người dùng';
+        await notificationService.notifyLibrarians(
+          'Yêu cầu mượn sách mới',
+          `${borrowerName} (${userRole}) vừa gửi yêu cầu mượn sách "${book.title}".`,
+          '/admin'
+        );
+
+        results.push(borrow);
+      } catch (itemErr) {
+        errors.push({ bookId, message: itemErr.message });
+      }
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({
+        message: "Không có sách nào được mượn thành công.",
+        errors
+      });
+    }
+
+    return res.json({
+      message: `Đã gửi yêu cầu mượn ${results.length} sách thành công!`,
+      borrows: results,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// =======================
 // GET MY BOOKS
 // =======================
 exports.getMyBooks = async (req, res) => {

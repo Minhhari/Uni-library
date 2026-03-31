@@ -4,8 +4,10 @@ const router = express.Router();
 const borrowController = require("../controllers/borrowController");
 const { protect } = require('../middleware/authMiddleware');
 
-// student request
+// student request (single)
 router.post("/request", protect, borrowController.requestBorrow);
+// student request (batch - cart)
+router.post("/request-batch", protect, borrowController.requestBorrowBatch);
 // student view
 router.get("/my-books", protect, borrowController.getMyBooks);
 

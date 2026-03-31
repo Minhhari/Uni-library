@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBorrowCart } from '../context/BorrowCartContext';
 import NotificationDropdown from './NotificationDropdown';
 
 const LecturerNavbar = () => {
     const { user, logout } = useAuth();
+    const { count } = useBorrowCart();
 
     return (
         <nav className="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-surface-dim z-50 px-8 flex items-center justify-between font-body transition-all">
@@ -48,6 +50,19 @@ const LecturerNavbar = () => {
 
             {/* Right Icons & Profile */}
             <div className="flex items-center gap-6">
+                {/* Cart Icon */}
+                <Link
+                    to="/cart"
+                    className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-primary/5 hover:bg-primary/10 text-primary transition-all border border-primary/10 hover:border-primary/30"
+                    title="Giỏ mượn sách"
+                >
+                    <span className="material-symbols-outlined text-xl">shopping_cart</span>
+                    {count > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-md shadow-primary/30 animate-in zoom-in duration-200">
+                            {count}
+                        </span>
+                    )}
+                </Link>
                 <NotificationDropdown />
                 <button
                     onClick={logout}
