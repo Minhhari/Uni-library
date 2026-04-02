@@ -20,13 +20,13 @@ const Sidebar = () => {
         : isLibrarian
             ? [
                 { name: 'Tổng quan', path: '/', icon: 'dashboard' },
+                { name: 'Sơ đồ kho', path: '/librarian/map', icon: 'map' },
                 { name: 'Mượn & Trả', path: '/?tab=borrows', icon: 'swap_horiz' },
                 { name: 'Đặt trước (Queue)', path: '/?tab=reservations', icon: 'bookmarks' },
                 { name: 'Yêu cầu nhập sách', path: '/?tab=requests', icon: 'local_shipping' },
                 { name: 'Tra cứu hội viên', path: '/admin/users', icon: 'group' },
                 { name: 'Khoản phạt', path: '/?tab=fines', icon: 'payments' },
                 { name: 'Kho sách (Tra cứu)', path: '/books', icon: 'search' },
-                { name: 'Quản lý sách', path: '/?tab=books', icon: 'inventory_2' },
             ]
             : [
                 { name: 'Tổng quan', path: '/', icon: 'dashboard' },

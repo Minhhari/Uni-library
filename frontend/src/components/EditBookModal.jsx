@@ -204,7 +204,7 @@ const EditBookModal = ({ book, onClose, onSuccess }) => {
                         />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="md:col-span-2 space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vị trí kệ</label>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 flex items-center gap-3 px-5 py-3 bg-slate-50 rounded-2xl border border-transparent focus-within:border-emerald-400 transition-all">
@@ -226,8 +226,8 @@ const EditBookModal = ({ book, onClose, onSuccess }) => {
                                 type="button"
                                 onClick={() => setShowMapPicker(v => !v)}
                                 className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${showMapPicker
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                        : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                    : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
                                     }`}
                             >
                                 <span className="material-symbols-outlined text-base">{showMapPicker ? 'expand_less' : 'map'}</span>

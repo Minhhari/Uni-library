@@ -23,6 +23,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminSystemSettingsPage from './pages/AdminSystemSettingsPage';
 import AdminReportsPage from './pages/AdminReportsPage';
 import LibrarianDashboard from './pages/LibrarianDashboard';
+import LibrarianMapPage from './pages/LibrarianMapPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -127,6 +128,9 @@ function App() {
               <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
               <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
               <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
+
+              {/* Librarian routes */}
+              <Route path="/librarian/map" element={<ProtectedRoute><LibrarianMapPage /></ProtectedRoute>} />
 
               {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
               <Route path="/my-activity" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
