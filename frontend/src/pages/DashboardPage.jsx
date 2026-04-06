@@ -287,15 +287,32 @@ const DashboardPage = () => {
   );
 
   const renderStudentDashboard = () => {
-    // Active loans: items from "borrow" request flow that are approved/borrowed or waiting for pickup
-    const activeLoans = myBooks.filter(b => b.itemType === 'borrow' && ['approved', 'borrowed', 'waiting_for_pickup'].includes(b.status));
-    // Reservations: items from "reservation" flow that are pending or approved (ready for pickup)
-    const reservations = myBooks.filter(b => b.itemType === 'reservation' && ['pending', 'approved', 'waiting_for_pickup'].includes(b.status));
-    const others = myBooks.filter(b => b.status === 'returned' || b.status === 'rejected' || b.status === 'expired' || b.status === 'cancelled');
+    // All borrows
+    const allBorrows = myBooks.filter(b => b.itemType === 'borrow');
+    // All reservations
+    const allReservations = myBooks.filter(b => b.itemType === 'reservation');
 
     const paginate = (items, page) => {
       const startIndex = (page - 1) * itemsPerPage;
       return items.slice(startIndex, startIndex + itemsPerPage);
+    };
+
+    const getStatusLabel = (item) => {
+      const s = item.status;
+      if (item.itemType === 'reservation') {
+        if (['approved', 'waiting_for_pickup'].includes(s)) return { text: 'SẴN SÀNG NHẬN SÁCH', classes: 'bg-amber-50 text-amber-600 border-amber-100/50', dot: 'bg-amber-500' };
+        if (s === 'pending') return { text: 'ĐANG CHỜ DUYỆT', classes: 'bg-yellow-50 text-yellow-600 border-yellow-100/50', dot: 'bg-yellow-500' };
+        if (s === 'rejected' || s === 'expired') return { text: s === 'rejected' ? 'BỊ TỪ CHỐI' : 'HỦY DO QUÁ HẠN', classes: 'bg-red-50 text-red-600 border-red-100/50', dot: 'bg-red-500' };
+        if (s === 'completed' || s === 'returned') return { text: 'ĐÃ HOÀN TẤT', classes: 'bg-emerald-50 text-emerald-600 border-emerald-100/50', dot: 'bg-emerald-500' };
+        return { text: s === 'cancelled' ? 'ĐÃ HỦY' : s.toUpperCase(), classes: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' };
+      } else {
+        if (s === 'pending') return { text: 'ĐANG CHỜ DUYỆT', classes: 'bg-yellow-50 text-yellow-600 border-yellow-100/50', dot: 'bg-yellow-500' };
+        if (s === 'waiting_for_pickup') return { text: 'CHỜ LẤY SÁCH', classes: 'bg-blue-50 text-blue-600 border-blue-100/50', dot: 'bg-blue-500' };
+        if (s === 'approved' || s === 'borrowed') return { text: 'ĐANG MƯỢN', classes: 'bg-emerald-50 text-emerald-600 border-emerald-100/50', dot: 'bg-emerald-500' };
+        if (s === 'rejected' || s === 'expired') return { text: s === 'rejected' ? 'BỊ TỪ CHỐI' : 'HỦY DO QUÁ HẠN', classes: 'bg-red-50 text-red-600 border-red-100/50', dot: 'bg-red-500' };
+        if (s === 'returned') return { text: 'ĐÃ TRẢ', classes: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' };
+        return { text: s === 'cancelled' ? 'ĐÃ HỦY' : s.toUpperCase(), classes: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' };
+      }
     };
 
     const Pagination = ({ total, current, onChange }) => {
@@ -407,40 +424,40 @@ const DashboardPage = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                  Sách đang mượn
-                  <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{activeLoans.length}</span>
+                  Lịch sử mượn sách
+                  <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{allBorrows.length}</span>
                 </h3>
               </div>
 
-              {activeLoans.length === 0 ? (
-                <p className="text-gray-400 text-sm italic py-4">Hiện tại không có sách nào đang mượn.</p>
+              {allBorrows.length === 0 ? (
+                <p className="text-gray-400 text-sm italic py-4">Hiện tại không có lịch sử mượn sách nào.</p>
               ) : (
                 <div className="space-y-3">
-                  {paginate(activeLoans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.loans).map((item, index) => (
-                    <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                        <div>
-                          <p className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors">
-                            {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
-                          </p>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            {item.dueDate ? `Hạn trả: ${new Date(item.dueDate).toLocaleDateString('vi-VN')}` :
-                              item.expiresAt ? `Hạn lấy sách: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}` :
-                                `Đã yêu cầu: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
-                          </p>
+                  {paginate(allBorrows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.loans).map((item, index) => {
+                    const statusVal = getStatusLabel(item);
+                    return (
+                      <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-2 h-2 rounded-full shadow-sm ${statusVal.dot}`}></div>
+                          <div>
+                            <p className="font-extrabold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                              {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
+                            </p>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                              {item.dueDate ? `Hạn trả: ${new Date(item.dueDate).toLocaleDateString('vi-VN')}` :
+                                item.expiresAt ? `Hạn lấy sách: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}` :
+                                  `Ngày yêu cầu: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
+                            </p>
+                          </div>
                         </div>
+                        <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${statusVal.classes}`}>
+                          {statusVal.text}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${item.status === 'waiting_for_pickup'
-                        ? 'bg-blue-50 text-blue-600 border-blue-100/50'
-                        : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'
-                        }`}>
-                        {item.status === 'waiting_for_pickup' ? 'CHỜ LẤY SÁCH' : item.status === 'approved' ? 'ĐANG MƯỢN' : item.status}
-                      </span>
-                    </div>
-                  ))}
+                    )
+                  })}
                   <Pagination
-                    total={activeLoans.length}
+                    total={allBorrows.length}
                     current={pages.loans}
                     onChange={(p) => setPages(prev => ({ ...prev, loans: p }))}
                   />
@@ -452,73 +469,46 @@ const DashboardPage = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                  Sách đã đặt trước
-                  <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">{reservations.length}</span>
+                  Lịch sử đặt trước
+                  <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">{allReservations.length}</span>
                 </h3>
               </div>
 
-              {reservations.length === 0 ? (
+              {allReservations.length === 0 ? (
                 <p className="text-gray-400 text-sm italic py-4">Không có yêu cầu đặt trước nào.</p>
               ) : (
                 <div className="space-y-3">
-                  {paginate(reservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.reservations).map((item, index) => (
-                    <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]`}></div>
-                        <div>
-                          <p className={`font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors`}>
-                            {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
-                          </p>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            {item.status === 'waiting_for_pickup' && item.expiresAt
-                              ? `Hạn lấy sách: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}`
-                              : `Ngày yêu cầu: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
-                          </p>
+                  {paginate(allReservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.reservations).map((item, index) => {
+                    const statusVal = getStatusLabel(item);
+                    return (
+                      <div key={index} className="group hover:bg-gray-50/50 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-2 h-2 rounded-full shadow-sm ${statusVal.dot}`}></div>
+                          <div>
+                            <p className={`font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors`}>
+                              {item.bookId?.title || item.bookId?.name || item.title || "Untitled Book"}
+                            </p>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                              {item.status === 'waiting_for_pickup' && item.expiresAt
+                                ? `Hạn lấy sách: ${new Date(item.expiresAt).toLocaleDateString('vi-VN')}`
+                                : `Ngày yêu cầu: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`}
+                            </p>
+                          </div>
                         </div>
+                        <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${statusVal.classes}`}>
+                          {statusVal.text}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${['approved', 'waiting_for_pickup'].includes(item.status)
-                        ? 'bg-amber-50 text-amber-600 border-amber-100/50'
-                        : 'bg-gray-100 text-gray-600 border-gray-200'
-                        }`}>
-                        {['approved', 'waiting_for_pickup'].includes(item.status) ? 'SẴN SÀNG NHẬN SÁCH' : 'ĐANG CHỜ DUYỆT'}
-                      </span>
-                    </div>
-                  ))}
+                    )
+                  })}
                   <Pagination
-                    total={reservations.length}
+                    total={allReservations.length}
                     current={pages.reservations}
                     onChange={(p) => setPages(prev => ({ ...prev, reservations: p }))}
                   />
                 </div>
               )}
             </div>
-
-            {/* History Summary Area */}
-            {others.length > 0 && (
-              <div className="space-y-6 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">Hoạt động khác</h3>
-                </div>
-                <div className="space-y-3">
-                  {paginate(others.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), pages.others).map((item, index) => (
-                    <div key={index} className="p-4 rounded-2xl flex items-center justify-between border border-transparent">
-                      <div className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                        <div>
-                          <p className="font-extrabold text-gray-900">
-                            {item.bookId?.title || item.title || "Untitled Book"}
-                          </p>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Đã hoàn tất</p>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-200">
-                        {item.status === 'expired' ? 'HỦY DO QUÁ HẠN LẤY' : item.status === 'returned' ? 'ĐÃ TRẢ' : item.status === 'rejected' ? 'BỊ TỪ CHỐI' : item.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

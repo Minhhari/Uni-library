@@ -1,5 +1,6 @@
 const BookRequest = require('../models/BookRequest');
 const Book = require('../models/Book');
+const Category = require('../models/Category');
 const notificationService = require('../services/notificationService');
 const User = require('../models/User');
 
@@ -196,7 +197,7 @@ exports.updateRequestStatus = async (req, res) => {
         const { id } = req.params;
         const { status, note } = req.body;
 
-        if (!['Pending', 'Approved', 'Rejected', 'PartiallyApproved'].includes(status)) {
+        if (!['Pending', 'Approved', 'Rejected', 'PartiallyApproved', 'Completed'].includes(status)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid status.',
@@ -235,7 +236,7 @@ exports.updateRequestStatus = async (req, res) => {
     }
 };
 
-// @desc    Update per-book status (approve or reject a single book item)
+// @desc    Update per-book status (approve → pending_import | reject)
 // @route   PUT /book-requests/:id/books/:bookIndex/status
 // @access  Private (Admin/Librarian)
 exports.updateBookItemStatus = async (req, res) => {
@@ -244,8 +245,8 @@ exports.updateBookItemStatus = async (req, res) => {
         const { bookStatus, rejectReason } = req.body;
         const idx = parseInt(bookIndex, 10);
 
-        if (!['approved', 'rejected'].includes(bookStatus)) {
-            return res.status(400).json({ success: false, message: 'bookStatus must be approved or rejected' });
+        if (!['pending_import', 'rejected'].includes(bookStatus)) {
+            return res.status(400).json({ success: false, message: 'bookStatus must be pending_import or rejected' });
         }
 
         const request = await BookRequest.findById(id);
@@ -265,16 +266,19 @@ exports.updateBookItemStatus = async (req, res) => {
 
         // Recompute overall status
         const statuses = request.books.map((b) => b.bookStatus);
-        const allApproved = statuses.every((s) => s === 'approved');
+        const allDone = statuses.every((s) => s === 'imported' || s === 'rejected');
         const allRejected = statuses.every((s) => s === 'rejected');
         const anyPending = statuses.some((s) => s === 'pending');
+        const anyPendingImport = statuses.some((s) => s === 'pending_import');
 
         if (anyPending) {
             request.status = 'Pending';
-        } else if (allApproved) {
-            request.status = 'Approved';
-        } else if (allRejected) {
-            request.status = 'Rejected';
+        } else if (allDone) {
+            request.status = allRejected ? 'Rejected' : 'Completed';
+        } else if (anyPendingImport) {
+            // Some approved (pending_import), others may be rejected
+            const hasRejected = statuses.some((s) => s === 'rejected');
+            request.status = hasRejected ? 'PartiallyApproved' : 'Approved';
         } else {
             request.status = 'PartiallyApproved';
         }
@@ -289,5 +293,297 @@ exports.updateBookItemStatus = async (req, res) => {
     } catch (error) {
         console.error('Error updating book item status:', error);
         res.status(500).json({ success: false, message: 'Failed to update book item status' });
+    }
+};
+
+// @desc    Nhập kho một cuốn sách (khi hàng về tay)
+// @route   POST /book-requests/:id/books/:bookIndex/import
+// @access  Private (Admin/Librarian)
+// Helper: normalize location to 'Kệ XN' format for LibraryMap compatibility
+const normalizeLocation = (loc) => {
+    if (!loc) return '';
+    const clean = loc.trim().toUpperCase().replace(/K[ÊE]\s*/gi, '').trim();
+    const match = clean.match(/^([A-G])(\d+)$/);
+    if (match) return `Kệ ${match[1]}${match[2]}`;
+    return loc.trim(); // fallback: keep as-is
+};
+
+exports.importBook = async (req, res) => {
+    try {
+        const { id, bookIndex } = req.params;
+        const { price, location, cover_image } = req.body;
+        const idx = parseInt(bookIndex, 10);
+
+        // Validate required import fields
+        if (price === undefined || price === null || price === '') {
+            return res.status(400).json({ success: false, message: 'Giá tiền là bắt buộc.' });
+        }
+        if (!location || !location.trim()) {
+            return res.status(400).json({ success: false, message: 'Vị trí kệ sách là bắt buộc.' });
+        }
+
+        const normalizedLocation = normalizeLocation(location);
+
+        const request = await BookRequest.findById(id).populate('lecturer', 'name email _id');
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Book request not found' });
+        }
+        if (idx < 0 || idx >= request.books.length) {
+            return res.status(400).json({ success: false, message: 'Invalid book index' });
+        }
+
+        const bookItem = request.books[idx];
+        if (bookItem.bookStatus !== 'pending_import') {
+            return res.status(400).json({
+                success: false,
+                message: 'Chỉ có thể nhập kho sách đang ở trạng thái chờ nhập kho.',
+            });
+        }
+
+        const importedPrice = parseFloat(price) || 0;
+        const importedAt = new Date();
+
+        // ── Resolve category ──────────────────────────────────────────────────
+        let categoryId = null;
+        if (bookItem.categoryName) {
+            let cat = await Category.findOne({ name: { $regex: new RegExp(`^${bookItem.categoryName}$`, 'i') } });
+            if (!cat) {
+                const code = bookItem.categoryName.toUpperCase().replace(/\s+/g, '_');
+                cat = await Category.create({ name: bookItem.categoryName, code });
+            }
+            categoryId = cat._id;
+        }
+
+        let bookDoc = null;
+        let action = 'created';
+
+        // ── Nhánh A / Nhánh B: kiểm tra ISBN trùng ───────────────────────────
+        if (bookItem.isbn) {
+            bookDoc = await Book.findOne({ isbn: bookItem.isbn });
+        }
+
+        if (bookDoc) {
+            // ── Nhánh B: Sách đã tồn tại — cộng dồn số lượng ────────────────
+            bookDoc.quantity += bookItem.quantity;
+            bookDoc.available += bookItem.quantity;
+            // Cập nhật giá nếu đợt này khác
+            if (importedPrice > 0) bookDoc.price = importedPrice;
+            // Cập nhật ảnh bìa nếu thủ thư upload
+            if (cover_image) bookDoc.cover_image = cover_image;
+            await bookDoc.save();
+            action = 'updated';
+        } else {
+            // ── Nhánh A: Sách mới — tạo mới trong bảng Book ──────────────────
+            const newBookData = {
+                title: bookItem.title,
+                author: bookItem.author || 'Chưa xác định',
+                isbn: bookItem.isbn || `AUTO-${Date.now()}`,
+                publisher: bookItem.publisher || 'Chưa xác định',
+                publish_year: bookItem.publish_year || new Date().getFullYear(),
+                quantity: bookItem.quantity,
+                available: bookItem.quantity,
+                price: importedPrice,
+                location: normalizedLocation,
+                cover_image: cover_image || '',
+                status: 'available',
+            };
+            if (categoryId) newBookData.category = categoryId;
+            bookDoc = await Book.create(newBookData);
+        }
+
+        // Cập nhật location trên Book doc (cho cả nhánh B)
+        if (action === 'updated' && normalizedLocation) {
+            await Book.findByIdAndUpdate(bookDoc._id, { location: normalizedLocation });
+        }
+
+        // ── Cập nhật bookItem trong request ──────────────────────────────────
+        request.books[idx].bookStatus = 'imported';
+        request.books[idx].importData = {
+            price: importedPrice,
+            location: normalizedLocation,
+            cover_image: cover_image || '',
+            importedAt,
+            bookId: bookDoc._id,
+            action,
+        };
+
+        // ── Recompute overall request status ─────────────────────────────────
+        const statuses = request.books.map((b) => b.bookStatus);
+        const allDone = statuses.every((s) => s === 'imported' || s === 'rejected');
+        const allRejected = statuses.every((s) => s === 'rejected');
+
+        if (allDone) {
+            request.status = allRejected ? 'Rejected' : 'Completed';
+        } else {
+            const hasImported = statuses.some((s) => s === 'imported');
+            request.status = hasImported ? 'PartiallyApproved' : 'Approved';
+        }
+
+        await request.save();
+
+        // ── Thông báo cho Giảng viên ──────────────────────────────────────────
+        const lecturerId = request.lecturer?._id || request.lecturer;
+        const bookTitle = bookItem.title;
+        await notificationService.createNotification(
+            lecturerId,
+            '📦 Sách đã nhập kho thành công',
+            `Sách "${bookTitle}" thầy/cô yêu cầu đã được nhập kho và sẵn sàng tại ${location.trim()}.`,
+            '/book-requests'
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Nhập kho thành công. Sách đã được ${action === 'created' ? 'tạo mới' : 'cập nhật số lượng'}.`,
+            data: {
+                request,
+                book: bookDoc,
+                action,
+            },
+        });
+    } catch (error) {
+        console.error('Error importing book:', error);
+        res.status(500).json({ success: false, message: 'Nhập kho thất bại.', error: error.message });
+    }
+};
+
+// @desc    Bulk import nhiều sách từ file Excel (nhập kho hàng loạt)
+// @route   POST /book-requests/bulk-import
+// @access  Private (Admin/Librarian)
+exports.bulkImportBooks = async (req, res) => {
+    try {
+        const { items } = req.body;
+        // items: [{ requestId, bookIndex, price, location }]
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, message: 'Danh sách items không hợp lệ.' });
+        }
+
+        const results = [];
+        const failures = [];
+
+        for (const item of items) {
+            const { requestId, bookIndex, price, location } = item;
+            const idx = parseInt(bookIndex, 10);
+
+            try {
+                if (!requestId || isNaN(idx) || price === undefined || !location?.trim()) {
+                    failures.push({ requestId, bookIndex, reason: 'Thiếu thông tin bắt buộc (giá, vị trí).' });
+                    continue;
+                }
+
+                const normalizedLocation = normalizeLocation(location);
+
+                const request = await BookRequest.findById(requestId).populate('lecturer', 'name email _id');
+                if (!request || idx < 0 || idx >= request.books.length) {
+                    failures.push({ requestId, bookIndex, reason: 'Không tìm thấy yêu cầu hoặc chỉ mục không hợp lệ.' });
+                    continue;
+                }
+
+                const bookItem = request.books[idx];
+                if (bookItem.bookStatus !== 'pending_import') {
+                    failures.push({ requestId, bookIndex, title: bookItem.title, reason: 'Sách không ở trạng thái chờ nhập kho.' });
+                    continue;
+                }
+
+                const importedPrice = parseFloat(price) || 0;
+                const importedAt = new Date();
+
+                // Auto cover_image từ Open Library theo ISBN
+                let cover_image = '';
+                if (bookItem.isbn) {
+                    cover_image = `https://covers.openlibrary.org/b/isbn/${bookItem.isbn}-L.jpg`;
+                }
+
+                // Resolve category
+                let categoryId = null;
+                if (bookItem.categoryName) {
+                    let cat = await Category.findOne({ name: { $regex: new RegExp(`^${bookItem.categoryName}$`, 'i') } });
+                    if (!cat) {
+                        const code = bookItem.categoryName.toUpperCase().replace(/\s+/g, '_');
+                        cat = await Category.create({ name: bookItem.categoryName, code });
+                    }
+                    categoryId = cat._id;
+                }
+
+                let bookDoc = null;
+                let action = 'created';
+
+                if (bookItem.isbn) {
+                    bookDoc = await Book.findOne({ isbn: bookItem.isbn });
+                }
+
+                if (bookDoc) {
+                    bookDoc.quantity += bookItem.quantity;
+                    bookDoc.available += bookItem.quantity;
+                    if (importedPrice > 0) bookDoc.price = importedPrice;
+                    if (cover_image) bookDoc.cover_image = cover_image;
+                    bookDoc.location = normalizedLocation;
+                    await bookDoc.save();
+                    action = 'updated';
+                } else {
+                    const newBookData = {
+                        title: bookItem.title,
+                        author: bookItem.author || 'Chưa xác định',
+                        isbn: bookItem.isbn || `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        publisher: bookItem.publisher || 'Chưa xác định',
+                        publish_year: bookItem.publish_year || new Date().getFullYear(),
+                        quantity: bookItem.quantity,
+                        available: bookItem.quantity,
+                        price: importedPrice,
+                        location: normalizedLocation,
+                        cover_image,
+                        status: 'available',
+                    };
+                    if (categoryId) newBookData.category = categoryId;
+                    bookDoc = await Book.create(newBookData);
+                }
+
+                request.books[idx].bookStatus = 'imported';
+                request.books[idx].importData = {
+                    price: importedPrice,
+                    location: normalizedLocation,
+                    cover_image,
+                    importedAt,
+                    bookId: bookDoc._id,
+                    action,
+                };
+
+                // Recompute request status
+                const statuses = request.books.map((b) => b.bookStatus);
+                const allDone = statuses.every((s) => s === 'imported' || s === 'rejected');
+                const allRejected = statuses.every((s) => s === 'rejected');
+                if (allDone) {
+                    request.status = allRejected ? 'Rejected' : 'Completed';
+                } else {
+                    const hasImported = statuses.some((s) => s === 'imported');
+                    request.status = hasImported ? 'PartiallyApproved' : 'Approved';
+                }
+
+                await request.save();
+
+                try {
+                    const lecturerId = request.lecturer?._id || request.lecturer;
+                    await notificationService.createNotification(
+                        lecturerId,
+                        'Sách đã nhập kho thành công',
+                        `Sách "${bookItem.title}" đã được nhập kho và sẵn sàng tại ${location.trim()}.`,
+                        '/book-requests'
+                    );
+                } catch (_) { /* Non-critical */ }
+
+                results.push({ requestId, bookIndex: idx, title: bookItem.title, action });
+            } catch (itemErr) {
+                failures.push({ requestId, bookIndex, reason: itemErr.message });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Nhập kho hàng loạt: ${results.length} thành công, ${failures.length} thất bại.`,
+            data: { imported: results.length, failed: failures.length, results, failures },
+        });
+    } catch (error) {
+        console.error('Error bulk importing books:', error);
+        res.status(500).json({ success: false, message: 'Nhập kho hàng loạt thất bại.', error: error.message });
     }
 };

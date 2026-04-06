@@ -24,6 +24,7 @@ const Sidebar = () => {
                 { name: 'Mượn & Trả', path: '/?tab=borrows', icon: 'swap_horiz' },
                 { name: 'Đặt trước (Queue)', path: '/?tab=reservations', icon: 'bookmarks' },
                 { name: 'Yêu cầu nhập sách', path: '/?tab=requests', icon: 'local_shipping' },
+                { name: 'Chờ nhập kho', path: '/?tab=import', icon: 'inventory_2' },
                 { name: 'Tra cứu hội viên', path: '/admin/users', icon: 'group' },
                 { name: 'Khoản phạt', path: '/?tab=fines', icon: 'payments' },
                 { name: 'Kho sách (Tra cứu)', path: '/books', icon: 'search' },

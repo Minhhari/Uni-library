@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api, { bookRequestAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { CreateBookModal, EditBookModal } from '../components';
+import LibraryMap from '../components/LibraryMap';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) =>
@@ -215,6 +217,195 @@ const ResultModal = ({ result, onClose }) => (
   </div>
 );
 
+// ─── ImportBookModal ─────────────────────────────────────────────────────────
+const ImportBookModal = ({ bookItem, requestId, bookIndex, onClose, onSuccess }) => {
+  const [price, setPrice] = useState('');
+  const [location, setLocation] = useState('');
+  const [coverImage, setCoverImage] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { uploadAPI } = await import('../services/api');
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await uploadAPI.uploadSingle(fd);
+      if (res.data?.url) {
+        setCoverImage(res.data.url);
+        toast.success('Tải ảnh bìa thành công!');
+      }
+    } catch (e) {
+      toast.error('Tải ảnh thất bại.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!price || isNaN(Number(price)) || Number(price) < 0) {
+      toast.warning('Vui lòng nhập giá tiền hợp lệ.');
+      return;
+    }
+    if (!location.trim()) {
+      toast.warning('Vui lòng nhập vị trí kệ sách.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await bookRequestAPI.importBook(requestId, bookIndex, {
+        price: Number(price),
+        location: location.trim(),
+        cover_image: coverImage || '',
+      });
+      toast.success(`Nhập kho thành công! Sách đã được ${res.data.data.action === 'created' ? 'tạo mới' : 'cập nhật số lượng'}.`);
+      onSuccess();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Nhập kho thất bại.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row max-h-[95vh]">
+
+        {/* === CỘT TRÁI: FORM NHẬP === */}
+        <div className="flex-1 w-full md:w-[45%] flex flex-col overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-br from-teal-800 via-emerald-900 to-teal-900 p-8 shrink-0 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-16 blur-2xl" />
+            <div className="flex items-start justify-between relative z-10">
+              <div>
+                <div className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Nhập vào kho</div>
+                <h2 className="text-xl font-black tracking-tight leading-tight">{bookItem.title}</h2>
+                <p className="text-emerald-300 text-xs mt-1">{bookItem.author} · x{bookItem.quantity} cuốn</p>
+                {bookItem.isbn && <p className="text-emerald-400 text-[10px] font-bold mt-1">ISBN: {bookItem.isbn}</p>}
+              </div>
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition shrink-0">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Pre-filled info */}
+          <div className="px-8 pt-6">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Thông tin từ Giảng viên (đã điền sẵn)</div>
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              {[
+                { label: 'NXB', val: bookItem.publisher || '—' },
+                { label: 'Năm XB', val: bookItem.publish_year || '—' },
+                { label: 'Thể loại', val: bookItem.categoryName || '—' },
+                { label: 'Số lượng đặt', val: `${bookItem.quantity} cuốn` },
+              ].map(({ label, val }) => (
+                <div key={label} className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">{val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Form — required fields */}
+          <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Thông tin cần bổ sung <span className="text-rose-500">*</span></div>
+
+            {/* Price */}
+            <div>
+              <label className="block text-xs font-black text-slate-700 mb-1.5">
+                Giá tiền (đồng) <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
+                  placeholder="VD: 250000"
+                  required
+                  className="w-full px-4 py-3 pr-12 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">đ</span>
+              </div>
+              {price && <p className="text-[10px] text-emerald-600 font-bold mt-1">{Number(price).toLocaleString('vi-VN')} đồng</p>}
+            </div>
+
+            {/* Location */}
+            <div className="space-y-1.5 shrink-0">
+              <label className="block text-xs font-black text-slate-700">
+                Vị trí kệ sách <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+                placeholder="Nhập hoặc click chọn kệ sách ở sơ đồ bên cạnh..."
+                required
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+              />
+            </div>
+
+            {/* Cover Image */}
+            <div>
+              <label className="block text-xs font-black text-slate-700 mb-1.5">Ảnh bìa sách</label>
+              <div className="flex items-center gap-3">
+                {coverImage
+                  ? <img src={coverImage} alt="cover" className="w-14 h-20 object-cover rounded-xl shadow-md border border-slate-100" />
+                  : <div className="w-14 h-20 rounded-xl bg-slate-100 flex items-center justify-center border border-dashed border-slate-200">
+                    <span className="material-symbols-outlined text-slate-300 text-[28px]">image</span>
+                  </div>
+                }
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 transition">
+                    <span className="material-symbols-outlined text-[16px]">{uploading ? 'progress_activity' : 'upload'}</span>
+                    {uploading ? 'Đang tải...' : coverImage ? 'Đổi ảnh' : 'Tải ảnh lên'}
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
+                  </label>
+                  <p className="text-[10px] text-slate-400 mt-1">Hoặc dán URL ảnh:</p>
+                  <input
+                    type="url"
+                    value={coverImage}
+                    onChange={e => setCoverImage(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full mt-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-200 transition"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4 shrink-0">
+              <button type="button" onClick={onClose}
+                className="flex-1 py-3 border-2 border-slate-200 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition">
+                Hủy
+              </button>
+              <button type="submit" disabled={submitting || uploading}
+                className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-emerald-500/30 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                {submitting
+                  ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                  : <span className="material-symbols-outlined text-[16px]">save</span>}
+                {submitting ? 'Đang xử lý...' : 'Xác nhận Nhập Kho'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* === CỘT PHẢI: MAP PICKER === */}
+        <div className="hidden md:flex flex-1 w-full md:w-[55%] bg-slate-50 border-l border-slate-100 p-6 flex-col overflow-y-auto">
+          <LibraryMap compact={true} location={location} onSelect={(loc) => setLocation(loc)} />
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
 // ─── BorrowSlip Component ──────────────────────────────────────────────────────
 const BorrowSlip = ({ group, slipIdx, actionLoading, onApprove, onReject, onPickup, onReturn }) => {
   const [expanded, setExpanded] = useState(true);
@@ -384,6 +575,59 @@ const BorrowSlip = ({ group, slipIdx, actionLoading, onApprove, onReject, onPick
   );
 };
 
+// ─── Bulk Import Preview Modal ───────────────────────────────────────────────
+const BulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) => {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="bg-gradient-to-br from-orange-800 via-amber-900 to-orange-900 p-8 shrink-0 text-white relative flex justify-between items-start">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-16 blur-2xl" />
+          <div className="relative z-10">
+            <div className="text-orange-300 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Xác nhận dữ liệu Nhập kho</div>
+            <h2 className="text-2xl font-black tracking-tight leading-tight">Xem trước {dataRows.length} sách</h2>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition shrink-0 relative z-10">
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50/80">
+                <tr>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Index</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Mã Request</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Giá (VNĐ)</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vị Trí</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {dataRows.map((item, i) => (
+                  <tr key={i} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-2 font-bold text-slate-500">{item.bookIndex}</td>
+                    <td className="px-4 py-2 text-xs text-slate-600 truncate max-w-[150px]">{item.requestId}</td>
+                    <td className="px-4 py-2 font-bold text-orange-600">{Number(item.price).toLocaleString('vi-VN')}</td>
+                    <td className="px-4 py-2 font-black text-teal-700">{item.location}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="p-6 bg-white border-t border-slate-100 flex gap-3 shrink-0">
+          <button onClick={onClose} disabled={submitting} className="flex-1 py-3 border-2 border-slate-200 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition">
+            Hủy / Chọn lại
+          </button>
+          <button onClick={onConfirm} disabled={submitting} className="flex-1 flex gap-2 justify-center items-center py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-orange-500/30 transition disabled:opacity-50">
+            {submitting ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">upload_file</span>}
+            {submitting ? 'Đang tải lên...' : 'Xác nhận Nhập kho'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Dashboard Page ───────────────────────────────────────────────────────
 const LibrarianDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -408,6 +652,14 @@ const LibrarianDashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [rejectInputs, setRejectInputs] = useState({}); // { bookIndex: 'reason string' }
   const [bookItemLoading, setBookItemLoading] = useState({}); // { `${reqId}_${idx}`: true }
+  // Import workflow state
+  const [importTarget, setImportTarget] = useState(null); // { requestId, bookIndex, bookItem }
+  // Bulk import state
+  const [selectedBooks, setSelectedBooks] = useState(new Set()); // Set of "reqId_bookIdx"
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkPreviewData, setBulkPreviewData] = useState(null); // array of parsed items
+  const [bookRequestSubTab, setBookRequestSubTab] = useState('requests'); // 'requests' | 'pending'
+  const bulkFileInputRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -532,10 +784,19 @@ const LibrarianDashboard = () => {
     setBookItemLoading(p => ({ ...p, [key]: true }));
     try {
       const res = await bookRequestAPI.updateBookItemStatus(requestId, bookIndex, bookStatus, rejectReason);
-      toast.success(bookStatus === 'approved' ? '✅ Đã duyệt cuốn sách' : '❌ Đã từ chối cuốn sách');
-      // Update selectedRequest in-place so modal stays open
-      if (res.data?.data) setSelectedRequest(res.data.data);
-      // Clear reject input for this book
+      toast.success(bookStatus === 'pending_import' ? 'Đã duyệt — sách đang chờ nhập kho' : 'Đã từ chối cuốn sách');
+
+      if (res.data?.data) {
+        // Giữ lại existingStock từ state cũ để không bị mất hiển thị "Cảnh báo trùng"
+        const updatedRequest = res.data.data;
+        if (selectedRequest) {
+          updatedRequest.books.forEach((b, i) => {
+            b.existingStock = selectedRequest.books[i]?.existingStock;
+          });
+        }
+        setSelectedRequest(updatedRequest);
+      }
+
       setRejectInputs(p => { const n = { ...p }; delete n[bookIndex]; return n; });
       fetchData();
     } catch (e) {
@@ -545,7 +806,100 @@ const LibrarianDashboard = () => {
     }
   };
 
+  // ─── Bulk Import helpers ────────────────────────────────────────────────────
+  const SHELF_LOCATIONS = [
+    'A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4',
+    'C1', 'C2', 'C3', 'C4', 'D1', 'D2', 'D3', 'D4',
+    'E1', 'E2', 'E3', 'E4', 'F1', 'F2', 'F3', 'F4',
+    'G1', 'G2', 'G3', 'G4',
+  ];
+
+  const getPendingImportBooks = () => {
+    const list = [];
+    data.bookRequests.forEach(req => {
+      req.books.forEach((book, idx) => {
+        if (book.bookStatus === 'pending_import') {
+          list.push({ req, book, idx, key: `${req._id}_${idx}` });
+        }
+      });
+    });
+    return list;
+  };
+
+  const handleExportExcel = () => {
+    const pendingList = getPendingImportBooks();
+    const selected = pendingList.filter(item => selectedBooks.has(item.key));
+    if (selected.length === 0) { toast.warning('Vui lòng chọn ít nhất 1 sách để xuất.'); return; }
+
+    const wb = XLSX.utils.book_new();
+    const fullHeader = [['req_id', 'book_index', 'Tên Sách', 'Tác Giả', 'ISBN', 'Nhà Xuất Bản', 'Số Lượng', 'Thể Loại', 'Giá Tiền (đồng) *', 'Mã Vị Trí *']];
+    const fullRows = selected.map(({ req, book, idx }) => [
+      req._id, idx, book.title, book.author || '', book.isbn || '', book.publisher || '', book.quantity, book.categoryName || '', '', '',
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([...fullHeader, ...fullRows]);
+    ws['!cols'] = [
+      { wch: 26 }, { wch: 8 }, { wch: 40 }, { wch: 20 }, { wch: 16 },
+      { wch: 22 }, { wch: 10 }, { wch: 16 }, { wch: 20 }, { wch: 14 },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Nhap Kho');
+    XLSX.writeFile(wb, `nhap-kho-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success(`Đã xuất ${selected.length} sách ra file Excel! Điền cột vàng (Giá + Vị trí) rồi tải lại.`);
+  };
+
+  const handleBulkImportUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const dataRows = rows.slice(1).filter(r => r[0] && r[1] !== undefined && r[1] !== '');
+      if (dataRows.length === 0) { toast.error('File Excel không có dữ liệu hợp lệ.'); return; }
+
+      const items = dataRows.map(r => ({
+        requestId: String(r[0] || '').trim(),
+        bookIndex: Number(r[1]),
+        price: Number(r[8]) || 0,
+        location: String(r[9] || '').trim(),
+      }));
+
+      const missingLocation = items.filter(it => !it.location);
+      if (missingLocation.length > 0) {
+        toast.error(`${missingLocation.length} sách chưa có Mã Vị Trí. Vui lòng điền đầy đủ và đúng định dạng.`);
+        return;
+      }
+
+      setBulkPreviewData(items);
+    } catch (err) {
+      toast.error('Lỗi đọc file Excel.');
+    }
+  };
+
+  const confirmBulkImport = async () => {
+    if (!bulkPreviewData) return;
+    setBulkImporting(true);
+    try {
+      const res = await bookRequestAPI.bulkImport(bulkPreviewData);
+      const { imported, failed, failures } = res.data.data;
+      toast.success(`Nhập kho thành công: ${imported} sách!`);
+      if (failed > 0) toast.warning(`${failed} sách thất bại: ${failures.map(f => f.title || `[${f.bookIndex}]`).join(', ')}`);
+      setSelectedBooks(new Set());
+      setBulkPreviewData(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Nhập kho thất bại.');
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
   // Sections
+
   const renderOverview = () => {
     const totalQty = data.books.reduce((s, b) => s + (b.quantity || 0), 0);
     const activeBor = data.borrows.filter(b => b.status === 'approved').length;
@@ -942,11 +1296,13 @@ const LibrarianDashboard = () => {
       Approved: { label: 'Đã duyệt', cls: 'bg-emerald-100 text-emerald-700' },
       Rejected: { label: 'Từ chối', cls: 'bg-red-100 text-red-600' },
       PartiallyApproved: { label: 'Duyệt 1 phần', cls: 'bg-blue-100 text-blue-700' },
+      Completed: { label: 'Hoàn tất', cls: 'bg-teal-100 text-teal-700' },
     };
 
     const bookStatusCfg = {
       pending: { label: 'Chờ duyệt', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
-      approved: { label: 'Đã duyệt', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      pending_import: { label: 'Chờ nhập kho', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
+      imported: { label: 'Đã nhập kho', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
       rejected: { label: 'Từ chối', cls: 'bg-red-50 text-red-600 border-red-200' },
     };
 
@@ -955,7 +1311,7 @@ const LibrarianDashboard = () => {
         {/* Detail Modal */}
         {selectedRequest && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-[95vw] max-w-7xl max-h-[90vh] flex flex-col overflow-hidden">
               {/* Modal Header */}
               <div className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 p-8 text-white relative overflow-hidden shrink-0">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-20 translate-x-20 blur-2xl" />
@@ -1005,104 +1361,150 @@ const LibrarianDashboard = () => {
                         const showRejectInput = rejectInputs[idx] !== undefined;
 
                         return (
-                          <tr key={idx} className={`transition hover:bg-slate-50/80 ${book.bookStatus === 'rejected' ? 'opacity-60' : ''}`}>
+                          <tr key={idx} className={`group transition-colors hover:bg-white bg-slate-50/30 ${book.bookStatus === 'rejected' ? 'opacity-50 grayscale' : ''}`}>
                             {/* # */}
-                            <td className="px-6 py-4 text-slate-400 font-black text-[11px]">{idx + 1}</td>
+                            <td className="px-6 py-5 align-top">
+                              <div className="w-6 h-6 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center font-black text-[10px] text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+                                {idx + 1}
+                              </div>
+                            </td>
 
                             {/* Title / Author */}
-                            <td className="px-4 py-4">
-                              <div className="font-bold text-slate-800 max-w-[180px]" title={book.title}>{book.title}</div>
-                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">{book.author || '—'}</div>
-                              {hasStock && (
-                                <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-black text-amber-700">
-                                  <span className="material-symbols-outlined text-[12px]">warning</span>
-                                  Đã có {book.existingStock} cuốn trong kho
+                            <td className="px-4 py-5 align-top">
+                              <div className="font-black text-slate-800 text-sm max-w-[220px] leading-snug" title={book.title}>{book.title}</div>
+                              <div className="text-[11px] font-bold text-slate-400 mt-1">{book.author || '—'}</div>
+                              {hasStock && book.bookStatus !== 'imported' && book.bookStatus !== 'pending_import' && (
+                                <div className="mt-2.5 inline-flex flex-col items-start gap-0.5 px-3 py-2 bg-amber-50 rounded-xl border border-amber-200/60 transition-transform hover:scale-[1.02]">
+                                  <span className="text-[9px] font-black text-amber-500 tracking-[0.1em] uppercase flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px]">warning</span>
+                                    Cảnh báo trùng
+                                  </span>
+                                  <span className="text-[11px] font-bold text-amber-700">Đã có {book.existingStock} cuốn trong kho</span>
                                 </div>
                               )}
                             </td>
 
                             {/* ISBN / Publisher */}
-                            <td className="px-4 py-4">
-                              <div className="text-[11px] font-bold text-slate-600">{book.isbn || <span className="text-slate-300 italic">Không có ISBN</span>}</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5">{book.publisher || '—'} {book.publish_year ? `(${book.publish_year})` : ''}</div>
+                            <td className="px-4 py-5 align-top">
+                              <div className="text-xs font-black text-slate-700">{book.isbn || <span className="text-slate-300 font-bold italic">Không có ISBN</span>}</div>
+                              <div className="text-[10px] font-bold text-slate-500 mt-1 max-w-[140px] leading-relaxed">{book.publisher || '—'}<br />{book.publish_year ? `(${book.publish_year})` : ''}</div>
                             </td>
 
                             {/* Category */}
-                            <td className="px-4 py-4">
-                              <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">{book.categoryName || '—'}</span>
+                            <td className="px-4 py-5 align-top">
+                              <span className="inline-block px-2.5 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                {book.categoryName || '—'}
+                              </span>
                             </td>
 
                             {/* Qty / Price */}
-                            <td className="px-4 py-4 text-center">
-                              <div className="font-black text-slate-800 text-sm">{book.quantity}</div>
-                              {book.price > 0 && <div className="text-[10px] text-slate-400 font-bold">{Number(book.price).toLocaleString('vi-VN')} đ</div>}
+                            <td className="px-4 py-5 align-top text-center">
+                              <div className="inline-flex flex-col items-center justify-center min-w-[50px]">
+                                <div className="text-xl font-black text-slate-900 leading-none">{book.quantity}</div>
+                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Cuốn</div>
+                              </div>
+                              {book.price > 0 && <div className="text-[11px] font-bold text-slate-500 bg-slate-100 rounded-md px-2 py-1 mt-2 mx-auto w-max">{Number(book.price).toLocaleString('vi-VN')} đ</div>}
                             </td>
 
                             {/* Reason */}
-                            <td className="px-4 py-4">
-                              <div className="text-[11px] text-slate-500 italic max-w-[140px]" title={book.reason}>{book.reason || '—'}</div>
+                            <td className="px-4 py-5 align-top">
+                              <div className="text-[11px] font-medium text-slate-500 italic max-w-[150px] leading-relaxed" title={book.reason}>{book.reason || '—'}</div>
                             </td>
 
                             {/* Per-book status */}
-                            <td className="px-4 py-4">
-                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${bCfg.cls}`}>
-                                {bCfg.label}
-                              </span>
-                              {book.rejectReason && (
-                                <div className="mt-1 text-[10px] text-red-500 italic max-w-[120px]">{book.rejectReason}</div>
-                              )}
+                            <td className="px-4 py-5 align-top">
+                              <div className="flex flex-col items-start gap-1">
+                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] shadow-sm
+                                  ${book.bookStatus === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                    book.bookStatus === 'pending_import' ? 'bg-orange-100 text-orange-700' :
+                                      book.bookStatus === 'imported' ? 'bg-teal-100 text-teal-700' :
+                                        'bg-rose-100 text-rose-700'
+                                  }`}>
+                                  {bCfg.label}
+                                </span>
+                                {book.rejectReason && (
+                                  <div className="mt-1 text-[10px] font-bold text-rose-500 italic max-w-[120px]">{book.rejectReason}</div>
+                                )}
+                              </div>
                             </td>
 
                             {/* Actions */}
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 align-top">
                               {book.bookStatus === 'pending' && (
-                                <div className="flex flex-col items-end gap-2">
+                                <div className="flex flex-col items-end gap-2 mt-1">
                                   <div className="flex gap-2">
                                     <button
-                                      onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'approved', undefined)}
+                                      onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'pending_import', undefined)}
                                       disabled={isLoading}
-                                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black hover:bg-emerald-700 transition disabled:opacity-50 active:scale-95"
+                                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50 active:scale-95"
                                     >
-                                      {isLoading ? <span className="material-symbols-outlined animate-spin text-[12px]">autorenew</span> : <span className="material-symbols-outlined text-[14px]">check</span>}
+                                      {isLoading ? <span className="material-symbols-outlined animate-spin text-[14px]">autorenew</span> : <span className="material-symbols-outlined text-[14px]">check</span>}
                                       Duyệt
                                     </button>
                                     <button
                                       onClick={() => setRejectInputs(p => ({ ...p, [idx]: p[idx] !== undefined ? undefined : '' }))}
                                       disabled={isLoading}
-                                      className="flex items-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-[10px] font-black hover:bg-rose-100 transition disabled:opacity-50 active:scale-95"
+                                      className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200/60 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all disabled:opacity-50 active:scale-95"
                                     >
                                       <span className="material-symbols-outlined text-[14px]">close</span>
                                       Từ chối
                                     </button>
                                   </div>
                                   {showRejectInput && (
-                                    <div className="w-full flex flex-col gap-1.5">
+                                    <div className="w-full flex flex-col gap-2 mt-2 bg-rose-50/50 p-3 rounded-xl border border-rose-100">
                                       <textarea
                                         value={rejectInputs[idx]}
                                         onChange={e => setRejectInputs(p => ({ ...p, [idx]: e.target.value }))}
-                                        placeholder="Lý do từ chối..."
+                                        placeholder="Lý do từ chối (bắt buộc)..."
                                         rows={2}
-                                        className="w-full max-w-[200px] px-3 py-2 text-xs border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-300/50 focus:border-rose-400 resize-none"
+                                        className="w-full min-w-[220px] px-3 py-2.5 text-xs border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300/50 focus:border-rose-400 resize-none bg-white"
                                       />
                                       <button
                                         onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'rejected', rejectInputs[idx])}
-                                        disabled={isLoading}
-                                        className="self-end flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white rounded-xl text-[10px] font-black hover:bg-rose-700 transition disabled:opacity-50"
+                                        disabled={isLoading || !rejectInputs[idx]?.trim()}
+                                        className="self-end flex items-center gap-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                       >
-                                        Xác nhận từ chối
+                                        Xác nhận
                                       </button>
                                     </div>
                                   )}
                                 </div>
                               )}
-                              {book.bookStatus !== 'pending' && (
-                                <button
-                                  onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'pending', undefined)}
-                                  disabled={isLoading}
-                                  className="text-[10px] text-slate-400 underline hover:text-slate-600 transition"
-                                >
-                                  Hoàn tác
-                                </button>
+                              {book.bookStatus === 'pending_import' && (
+                                <div className="flex flex-col items-end gap-1.5 mt-1">
+                                  <span className="px-3 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                    Chờ nhập kho
+                                  </span>
+                                  <button
+                                    onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'pending', undefined)}
+                                    disabled={isLoading}
+                                    className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-700 transition mt-1"
+                                  >
+
+                                  </button>
+                                </div>
+                              )}
+                              {book.bookStatus === 'imported' && (
+                                <div className="text-right mt-1">
+                                  <div className="inline-flex flex-col items-end">
+                                    <span className="px-3 py-1 bg-teal-50 text-teal-700 border border-teal-200/60 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                      Đã nhập kho
+                                    </span>
+                                    {book.importData?.location && (
+                                      <div className="text-[9px] font-black text-slate-400 mt-1.5 tracking-wider uppercase flex items-center gap-1 justify-end">
+                                        <span className="material-symbols-outlined text-[12px]">location_on</span>
+                                        {book.importData.location}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              {book.bookStatus === 'rejected' && (
+                                <div className="text-right mt-1">
+                                  <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest px-2 py-1 bg-rose-50 rounded-lg border border-rose-100">
+                                    Đã từ chối
+                                  </span>
+                                </div>
                               )}
                             </td>
                           </tr>
@@ -1116,7 +1518,7 @@ const LibrarianDashboard = () => {
               {/* Modal Footer */}
               <div className="p-6 border-t border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
                 <div className="text-xs text-slate-500 font-bold">
-                  {selectedRequest.books.filter(b => b.bookStatus === 'approved').length} duyệt ·
+                  {selectedRequest.books.filter(b => b.bookStatus === 'pending_import' || b.bookStatus === 'imported').length} duyệt ·
                   {selectedRequest.books.filter(b => b.bookStatus === 'rejected').length} từ chối ·
                   {selectedRequest.books.filter(b => b.bookStatus === 'pending').length} chờ
                 </div>
@@ -1129,114 +1531,280 @@ const LibrarianDashboard = () => {
           </div>
         )}
 
+        {/* Hidden file input for bulk upload */}
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          ref={bulkFileInputRef}
+          onChange={handleBulkImportUpload}
+          className="hidden"
+        />
+
         {/* List View */}
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic">Yêu cầu mua sách từ Giảng viên</h3>
-              <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">
-                {data.bookRequests.length} phiếu yêu cầu
-                {pending > 0 && <span className="ml-3 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-lg font-black">{pending} chờ duyệt</span>}
-              </p>
+          {/* Header with Sub-tabs */}
+          <div className="p-8 border-b border-slate-50">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic">Yêu cầu mua sách từ Giảng viên</h3>
+                <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">
+                  {data.bookRequests.length} phiếu yêu cầu
+                  {pending > 0 && <span className="ml-3 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-lg font-black">{pending} chờ duyệt</span>}
+                  {getPendingImportBooks().length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-lg font-black">
+                      📦 {getPendingImportBooks().length} chờ nhập kho
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setBookRequestSubTab('requests'); setSelectedBooks(new Set()); }}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition ${bookRequestSubTab === 'requests' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              >
+                <span className="material-symbols-outlined text-[14px] mr-1.5 align-[-2px]">list_alt</span>
+                Phiếu yêu cầu
+              </button>
+              <button
+                onClick={() => { setBookRequestSubTab('pending'); setSelectedBooks(new Set()); }}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition flex items-center gap-1.5 ${bookRequestSubTab === 'pending' ? 'bg-orange-600 text-white shadow-lg shadow-orange-200' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
+              >
+                <span className="material-symbols-outlined text-[14px]">inventory_2</span>
+                Chờ nhập kho
+                {getPendingImportBooks().length > 0 && (
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${bookRequestSubTab === 'pending' ? 'bg-white/20 text-white' : 'bg-orange-100'}`}>
+                    {getPendingImportBooks().length}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
 
-          {data.bookRequests.length === 0 ? (
-            <div className="py-24 text-center text-slate-300">
-              <span className="material-symbols-outlined text-[64px] block mb-4">inbox</span>
-              <p className="font-bold uppercase tracking-widest text-xs">Chưa có phiếu yêu cầu nào</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50/60">
-                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mã phiếu</th>
-                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Giảng viên</th>
-                    <th className="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Số đầu sách</th>
-                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Học kỳ</th>
-                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gửi lúc</th>
-                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trạng thái</th>
-                    <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {data.bookRequests.map((req, i) => {
-                    const sCfg = statusCfg[req.status] || { label: req.status, cls: 'bg-gray-100 text-gray-500' };
-                    const duplicateCount = req.books.filter(b => (b.existingStock || 0) > 0).length;
-
-                    return (
-                      <tr key={req._id} className="hover:bg-slate-50/50 transition cursor-pointer" onClick={() => setSelectedRequest(req)}>
-                        {/* Mã phiếu */}
-                        <td className="px-8 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center font-black text-emerald-700 text-sm border border-emerald-100">
-                              #{String(i + 1).padStart(2, '0')}
-                            </div>
-                            {duplicateCount > 0 && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black rounded-lg">
-                                <span className="material-symbols-outlined text-[12px]">warning</span>
-                                {duplicateCount} trùng kho
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Giảng viên */}
-                        <td className="px-4 py-5">
-                          <div className="font-bold text-slate-800">{req.lecturer?.name || 'Ẩn danh'}</div>
-                          <div className="text-[10px] text-slate-400 font-bold mt-0.5">{req.lecturer?.department || req.lecturer?.email}</div>
-                        </td>
-
-                        {/* Số sách */}
-                        <td className="px-4 py-5 text-center">
-                          <div className="text-2xl font-black text-slate-800">{req.books.length}</div>
-                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">đầu sách</div>
-                        </td>
-
-                        {/* Học kỳ */}
-                        <td className="px-4 py-5">
-                          <div className="text-xs font-bold text-slate-600">{req.semester || '—'}</div>
-                        </td>
-
-                        {/* Gửi lúc */}
-                        <td className="px-4 py-5">
-                          <div className="text-xs font-bold text-slate-500">
-                            {new Date(req.createdAt).toLocaleDateString('vi-VN')}
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            {new Date(req.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </td>
-
-                        {/* Trạng thái */}
-                        <td className="px-4 py-5">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sCfg.cls}`}>
-                            {sCfg.label}
-                          </span>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-8 py-5" onClick={e => e.stopPropagation()}>
-                          <button
-                            onClick={() => setSelectedRequest(req)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition active:scale-95"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                            Xem & Duyệt
-                          </button>
-                        </td>
+          {/* ── Sub-tab: Phiếu yêu cầu ── */}
+          {bookRequestSubTab === 'requests' && (
+            <>
+              {data.bookRequests.length === 0 ? (
+                <div className="py-24 text-center text-slate-300">
+                  <span className="material-symbols-outlined text-[64px] block mb-4">inbox</span>
+                  <p className="font-bold uppercase tracking-widest text-xs">Chưa có phiếu yêu cầu nào</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50/60">
+                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mã phiếu</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Giảng viên</th>
+                        <th className="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Số đầu sách</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Học kỳ</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gửi lúc</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trạng thái</th>
+                        <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thao tác</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {data.bookRequests.map((req, i) => {
+                        const duplicateCount = req.books.filter(b => (b.existingStock || 0) > 0 && b.bookStatus !== 'imported' && b.bookStatus !== 'pending_import').length;
+                        const sCfg = statusCfg[req.status] || { label: req.status, cls: 'bg-gray-100 text-gray-500' };
+
+                        return (
+                          <tr key={req._id} className="transition group hover:bg-slate-50/80 cursor-pointer" onClick={() => setSelectedRequest(req)}>
+                            {/* Mã phiếu */}
+                            <td className="px-8 py-5">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center font-black text-emerald-700 text-sm border border-emerald-100">
+                                  #{String(i + 1).padStart(2, '0')}
+                                </div>
+                                {duplicateCount > 0 && (
+                                  <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black rounded-lg">
+                                    <span className="material-symbols-outlined text-[12px]">warning</span>
+                                    {duplicateCount} trùng kho
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Giảng viên */}
+                            <td className="px-4 py-5">
+                              <div className="font-bold text-slate-800">{req.lecturer?.name || 'Ẩn danh'}</div>
+                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">{req.lecturer?.department || req.lecturer?.email}</div>
+                            </td>
+
+                            {/* Số sách */}
+                            <td className="px-4 py-5 text-center">
+                              <div className="text-2xl font-black text-slate-800">{req.books.length}</div>
+                              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">đầu sách</div>
+                            </td>
+
+                            {/* Học kỳ */}
+                            <td className="px-4 py-5">
+                              <div className="text-xs font-bold text-slate-600">{req.semester || '—'}</div>
+                            </td>
+
+                            {/* Gửi lúc */}
+                            <td className="px-4 py-5">
+                              <div className="text-xs font-bold text-slate-500">
+                                {new Date(req.createdAt).toLocaleDateString('vi-VN')}
+                              </div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">
+                                {new Date(req.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </td>
+
+                            {/* Trạng thái */}
+                            <td className="px-4 py-5">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sCfg.cls}`}>
+                                {sCfg.label}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-8 py-5" onClick={e => e.stopPropagation()}>
+                              <button
+                                onClick={() => setSelectedRequest(req)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition active:scale-95"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                Xem & Duyệt
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
+
+          {/* ── Sub-tab: Chờ nhập kho ── */}
+          {bookRequestSubTab === 'pending' && (() => {
+            const pendingList = getPendingImportBooks();
+            const allSelected = pendingList.length > 0 && pendingList.every(item => selectedBooks.has(item.key));
+            const someSelected = selectedBooks.size > 0;
+            return (
+              <>
+                {/* Bulk Action Toolbar */}
+                {someSelected && (
+                  <div className="mx-6 my-4 flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+                    <span className="text-xs font-black text-orange-700">{selectedBooks.size} sách đã chọn</span>
+                    <div className="flex-1" />
+                    <button
+                      onClick={handleExportExcel}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-orange-50 transition active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">download</span>
+                      Xuất Excel ({selectedBooks.size} sách)
+                    </button>
+                    <button
+                      onClick={() => bulkFileInputRef.current?.click()}
+                      disabled={bulkImporting}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-orange-200 transition active:scale-95 disabled:opacity-50"
+                    >
+                      {bulkImporting
+                        ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                        : <span className="material-symbols-outlined text-[16px]">upload_file</span>}
+                      {bulkImporting ? 'Đang xử lý...' : 'Nhập kho bằng Excel'}
+                    </button>
+                  </div>
+                )}
+
+                {pendingList.length === 0 ? (
+                  <div className="py-24 text-center text-slate-300">
+                    <span className="material-symbols-outlined text-[64px] block mb-4">inventory_2</span>
+                    <p className="font-bold uppercase tracking-widest text-xs">Không có sách nào đang chờ nhập kho</p>
+                    <p className="text-[10px] mt-2 text-slate-300">Duyệt yêu cầu từ Giảng viên để sách xuất hiện ở đây</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-orange-50/60">
+                          <th className="px-6 py-4 w-10">
+                            <input
+                              type="checkbox"
+                              checked={allSelected}
+                              onChange={() => {
+                                if (allSelected) {
+                                  setSelectedBooks(new Set());
+                                } else {
+                                  setSelectedBooks(new Set(pendingList.map(i => i.key)));
+                                }
+                              }}
+                              className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
+                            />
+                          </th>
+                          <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tên sách / Tác giả</th>
+                          <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ISBN / NXB</th>
+                          <th className="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SL</th>
+                          <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Giảng viên</th>
+                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {pendingList.map(({ req, book, idx, key }) => {
+                          const isChecked = selectedBooks.has(key);
+                          return (
+                            <tr key={key} className={`transition hover:bg-orange-50/30 ${isChecked ? 'bg-orange-50/50' : ''}`}>
+                              <td className="px-6 py-4">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    setSelectedBooks(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(key)) next.delete(key); else next.add(key);
+                                      return next;
+                                    });
+                                  }}
+                                  className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
+                                />
+                              </td>
+                              <td className="px-4 py-4">
+                                <div className="font-bold text-slate-800">{book.title}</div>
+                                <div className="text-xs text-slate-400 mt-0.5">{book.author || '—'}</div>
+                              </td>
+                              <td className="px-4 py-4 text-xs text-slate-500">
+                                <div className="font-bold">{book.isbn || 'Chưa có ISBN'}</div>
+                                <div className="text-slate-400 mt-0.5">{book.publisher || '—'}</div>
+                              </td>
+                              <td className="px-4 py-4 text-center">
+                                <span className="font-black text-orange-700 text-sm">{book.quantity}</span>
+                              </td>
+                              <td className="px-4 py-4">
+                                <div className="text-xs font-bold text-slate-600">{req.lecturer?.name || '—'}</div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">{req.semester}</div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <button
+                                  onClick={() => setImportTarget({ requestId: req._id, bookIndex: idx, bookItem: book })}
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:shadow-lg hover:shadow-teal-500/30 transition active:scale-95 ml-auto"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">download</span>
+                                  Nhập kho
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+
         </div>
       </>
     );
   };
+
+  // ─── Tab: Sách chờ nhập kho ────────────────────────────────────────────────
 
   const renderUsers = () => (
     <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
@@ -1387,6 +1955,25 @@ const LibrarianDashboard = () => {
       {returnResult && <ResultModal result={returnResult} onClose={() => setReturnResult(null)} />}
       {showCreateBookModal && <CreateBookModal onClose={() => setShowCreateBookModal(false)} onSuccess={fetchData} />}
       {editTarget && <EditBookModal book={editTarget} onClose={() => setEditTarget(null)} onSuccess={fetchData} />}
+      {/* ── Import Workflow Modal ── */}
+      {importTarget && (
+        <ImportBookModal
+          bookItem={importTarget.bookItem}
+          requestId={importTarget.requestId}
+          bookIndex={importTarget.bookIndex}
+          onClose={() => setImportTarget(null)}
+          onSuccess={fetchData}
+        />
+      )}
+      {/* ── Bulk Import Preview Modal ── */}
+      {bulkPreviewData && (
+        <BulkImportPreviewModal
+          dataRows={bulkPreviewData}
+          onClose={() => setBulkPreviewData(null)}
+          onConfirm={confirmBulkImport}
+          submitting={bulkImporting}
+        />
+      )}
 
       {/* ── Sidebar-driven Content Area ── */}
       <div className="pt-4">
@@ -1395,6 +1982,7 @@ const LibrarianDashboard = () => {
         {activeTab === 'borrows' && renderBorrows()}
         {activeTab === 'reservations' && renderReservations()}
         {activeTab === 'requests' && renderBookRequests()}
+        {activeTab === 'import' && (() => { if (bookRequestSubTab !== 'pending') setBookRequestSubTab('pending'); return renderBookRequests(); })()}
         {activeTab === 'fines' && renderFines()}
       </div>
     </div>
