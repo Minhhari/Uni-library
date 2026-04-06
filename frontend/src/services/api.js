@@ -68,6 +68,7 @@ export const bookAPI = {
   deleteBook: (id) => api.delete(`/books/${id}`),
   updateQuantity: (id, quantity) =>
     api.put(`/books/${id}/quantity`, { quantity }),
+  bulkAddBooks: (items) => api.post('/books/bulk-import', { items }),
 };
 
 // ─── Recommendation APIs ─────────────────────────────────

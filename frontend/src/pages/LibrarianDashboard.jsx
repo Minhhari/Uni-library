@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api, { bookRequestAPI } from '../services/api';
+import api, { bookRequestAPI, bookAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { CreateBookModal, EditBookModal } from '../components';
 import LibraryMap from '../components/LibraryMap';
@@ -579,12 +580,105 @@ const BorrowSlip = ({ group, slipIdx, actionLoading, onApprove, onReject, onPick
 const BulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) => {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-white/10">
+        <div className="bg-gradient-to-br from-orange-800 via-orange-600 to-amber-600 p-8 shrink-0 text-white relative flex justify-between items-start">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-16 blur-2xl" />
+          <div className="absolute bottom-0 left-10 w-32 h-32 bg-amber-500/20 rounded-full translate-y-16 blur-xl" />
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+              <span className="material-symbols-outlined text-[32px] text-amber-100">inventory_2</span>
+            </div>
+            <div>
+              <div className="text-amber-200 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Xác nhận báo cáo Excel</div>
+              <h2 className="text-2xl font-black tracking-tight leading-tight">Xem trước {dataRows.length} sách chờ nhập kho</h2>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition shrink-0 relative z-10">
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
+                <thead className="bg-slate-50/80 border-b border-slate-200">
+                  <tr>
+                    <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Mã Phiếu & Vị Trí (Idx)</th>
+                    <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sách & Tác Giả</th>
+                    <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Mã ISBN / Thể Loại</th>
+                    <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Tồn Kho</th>
+                    <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Giá Tiền (VNĐ)</th>
+                    <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Vị Trí Kệ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {dataRows.map((item, i) => (
+                    <tr key={i} className="hover:bg-orange-50/30 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-slate-500 text-xs truncate max-w-[150px]" title={item.requestId}>REQ: {item.requestId}</div>
+                        <div className="text-[10px] font-bold text-slate-400 mt-1">Vị trí dòng: {item.bookIndex}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-slate-800 text-sm max-w-[200px] truncate" title={item.title}>{item.title || 'N/A'}</div>
+                        <div className="text-[11px] font-semibold text-slate-500 mt-1 max-w-[200px] truncate" title={item.author}>{item.author || 'Chưa rõ tác giả'}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="text-xs font-bold text-slate-600">{item.isbn || 'Chưa có ISBN'}</div>
+                        <div className="inline-block mt-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-wider">
+                          {item.categoryName || 'Chưa phân loại'}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-50 text-amber-700 font-black text-sm border border-amber-100">
+                          {item.quantity || 1}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-amber-600 text-sm">{Number(item.price).toLocaleString('vi-VN')}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">VNĐ / Cuốn</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1.5 font-black text-orange-700 text-xs bg-orange-50 px-2 py-1 rounded-lg border border-orange-100 w-fit">
+                          <span className="material-symbols-outlined text-[14px]">location_on</span>
+                          {item.location || 'Chưa xếp'}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 bg-white border-t border-slate-200 flex gap-4 shrink-0 items-center justify-between">
+          <div className="text-xs font-bold text-slate-500">
+            Hãy chắc chắn Giá tiền và Mã vị trí là hoàn toàn chính xác.
+          </div>
+          <div className="flex gap-3">
+            <button onClick={onClose} disabled={submitting} className="px-8 py-3 border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900 transition active:scale-95 disabled:opacity-50">
+              Hủy / Quay Lại
+            </button>
+            <button onClick={onConfirm} disabled={submitting} className="flex gap-2 justify-center items-center px-8 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-xl hover:shadow-orange-500/30 transition active:scale-95 disabled:opacity-50 min-w-[200px]">
+              {submitting ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">cloud_upload</span>}
+              {submitting ? 'Đang Xử Lý...' : 'Xác Nhận Nhập Kho'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Direct Bulk Import Preview Modal ────────────────────────────────────────
+const DirectBulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) => {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
       <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="bg-gradient-to-br from-orange-800 via-amber-900 to-orange-900 p-8 shrink-0 text-white relative flex justify-between items-start">
+        <div className="bg-gradient-to-br from-indigo-800 via-indigo-900 to-indigo-800 p-8 shrink-0 text-white relative flex justify-between items-start">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-16 blur-2xl" />
           <div className="relative z-10">
-            <div className="text-orange-300 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Xác nhận dữ liệu Nhập kho</div>
-            <h2 className="text-2xl font-black tracking-tight leading-tight">Xem trước {dataRows.length} sách</h2>
+            <div className="text-indigo-300 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Xác nhận dữ liệu Nhập Sách</div>
+            <h2 className="text-2xl font-black tracking-tight leading-tight">Xem trước {dataRows.length} sách mới</h2>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition shrink-0 relative z-10">
             <span className="material-symbols-outlined text-[20px]">close</span>
@@ -595,8 +689,10 @@ const BulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) =>
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50/80">
                 <tr>
-                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Index</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Mã Request</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên Sách</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tác Giả</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">ISBN</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Số Lượng</th>
                   <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Giá (VNĐ)</th>
                   <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vị Trí</th>
                 </tr>
@@ -604,9 +700,11 @@ const BulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) =>
               <tbody className="divide-y divide-slate-50">
                 {dataRows.map((item, i) => (
                   <tr key={i} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-2 font-bold text-slate-500">{item.bookIndex}</td>
-                    <td className="px-4 py-2 text-xs text-slate-600 truncate max-w-[150px]">{item.requestId}</td>
-                    <td className="px-4 py-2 font-bold text-orange-600">{Number(item.price).toLocaleString('vi-VN')}</td>
+                    <td className="px-4 py-2 text-xs font-bold text-slate-700 truncate max-w-[200px]">{item.title}</td>
+                    <td className="px-4 py-2 text-xs text-slate-600 truncate max-w-[150px]">{item.author}</td>
+                    <td className="px-4 py-2 text-xs text-slate-500">{item.isbn}</td>
+                    <td className="px-4 py-2 font-bold text-indigo-600 text-center">{item.quantity}</td>
+                    <td className="px-4 py-2 font-bold text-emerald-600">{Number(item.price).toLocaleString('vi-VN')}</td>
                     <td className="px-4 py-2 font-black text-teal-700">{item.location}</td>
                   </tr>
                 ))}
@@ -618,9 +716,9 @@ const BulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) =>
           <button onClick={onClose} disabled={submitting} className="flex-1 py-3 border-2 border-slate-200 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition">
             Hủy / Chọn lại
           </button>
-          <button onClick={onConfirm} disabled={submitting} className="flex-1 flex gap-2 justify-center items-center py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-orange-500/30 transition disabled:opacity-50">
+          <button onClick={onConfirm} disabled={submitting} className="flex-1 flex gap-2 justify-center items-center py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-indigo-500/30 transition disabled:opacity-50">
             {submitting ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">upload_file</span>}
-            {submitting ? 'Đang tải lên...' : 'Xác nhận Nhập kho'}
+            {submitting ? 'Đang xử lý...' : 'Xác nhận Thêm Sách'}
           </button>
         </div>
       </div>
@@ -660,6 +758,11 @@ const LibrarianDashboard = () => {
   const [bulkPreviewData, setBulkPreviewData] = useState(null); // array of parsed items
   const [bookRequestSubTab, setBookRequestSubTab] = useState('requests'); // 'requests' | 'pending'
   const bulkFileInputRef = useRef(null);
+
+  // Direct bulk add state
+  const [directBulkImporting, setDirectBulkImporting] = useState(false);
+  const [directBulkPreviewData, setDirectBulkPreviewData] = useState(null);
+  const directBulkFileInputRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -826,26 +929,78 @@ const LibrarianDashboard = () => {
     return list;
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const pendingList = getPendingImportBooks();
     const selected = pendingList.filter(item => selectedBooks.has(item.key));
     if (selected.length === 0) { toast.warning('Vui lòng chọn ít nhất 1 sách để xuất.'); return; }
 
-    const wb = XLSX.utils.book_new();
-    const fullHeader = [['req_id', 'book_index', 'Tên Sách', 'Tác Giả', 'ISBN', 'Nhà Xuất Bản', 'Số Lượng', 'Thể Loại', 'Giá Tiền (đồng) *', 'Mã Vị Trí *']];
-    const fullRows = selected.map(({ req, book, idx }) => [
-      req._id, idx, book.title, book.author || '', book.isbn || '', book.publisher || '', book.quantity, book.categoryName || '', '', '',
-    ]);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Nhap Kho');
 
-    const ws = XLSX.utils.aoa_to_sheet([...fullHeader, ...fullRows]);
-    ws['!cols'] = [
-      { wch: 26 }, { wch: 8 }, { wch: 40 }, { wch: 20 }, { wch: 16 },
-      { wch: 22 }, { wch: 10 }, { wch: 16 }, { wch: 20 }, { wch: 14 },
-    ];
+      // Cột header
+      sheet.columns = [
+        { header: 'req_id', key: 'req_id', width: 26 },
+        { header: 'book_index', key: 'book_index', width: 12 },
+        { header: 'Tên Sách', key: 'title', width: 40 },
+        { header: 'Tác Giả', key: 'author', width: 20 },
+        { header: 'ISBN', key: 'isbn', width: 16 },
+        { header: 'Nhà Xuất Bản', key: 'publisher', width: 22 },
+        { header: 'Số Lượng', key: 'quantity', width: 10 },
+        { header: 'Thể Loại', key: 'category', width: 16 },
+        { header: 'Giá Tiền (đồng) *', key: 'price', width: 20 },
+        { header: 'Mã Vị Trí *', key: 'location', width: 16 },
+      ];
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Nhap Kho');
-    XLSX.writeFile(wb, `nhap-kho-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success(`Đã xuất ${selected.length} sách ra file Excel! Điền cột vàng (Giá + Vị trí) rồi tải lại.`);
+      // Style header
+      sheet.getRow(1).font = { bold: true };
+
+      const shelfList = '"' + SHELF_LOCATIONS.map(s => 'Kệ ' + s).join(',') + '"';
+
+      selected.forEach(({ req, book, idx }, i) => {
+        const rowNum = i + 2;
+        sheet.addRow({
+          req_id: req._id,
+          book_index: idx,
+          title: book.title,
+          author: book.author || '',
+          isbn: book.isbn || '',
+          publisher: book.publisher || '',
+          quantity: book.quantity,
+          category: book.categoryName || '',
+          price: '',
+          location: '',
+        });
+
+        // Data Validation cho Mã Vị Trí (Cột J)
+        sheet.getCell(`J${rowNum}`).dataValidation = {
+          type: 'list',
+          allowBlank: false,
+          formulae: [shelfList],
+          showErrorMessage: true,
+          errorTitle: 'Lỗi',
+          error: 'Vui lòng chọn mã vị trí từ danh sách thả xuống.'
+        };
+
+        // Bôi nền màu cam nhạt cho 2 cột cần điền
+        sheet.getCell(`I${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE0' } };
+        sheet.getCell(`J${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE0' } };
+      });
+
+      // Xuất file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `nhap-kho-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Đã xuất ${selected.length} sách ra file Excel! Lưu ý bấm "Enable Editing" khi mở file Excel (nếu có).`);
+    } catch (e) {
+      toast.error('Lỗi khi xuất file Excel');
+    }
   };
 
   const handleBulkImportUpload = async (e) => {
@@ -864,6 +1019,12 @@ const LibrarianDashboard = () => {
       const items = dataRows.map(r => ({
         requestId: String(r[0] || '').trim(),
         bookIndex: Number(r[1]),
+        title: String(r[2] || '').trim(),
+        author: String(r[3] || '').trim(),
+        isbn: String(r[4] || '').trim(),
+        publisher: String(r[5] || '').trim(),
+        quantity: Number(r[6]) || 1,
+        categoryName: String(r[7] || '').trim(),
         price: Number(r[8]) || 0,
         location: String(r[9] || '').trim(),
       }));
@@ -895,6 +1056,68 @@ const LibrarianDashboard = () => {
       toast.error(err.response?.data?.message || 'Nhập kho thất bại.');
     } finally {
       setBulkImporting(false);
+    }
+  };
+
+  const handleDirectBulkImportUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+
+      const items = rows.map(row => ({
+        title: (row['Tên Sách'] || row['Title'] || '').toString().trim(),
+        author: (row['Tác Giả'] || row['Author'] || '').toString().trim(),
+        isbn: (row['Mã ISBN'] || row['ISBN'] || '').toString().trim(),
+        publisher: (row['Nhà Xuất Bản'] || row['Publisher'] || '').toString().trim(),
+        publish_year: parseInt(row['Năm XB'] || row['Publish Year'], 10) || undefined,
+        price: parseFloat(row['Giá Tiền Dự Kiến'] || row['Giá Tiền'] || row['Price']) || 0,
+        quantity: parseInt(row['Số Lượng'] || row['Quantity'], 10) || 1,
+        categoryName: (row['Thể Loại'] || row['Category'] || '').toString().trim(),
+        location: (row['Mã Vị Trí'] || row['Vị trí'] || row['Location'] || '').toString().trim(),
+      })).filter(b => b.title);
+
+      if (items.length === 0) {
+        toast.error('Không tìm thấy dữ liệu hợp lệ. Vui lòng kiểm tra lại file.');
+        return;
+      }
+
+      setDirectBulkPreviewData(items);
+    } catch (err) {
+      toast.error('Lỗi đọc file Excel.');
+    }
+  };
+
+  const confirmDirectBulkImport = async () => {
+    if (!directBulkPreviewData) return;
+    setDirectBulkImporting(true);
+    try {
+      const res = await bookAPI.bulkAddBooks(directBulkPreviewData);
+      const { imported, failed, failures } = res.data.data;
+      toast.success(`Thêm thành công: ${imported} sách!`);
+      if (failed > 0) toast.warning(`${failed} sách thất bại: ${failures.map(f => f.title).join(', ')}`);
+      setDirectBulkPreviewData(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Thêm sách thất bại.');
+    } finally {
+      setDirectBulkImporting(false);
+    }
+  };
+
+  const handleDeleteBook = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa cuốn sách này? Dữ liệu không thể hoàn tác.')) return;
+    try {
+      await bookAPI.deleteBook(id);
+      toast.success('Xóa sách thành công');
+      fetchData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Không thể xóa sách này do đang có người mượn hoặc lỗi máy chủ');
     }
   };
 
@@ -1859,13 +2082,29 @@ const LibrarianDashboard = () => {
           <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic">Quản lý kho sách</h3>
           <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">{data.books.length} đầu sách trong kho</p>
         </div>
-        <button
-          onClick={() => setShowCreateBookModal(true)}
-          className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition shadow-xl active:scale-95 flex items-center gap-2"
-        >
-          <span className="material-symbols-outlined text-lg">add_box</span>
-          Thêm sách mới
-        </button>
+        <div className="flex gap-3">
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            ref={directBulkFileInputRef}
+            onChange={handleDirectBulkImportUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => directBulkFileInputRef.current?.click()}
+            className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm active:scale-95 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-lg">upload_file</span>
+            Nhập bằng Excel
+          </button>
+          <button
+            onClick={() => setShowCreateBookModal(true)}
+            className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition shadow-xl active:scale-95 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-lg">add_box</span>
+            Thêm sách mới
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -1929,6 +2168,13 @@ const LibrarianDashboard = () => {
                       <span className="material-symbols-outlined text-[16px]">edit</span>
                       Sửa
                     </button>
+                    <button
+                      onClick={() => handleDeleteBook(book._id)}
+                      className="inline-flex items-center gap-2 px-4 py-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition active:scale-95 shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                      Xóa
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -1972,6 +2218,16 @@ const LibrarianDashboard = () => {
           onClose={() => setBulkPreviewData(null)}
           onConfirm={confirmBulkImport}
           submitting={bulkImporting}
+        />
+      )}
+
+      {/* ── Direct Bulk Import Preview Modal ── */}
+      {directBulkPreviewData && (
+        <DirectBulkImportPreviewModal
+          dataRows={directBulkPreviewData}
+          onClose={() => setDirectBulkPreviewData(null)}
+          onConfirm={confirmDirectBulkImport}
+          submitting={directBulkImporting}
         />
       )}
 

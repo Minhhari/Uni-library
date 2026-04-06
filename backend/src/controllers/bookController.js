@@ -445,3 +445,92 @@ exports.updateBookQuantity = async (req, res) => {
     });
   }
 };
+
+// @desc    Bulk add books via frontend JSON array
+// @route   POST /api/books/bulk-import
+// @access  Private (Admin, Librarian)
+exports.bulkAddBooks = async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Danh sách sách trống.' });
+    }
+    const results = [];
+    const failures = [];
+
+    for (const item of items) {
+      const { title, author, isbn, publisher, publish_year, quantity, categoryName, price, location } = item;
+      try {
+        if (!title || price === undefined || !location) {
+          failures.push({ title: title || 'N/A', reason: 'Thiếu thông tin bắt buộc (Tên sách, Giá, Vị trí).' });
+          continue;
+        }
+
+        // Normalize location
+        const locStr = location.trim().toUpperCase().replace(/K[ÊE]\s*/gi, '').trim();
+        const match = locStr.match(/^([A-G])(\d+)$/);
+        const normalizedLocation = match ? `Kệ ${match[1]}${match[2]}` : location.trim();
+
+        let categoryId = null;
+        if (categoryName) {
+          let cat = await Category.findOne({ name: { $regex: new RegExp(`^${categoryName}$`, 'i') } });
+          if (!cat) {
+            const code = categoryName.toUpperCase().replace(/\s+/g, '_');
+            cat = await Category.create({ name: categoryName, code });
+          }
+          categoryId = cat._id;
+        }
+
+        let cover_image = '';
+        if (isbn) {
+          cover_image = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+        }
+
+        let bookDoc = null;
+        let action = 'created';
+
+        if (isbn) {
+          bookDoc = await Book.findOne({ isbn });
+        }
+
+        if (bookDoc) {
+          bookDoc.quantity += (quantity || 1);
+          bookDoc.available += (quantity || 1);
+          if (price > 0) bookDoc.price = price;
+          if (cover_image) bookDoc.cover_image = cover_image;
+          bookDoc.location = normalizedLocation;
+          await bookDoc.save();
+          action = 'updated';
+        } else {
+          const newBookData = {
+            title,
+            author: author || 'Chưa xác định',
+            isbn: isbn || `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            publisher: publisher || 'Chưa xác định',
+            publish_year: publish_year || new Date().getFullYear(),
+            quantity: quantity || 1,
+            available: quantity || 1,
+            price,
+            location: normalizedLocation,
+            cover_image,
+            status: 'available',
+          };
+          if (categoryId) newBookData.category = categoryId;
+          bookDoc = await Book.create(newBookData);
+        }
+
+        results.push({ title, action });
+      } catch (err) {
+        failures.push({ title: title || 'N/A', reason: err.message });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { imported: results.length, failed: failures.length, results, failures }
+    });
+  } catch (error) {
+    console.error('Error bulk adding books:', error);
+    res.status(500).json({ success: false, message: 'Nhập sách hàng loạt thất bại' });
+  }
+};

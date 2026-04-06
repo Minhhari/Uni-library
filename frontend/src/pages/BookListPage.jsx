@@ -1,8 +1,102 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookAPI } from '../services/api';
 import { LoadingSpinner, ErrorMessage, CreateBookModal } from '../components';
+
+const DirectBulkImportPreviewModal = ({ dataRows, onClose, onConfirm, submitting }) => {
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-white/10">
+                <div className="bg-gradient-to-br from-indigo-800 via-indigo-900 to-indigo-800 p-8 shrink-0 text-white relative flex justify-between items-start">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-16 blur-2xl" />
+                    <div className="absolute bottom-0 left-10 w-32 h-32 bg-indigo-500/20 rounded-full translate-y-16 blur-xl" />
+                    <div className="relative z-10 flex items-center gap-4">
+                        <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+                            <span className="material-symbols-outlined text-[32px] text-indigo-200">table_chart</span>
+                        </div>
+                        <div>
+                            <div className="text-indigo-300 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Xác nhận báo cáo Excel</div>
+                            <h2 className="text-2xl font-black tracking-tight leading-tight">Xem trước {dataRows.length} sách mới</h2>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition shrink-0 relative z-10">
+                        <span className="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left whitespace-nowrap">
+                                <thead className="bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sách & Tác Giả</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Mã ISBN / Thể Loại</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">NXB & Năm</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Tồn Kho</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Giá Tiền (VNĐ)</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Vị Trí Kệ</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {dataRows.map((item, i) => (
+                                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                                            <td className="px-5 py-4">
+                                                <div className="font-bold text-slate-800 text-sm max-w-[250px] truncate" title={item.title}>{item.title}</div>
+                                                <div className="text-[11px] font-semibold text-slate-500 mt-1 max-w-[250px] truncate" title={item.author}>{item.author || 'Chưa rõ tác giả'}</div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="text-xs font-bold text-slate-600">{item.isbn || 'Chưa có ISBN'}</div>
+                                                <div className="inline-block mt-1 px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-black uppercase tracking-wider">
+                                                    {item.categoryName || 'Chưa phân loại'}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="text-xs font-bold text-slate-600 truncate max-w-[150px]" title={item.publisher}>{item.publisher || 'NXB chưa rõ'}</div>
+                                                <div className="text-[11px] text-slate-400 font-semibold mt-1">Năm: {item.publish_year || '—'}</div>
+                                            </td>
+                                            <td className="px-5 py-4 text-center">
+                                                <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 font-black text-sm border border-emerald-100">
+                                                    {item.quantity}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="font-bold text-emerald-600 text-sm">{Number(item.price).toLocaleString('vi-VN')}</div>
+                                                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">VNĐ / Cuốn</div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-1.5 font-black text-teal-700 text-xs bg-teal-50 px-2 py-1 rounded-lg border border-teal-100 w-fit">
+                                                    <span className="material-symbols-outlined text-[14px]">location_on</span>
+                                                    {item.location || 'Chưa xếp'}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-6 bg-white border-t border-slate-200 flex gap-4 shrink-0 items-center justify-between">
+                    <div className="text-xs font-bold text-slate-500">
+                        Hệ thống sẽ cập nhật số lượng nếu trùng ISBN, hoặc tạo sách mới.
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={onClose} disabled={submitting} className="px-8 py-3 border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900 transition active:scale-95 disabled:opacity-50">
+                            Hủy / Quay lại
+                        </button>
+                        <button onClick={onConfirm} disabled={submitting} className="flex gap-2 justify-center items-center px-8 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-xl hover:shadow-indigo-500/30 transition active:scale-95 disabled:opacity-50 min-w-[200px]">
+                            {submitting ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">cloud_upload</span>}
+                            {submitting ? 'Đang thêm sách...' : 'Xác nhận Thêm Sách'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const BookListPage = () => {
     const [selectedGenre, setSelectedGenre] = useState('Tất cả');
@@ -23,12 +117,21 @@ const BookListPage = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { user } = useAuth();
 
+    // Direct bulk add state
+    const [directBulkImporting, setDirectBulkImporting] = useState(false);
+    const [directBulkPreviewData, setDirectBulkPreviewData] = useState(null);
+    const directBulkFileInputRef = useRef(null);
+
     useEffect(() => {
         loadCategories();
     }, []);
 
     useEffect(() => {
-        loadBooks();
+        const delayDebounceFn = setTimeout(() => {
+            loadBooks();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
     }, [page, selectedGenre, searchQuery, filterAuthor, filterYear, filterPublisher]);
 
     const loadCategories = async () => {
@@ -94,13 +197,57 @@ const BookListPage = () => {
         setFilterPublisher('');
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <LoadingSpinner />
-            </div>
-        );
-    }
+    const handleDirectBulkImportUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        e.target.value = '';
+
+        try {
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer);
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws);
+
+            const items = rows.map(row => ({
+                title: (row['Tên Sách'] || row['Title'] || '').toString().trim(),
+                author: (row['Tác Giả'] || row['Author'] || '').toString().trim(),
+                isbn: (row['Mã ISBN'] || row['ISBN'] || '').toString().trim(),
+                publisher: (row['Nhà Xuất Bản'] || row['Publisher'] || '').toString().trim(),
+                publish_year: parseInt(row['Năm XB'] || row['Publish Year'], 10) || undefined,
+                price: parseFloat(row['Giá Tiền (đồng) *'] || row['Giá Tiền Dự Kiến'] || row['Giá Tiền'] || row['Price']) || 0,
+                quantity: parseInt(row['Số Lượng'] || row['Quantity'], 10) || 1,
+                categoryName: (row['Thể Loại'] || row['Category'] || '').toString().trim(),
+                location: (row['Mã Vị Trí *'] || row['Mã Vị Trí'] || row['Vị trí'] || row['Location'] || '').toString().trim(),
+            })).filter(b => b.title);
+
+            if (items.length === 0) {
+                toast.error('Không tìm thấy dữ liệu hợp lệ. Vui lòng kiểm tra lại file.');
+                return;
+            }
+
+            setDirectBulkPreviewData(items);
+        } catch (err) {
+            toast.error('Lỗi đọc file Excel.');
+            console.error(err);
+        }
+    };
+
+    const confirmDirectBulkImport = async () => {
+        if (!directBulkPreviewData) return;
+        setDirectBulkImporting(true);
+        try {
+            const res = await bookAPI.bulkAddBooks(directBulkPreviewData);
+            const { imported, failed, failures } = res.data.data;
+            toast.success(`Thêm thành công: ${imported} sách!`);
+            if (failed > 0) toast.warning(`${failed} sách thất bại: ${failures.map(f => f.title).join(', ')}`);
+            setDirectBulkPreviewData(null);
+            loadBooks(); // refresh
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Thêm sách thất bại.');
+        } finally {
+            setDirectBulkImporting(false);
+        }
+    };
 
     if (error) {
         return (
@@ -118,18 +265,44 @@ const BookListPage = () => {
                     <p className="text-on-surface-variant text-lg">Khám phá tri thức mới trong số {allBooks.length} tựa sách</p>
                 </div>
                 {user?.role === 'librarian' && (
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
-                    >
-                        <span className="material-symbols-outlined text-lg">add_box</span>
-                        Thêm sách mới
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            ref={directBulkFileInputRef}
+                            onChange={handleDirectBulkImportUpload}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => directBulkFileInputRef.current?.click()}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-emerald-700 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-emerald-100 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm shadow-emerald-500/10 active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-lg">upload_file</span>
+                            Nhập bằng Excel
+                        </button>
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-lg">add_box</span>
+                            Thêm sách mới
+                        </button>
+                    </div>
                 )}
             </header>
 
             {/* Create Modal */}
             {showCreateModal && <CreateBookModal onClose={() => setShowCreateModal(false)} onSuccess={loadBooks} />}
+
+            {/* Direct Bulk Import Preview Modal */}
+            {directBulkPreviewData && (
+                <DirectBulkImportPreviewModal
+                    dataRows={directBulkPreviewData}
+                    onClose={() => setDirectBulkPreviewData(null)}
+                    onConfirm={confirmDirectBulkImport}
+                    submitting={directBulkImporting}
+                />
+            )}
 
             {/* ── Search + Advanced Filter ── */}
             <div className="bg-white rounded-2xl border border-surface-container-low shadow-sm overflow-hidden">
@@ -254,14 +427,18 @@ const BookListPage = () => {
             </div>
 
             {/* ── Results count ── */}
-            {(searchQuery || hasAdvancedFilter || selectedGenre !== 'Tất cả') && (
+            {(searchQuery || hasAdvancedFilter || selectedGenre !== 'Tất cả') && !loading && (
                 <p className="text-sm text-on-surface-variant font-medium">
                     Tìm thấy <span className="font-black text-primary">{totalBooks}</span> sách
                 </p>
             )}
 
             {/* ── Book Grid ── */}
-            {filteredBooks.length === 0 ? (
+            {loading ? (
+                <div className="py-20 flex justify-center">
+                    <LoadingSpinner />
+                </div>
+            ) : filteredBooks.length === 0 ? (
                 <div className="py-20 text-center">
                     <span className="material-symbols-outlined text-8xl text-on-surface-variant/20 mb-4">search_off</span>
                     <h3 className="text-2xl font-bold text-on-surface-variant">Không tìm thấy sách</h3>
@@ -320,7 +497,7 @@ const BookListPage = () => {
             )}
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {!loading && totalPages > 1 && (
                 <footer className="pt-12 flex justify-center border-t border-surface-container-low">
                     <div className="flex items-center gap-2">
                         <button

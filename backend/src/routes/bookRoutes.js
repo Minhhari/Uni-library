@@ -8,7 +8,8 @@ const {
   deleteBook,
   updateBookQuantity,
   getCategories,
-  getShelfStats
+  getShelfStats,
+  bulkAddBooks
 } = require('../controllers/bookController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
@@ -44,10 +45,11 @@ router.get('/:id', getBookById);
 
 // Protected routes - Admin and Librarian only
 router.post('/', protect, authorize('admin', 'librarian'), bookValidation, createBook);
+router.post('/bulk-import', protect, authorize('admin', 'librarian'), bulkAddBooks);
 router.put('/:id', protect, authorize('admin', 'librarian'), updateBookValidation, updateBook);
 router.put('/:id/quantity', protect, authorize('admin', 'librarian'), updateBookQuantity);
 
-// Admin only route
-router.delete('/:id', protect, authorize('admin'), deleteBook);
+// Admin and Librarian can delete
+router.delete('/:id', protect, authorize('admin', 'librarian'), deleteBook);
 
 module.exports = router;
