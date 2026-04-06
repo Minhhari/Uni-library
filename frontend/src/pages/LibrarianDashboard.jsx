@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api from '../services/api';
+import api, { bookRequestAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { CreateBookModal, EditBookModal } from '../components';
 
@@ -404,6 +404,10 @@ const LibrarianDashboard = () => {
   const [returnResult, setReturnResult] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
+  // Book request review state
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [rejectInputs, setRejectInputs] = useState({}); // { bookIndex: 'reason string' }
+  const [bookItemLoading, setBookItemLoading] = useState({}); // { `${reqId}_${idx}`: true }
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -512,13 +516,32 @@ const LibrarianDashboard = () => {
     }
   };
 
-  const handleUpdateRequestStatus = async (id, status) => {
+  const handleUpdateRequestStatus = async (id, status, note) => {
     try {
-      await api.put(`/book-requests/${id}/status`, { status });
-      toast.success(`Đã cập nhật trạng thái: ${status}`);
+      await bookRequestAPI.updateStatus(id, status, note);
+      toast.success(`Đã cập nhật phiếu: ${status}`);
       fetchData();
+      if (selectedRequest?._id === id) setSelectedRequest(null);
     } catch (e) {
       toast.error(e.response?.data?.message || 'Lỗi');
+    }
+  };
+
+  const handleBookItemStatus = async (requestId, bookIndex, bookStatus, rejectReason) => {
+    const key = `${requestId}_${bookIndex}`;
+    setBookItemLoading(p => ({ ...p, [key]: true }));
+    try {
+      const res = await bookRequestAPI.updateBookItemStatus(requestId, bookIndex, bookStatus, rejectReason);
+      toast.success(bookStatus === 'approved' ? '✅ Đã duyệt cuốn sách' : '❌ Đã từ chối cuốn sách');
+      // Update selectedRequest in-place so modal stays open
+      if (res.data?.data) setSelectedRequest(res.data.data);
+      // Clear reject input for this book
+      setRejectInputs(p => { const n = { ...p }; delete n[bookIndex]; return n; });
+      fetchData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Lỗi cập nhật');
+    } finally {
+      setBookItemLoading(p => ({ ...p, [key]: false }));
     }
   };
 
@@ -911,76 +934,309 @@ const LibrarianDashboard = () => {
     </div>
   );
 
-  const renderBookRequests = () => (
-    <div className="bg-emerald-900 rounded-[2rem] shadow-2xl overflow-hidden text-white">
-      <div className="p-10 border-b border-white/10">
-        <h3 className="text-2xl font-black tracking-tighter uppercase italic">Yêu cầu từ Giảng viên (Lecturer Requests)</h3>
-        <p className="text-emerald-400 text-xs font-bold mt-2 tracking-widest opacity-80 underline underline-offset-4">Danh sách sách cần bổ sung cho học kỳ tới</p>
-      </div>
-      <div className="p-10">
-        <div className="grid grid-cols-1 gap-6">
-          {data.bookRequests.map(req => (
-            <div key={req._id} className="bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/[0.08] transition relative group">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                      <span className="material-symbols-outlined text-[32px]">campaign</span>
-                    </div>
-                    <div>
-                      <div className="text-lg font-black">{req.lecturer?.name}</div>
-                      <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest">{req.lecturer?.department}</div>
-                    </div>
-                    <span className={`ml-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg
-                      ${req.status === 'Approved' ? 'bg-emerald-500 text-white' : req.status === 'Rejected' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-amber-900'}`}>
-                      {req.status === 'Approved' ? 'Đã duyệt' : req.status === 'Rejected' ? 'Từ chối' : 'Chờ duyệt'}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {req.books?.map((b, i) => (
-                      <span key={i} className="px-4 py-2 bg-white/10 rounded-xl text-[11px] font-bold border border-white/5 group-hover:bg-white/20 transition-colors">
-                        {b.title} <span className="opacity-50 ml-1">x {b.quantity}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
+  const renderBookRequests = () => {
+    const pending = data.bookRequests.filter(r => r.status === 'Pending').length;
 
-                <div className="flex items-center gap-3 shrink-0">
-                  {req.status === 'Pending' && (
-                    <>
-                      <button
-                        onClick={() => handleUpdateRequestStatus(req._id, 'Approved')}
-                        className="whitespace-nowrap px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                        Duyệt nhập
-                      </button>
-                      <button
-                        onClick={() => handleUpdateRequestStatus(req._id, 'Rejected')}
-                        className="whitespace-nowrap px-6 py-3.5 bg-white/5 hover:bg-rose-500/20 text-white border border-white/20 hover:border-rose-500/30 rounded-2xl font-black uppercase tracking-widest text-[10px] transition active:scale-95 flex items-center gap-2"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">cancel</span>
-                        Từ chối
-                      </button>
-                    </>
-                  )}
-                  {req.status !== 'Pending' && (
-                    <div className="text-right">
-                      <div className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Ghi chú xử lý</div>
-                      <div className="text-sm font-bold italic">"{req.note || 'Đã xử lý xong'}"</div>
+    const statusCfg = {
+      Pending: { label: 'Chờ duyệt', cls: 'bg-amber-100 text-amber-700' },
+      Approved: { label: 'Đã duyệt', cls: 'bg-emerald-100 text-emerald-700' },
+      Rejected: { label: 'Từ chối', cls: 'bg-red-100 text-red-600' },
+      PartiallyApproved: { label: 'Duyệt 1 phần', cls: 'bg-blue-100 text-blue-700' },
+    };
+
+    const bookStatusCfg = {
+      pending: { label: 'Chờ duyệt', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+      approved: { label: 'Đã duyệt', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      rejected: { label: 'Từ chối', cls: 'bg-red-50 text-red-600 border-red-200' },
+    };
+
+    return (
+      <>
+        {/* Detail Modal */}
+        {selectedRequest && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 p-8 text-white relative overflow-hidden shrink-0">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-20 translate-x-20 blur-2xl" />
+                <div className="flex items-start justify-between relative z-10">
+                  <div>
+                    <div className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.25em] mb-1">Chi tiết phiếu yêu cầu</div>
+                    <h2 className="text-2xl font-black tracking-tight">{selectedRequest.lecturer?.name}</h2>
+                    <p className="text-emerald-300 text-sm mt-1">{selectedRequest.lecturer?.department || selectedRequest.lecturer?.email}</p>
+                    <div className="flex items-center gap-3 mt-3">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusCfg[selectedRequest.status]?.cls || 'bg-gray-100 text-gray-500'}`}>
+                        {statusCfg[selectedRequest.status]?.label || selectedRequest.status}
+                      </span>
+                      <span className="text-emerald-400 text-xs font-bold">
+                        {new Date(selectedRequest.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                  )}
+                  </div>
+                  <button onClick={() => setSelectedRequest(null)}
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
                 </div>
               </div>
+
+              {/* Books Table */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[900px]">
+                    <thead className="sticky top-0 bg-slate-50 z-10">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">#</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tên sách / Tác giả</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ISBN / NXB / Năm</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thể loại</th>
+                        <th className="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SL / Giá</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Lý do</th>
+                        <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trạng thái</th>
+                        <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {selectedRequest.books.map((book, idx) => {
+                        const loadKey = `${selectedRequest._id}_${idx}`;
+                        const isLoading = bookItemLoading[loadKey];
+                        const bCfg = bookStatusCfg[book.bookStatus] || bookStatusCfg.pending;
+                        const hasStock = (book.existingStock || 0) > 0;
+                        const showRejectInput = rejectInputs[idx] !== undefined;
+
+                        return (
+                          <tr key={idx} className={`transition hover:bg-slate-50/80 ${book.bookStatus === 'rejected' ? 'opacity-60' : ''}`}>
+                            {/* # */}
+                            <td className="px-6 py-4 text-slate-400 font-black text-[11px]">{idx + 1}</td>
+
+                            {/* Title / Author */}
+                            <td className="px-4 py-4">
+                              <div className="font-bold text-slate-800 max-w-[180px]" title={book.title}>{book.title}</div>
+                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">{book.author || '—'}</div>
+                              {hasStock && (
+                                <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-black text-amber-700">
+                                  <span className="material-symbols-outlined text-[12px]">warning</span>
+                                  Đã có {book.existingStock} cuốn trong kho
+                                </div>
+                              )}
+                            </td>
+
+                            {/* ISBN / Publisher */}
+                            <td className="px-4 py-4">
+                              <div className="text-[11px] font-bold text-slate-600">{book.isbn || <span className="text-slate-300 italic">Không có ISBN</span>}</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">{book.publisher || '—'} {book.publish_year ? `(${book.publish_year})` : ''}</div>
+                            </td>
+
+                            {/* Category */}
+                            <td className="px-4 py-4">
+                              <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">{book.categoryName || '—'}</span>
+                            </td>
+
+                            {/* Qty / Price */}
+                            <td className="px-4 py-4 text-center">
+                              <div className="font-black text-slate-800 text-sm">{book.quantity}</div>
+                              {book.price > 0 && <div className="text-[10px] text-slate-400 font-bold">{Number(book.price).toLocaleString('vi-VN')} đ</div>}
+                            </td>
+
+                            {/* Reason */}
+                            <td className="px-4 py-4">
+                              <div className="text-[11px] text-slate-500 italic max-w-[140px]" title={book.reason}>{book.reason || '—'}</div>
+                            </td>
+
+                            {/* Per-book status */}
+                            <td className="px-4 py-4">
+                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${bCfg.cls}`}>
+                                {bCfg.label}
+                              </span>
+                              {book.rejectReason && (
+                                <div className="mt-1 text-[10px] text-red-500 italic max-w-[120px]">{book.rejectReason}</div>
+                              )}
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-6 py-4">
+                              {book.bookStatus === 'pending' && (
+                                <div className="flex flex-col items-end gap-2">
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'approved', undefined)}
+                                      disabled={isLoading}
+                                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black hover:bg-emerald-700 transition disabled:opacity-50 active:scale-95"
+                                    >
+                                      {isLoading ? <span className="material-symbols-outlined animate-spin text-[12px]">autorenew</span> : <span className="material-symbols-outlined text-[14px]">check</span>}
+                                      Duyệt
+                                    </button>
+                                    <button
+                                      onClick={() => setRejectInputs(p => ({ ...p, [idx]: p[idx] !== undefined ? undefined : '' }))}
+                                      disabled={isLoading}
+                                      className="flex items-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-[10px] font-black hover:bg-rose-100 transition disabled:opacity-50 active:scale-95"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">close</span>
+                                      Từ chối
+                                    </button>
+                                  </div>
+                                  {showRejectInput && (
+                                    <div className="w-full flex flex-col gap-1.5">
+                                      <textarea
+                                        value={rejectInputs[idx]}
+                                        onChange={e => setRejectInputs(p => ({ ...p, [idx]: e.target.value }))}
+                                        placeholder="Lý do từ chối..."
+                                        rows={2}
+                                        className="w-full max-w-[200px] px-3 py-2 text-xs border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-300/50 focus:border-rose-400 resize-none"
+                                      />
+                                      <button
+                                        onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'rejected', rejectInputs[idx])}
+                                        disabled={isLoading}
+                                        className="self-end flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white rounded-xl text-[10px] font-black hover:bg-rose-700 transition disabled:opacity-50"
+                                      >
+                                        Xác nhận từ chối
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {book.bookStatus !== 'pending' && (
+                                <button
+                                  onClick={() => handleBookItemStatus(selectedRequest._id, idx, 'pending', undefined)}
+                                  disabled={isLoading}
+                                  className="text-[10px] text-slate-400 underline hover:text-slate-600 transition"
+                                >
+                                  Hoàn tác
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
+                <div className="text-xs text-slate-500 font-bold">
+                  {selectedRequest.books.filter(b => b.bookStatus === 'approved').length} duyệt ·
+                  {selectedRequest.books.filter(b => b.bookStatus === 'rejected').length} từ chối ·
+                  {selectedRequest.books.filter(b => b.bookStatus === 'pending').length} chờ
+                </div>
+                <button onClick={() => setSelectedRequest(null)}
+                  className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition">
+                  Đóng
+                </button>
+              </div>
             </div>
-          ))}
-          {data.bookRequests.length === 0 && (
-            <div className="py-20 text-center text-white/20 font-black uppercase tracking-[0.3em]">Hệ thống chưa có yêu cầu mua sách nào</div>
+          </div>
+        )}
+
+        {/* List View */}
+        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic">Yêu cầu mua sách từ Giảng viên</h3>
+              <p className="text-slate-400 text-xs font-bold mt-1 tracking-widest">
+                {data.bookRequests.length} phiếu yêu cầu
+                {pending > 0 && <span className="ml-3 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-lg font-black">{pending} chờ duyệt</span>}
+              </p>
+            </div>
+          </div>
+
+          {data.bookRequests.length === 0 ? (
+            <div className="py-24 text-center text-slate-300">
+              <span className="material-symbols-outlined text-[64px] block mb-4">inbox</span>
+              <p className="font-bold uppercase tracking-widest text-xs">Chưa có phiếu yêu cầu nào</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50/60">
+                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mã phiếu</th>
+                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Giảng viên</th>
+                    <th className="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Số đầu sách</th>
+                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Học kỳ</th>
+                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gửi lúc</th>
+                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trạng thái</th>
+                    <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {data.bookRequests.map((req, i) => {
+                    const sCfg = statusCfg[req.status] || { label: req.status, cls: 'bg-gray-100 text-gray-500' };
+                    const duplicateCount = req.books.filter(b => (b.existingStock || 0) > 0).length;
+
+                    return (
+                      <tr key={req._id} className="hover:bg-slate-50/50 transition cursor-pointer" onClick={() => setSelectedRequest(req)}>
+                        {/* Mã phiếu */}
+                        <td className="px-8 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center font-black text-emerald-700 text-sm border border-emerald-100">
+                              #{String(i + 1).padStart(2, '0')}
+                            </div>
+                            {duplicateCount > 0 && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black rounded-lg">
+                                <span className="material-symbols-outlined text-[12px]">warning</span>
+                                {duplicateCount} trùng kho
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Giảng viên */}
+                        <td className="px-4 py-5">
+                          <div className="font-bold text-slate-800">{req.lecturer?.name || 'Ẩn danh'}</div>
+                          <div className="text-[10px] text-slate-400 font-bold mt-0.5">{req.lecturer?.department || req.lecturer?.email}</div>
+                        </td>
+
+                        {/* Số sách */}
+                        <td className="px-4 py-5 text-center">
+                          <div className="text-2xl font-black text-slate-800">{req.books.length}</div>
+                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">đầu sách</div>
+                        </td>
+
+                        {/* Học kỳ */}
+                        <td className="px-4 py-5">
+                          <div className="text-xs font-bold text-slate-600">{req.semester || '—'}</div>
+                        </td>
+
+                        {/* Gửi lúc */}
+                        <td className="px-4 py-5">
+                          <div className="text-xs font-bold text-slate-500">
+                            {new Date(req.createdAt).toLocaleDateString('vi-VN')}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {new Date(req.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </td>
+
+                        {/* Trạng thái */}
+                        <td className="px-4 py-5">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sCfg.cls}`}>
+                            {sCfg.label}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-8 py-5" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => setSelectedRequest(req)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition active:scale-95"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                            Xem & Duyệt
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-      </div>
-    </div>
-  );
+      </>
+    );
+  };
 
   const renderUsers = () => (
     <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">

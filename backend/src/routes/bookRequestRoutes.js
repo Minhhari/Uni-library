@@ -7,6 +7,7 @@ const {
     getMyRequests,
     getAllRequests,
     updateRequestStatus,
+    updateBookItemStatus,
 } = bookRequestController;
 
 const multer = require('multer');
@@ -23,5 +24,6 @@ router.get('/my-requests', authorize('lecturer', 'admin', 'librarian'), getMyReq
 // Librarian/Admin endpoints
 router.get('/', authorize('admin', 'librarian'), getAllRequests);
 router.put('/:id/status', authorize('admin', 'librarian'), updateRequestStatus);
+router.put('/:id/books/:bookIndex/status', authorize('admin', 'librarian'), updateBookItemStatus);
 
 module.exports = router;

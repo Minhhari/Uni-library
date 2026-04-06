@@ -1,51 +1,117 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { bookRequestAPI } from '../services/api';
 
+// ─── Constants ──────────────────────────────────────────────────────────────────
+const COLUMNS = [
+    { key: 'title', label: 'Tên Sách', required: true },
+    { key: 'author', label: 'Tác Giả', required: true },
+    { key: 'isbn', label: 'Mã ISBN', required: true },
+    { key: 'publisher', label: 'Nhà Xuất Bản', required: true },
+    { key: 'publish_year', label: 'Năm XB', required: true },
+    { key: 'price', label: 'Giá Tiền Dự Kiến', required: true },
+    { key: 'quantity', label: 'Số Lượng', required: true },
+    { key: 'categoryName', label: 'Thể Loại', required: true },
+    { key: 'reason', label: 'Lý do yêu cầu', required: true },
+];
+
+const REQUIRED_KEYS = COLUMNS.filter(c => c.required).map(c => c.key);
+
+// ─── Helper: generate xlsx template client-side ──────────────────────────────
+const downloadTemplate = async () => {
+    const { utils, writeFile } = await import('xlsx');
+    const headers = COLUMNS.map(c => c.label);
+    const exampleRow = [
+        'Lập trình Python nâng cao',
+        'Nguyễn Văn A',
+        '978-604-1234-56-7',
+        'NXB Đại học Quốc gia',
+        2023,
+        250000,
+        5,
+        'Khoa học máy tính',
+        'Môn học Lập trình Python - HK2 2025-2026',
+    ];
+    const ws = utils.aoa_to_sheet([headers, exampleRow]);
+
+    // Column widths
+    ws['!cols'] = [22, 18, 16, 20, 8, 14, 8, 18, 30].map(w => ({ wch: w }));
+
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, 'Danh sách sách');
+    writeFile(wb, 'Template_Yêu_Cầu_Sách.xlsx');
+};
+
+// ─── Helper: validate a parsed row ──────────────────────────────────────────
+const validateRow = (row) => {
+    const errors = [];
+    COLUMNS.forEach(c => {
+        if (c.required) {
+            const val = row[c.key];
+            if (c.key === 'quantity') {
+                const qty = Number(val);
+                if (!qty || qty < 1) errors.push(`Số lượng không hợp lệ`);
+            } else if (c.key === 'price' || c.key === 'publish_year') {
+                if (val === undefined || val === null || String(val).trim() === '') errors.push(`Thiếu ${c.label}`);
+            } else {
+                if (!val?.toString().trim()) errors.push(`Thiếu ${c.label}`);
+            }
+        }
+    });
+    return errors;
+};
+
+// ─── StatusBadge for request history ────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+    const cfg = {
+        Pending: { label: 'Chờ duyệt', cls: 'bg-amber-50 text-amber-600 border-amber-100' },
+        Approved: { label: 'Đã duyệt', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        Rejected: { label: 'Từ chối', cls: 'bg-rose-50 text-rose-600 border-rose-100' },
+        PartiallyApproved: { label: 'Duyệt một phần', cls: 'bg-blue-50 text-blue-600 border-blue-100' },
+    }[status] || { label: status, cls: 'bg-gray-50 text-gray-500 border-gray-100' };
+    return (
+        <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md border ${cfg.cls}`}>
+            {cfg.label}
+        </span>
+    );
+};
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 const LecturerBookRequestPage = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    // Manual form state
-    const [books, setBooks] = useState([{ title: '', major: '', quantity: 1 }]);
-    const [semester, setSemester] = useState('Upcoming Semester');
+    const [semester, setSemester] = useState('Học kỳ 2 năm 2025-2026');
     const [submitLoading, setSubmitLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('upload'); // 'manual' | 'upload'
 
-    // Upload state
+    // Upload flow state
     const [file, setFile] = useState(null);
+    const [previewRows, setPreviewRows] = useState(null); // null = not parsed yet
+    const [dragOver, setDragOver] = useState(false);
+    const fileInputRef = useRef(null);
 
-    const [activeTab, setActiveTab] = useState('manual'); // 'manual' | 'upload'
+    // Manual form
+    const [books, setBooks] = useState([{
+        title: '', author: '', isbn: '', publisher: '',
+        publish_year: '', price: '', quantity: 1,
+        categoryName: '', reason: '',
+    }]);
 
-    useEffect(() => {
-        fetchMyRequests();
-    }, []);
+    useEffect(() => { fetchMyRequests(); }, []);
 
     const fetchMyRequests = async () => {
         try {
             setLoading(true);
             const res = await bookRequestAPI.getMyRequests();
-            if (res.data?.success) {
-                setRequests(res.data.data);
-            }
-        } catch (error) {
-            console.error('Lỗi khi tải lịch sử:', error);
+            if (res.data?.success) setRequests(res.data.data);
+        } catch (e) {
+            console.error('Lỗi khi tải lịch sử:', e);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAddRow = () => {
-        setBooks([...books, { title: '', major: '', quantity: 1 }]);
-    };
-
-    const handleRemoveRow = (index) => {
-        if (books.length > 1) {
-            const newBooks = [...books];
-            newBooks.splice(index, 1);
-            setBooks(newBooks);
-        }
-    };
-
+    // ── Manual form handlers ────────────────────────────────────────────────
     const handleBookChange = (index, field, value) => {
         const newBooks = [...books];
         newBooks[index][field] = value;
@@ -54,59 +120,101 @@ const LecturerBookRequestPage = () => {
 
     const submitManualRequest = async (e) => {
         e.preventDefault();
+        const validBooks = books.filter(b => validateRow(b).length === 0);
+        if (validBooks.length !== books.length) {
+            toast.warning('Vui lòng điền ĐẦY ĐỦ tất cả các trường cho mỗi cuốn sách.');
+            return;
+        }
         try {
             setSubmitLoading(true);
-            // Validate
-            const validBooks = books.filter(b => b.title.trim() !== '' && b.major.trim() !== '');
-            if (validBooks.length === 0) {
-                toast.warning('Vui lòng điền tên sách và ngành cho ít nhất 1 dòng.');
-                return;
-            }
-
-            const res = await bookRequestAPI.createRequest({
-                books: validBooks,
-                semester
-            });
-
+            const payload = validBooks.map(b => ({
+                ...b,
+                quantity: Number(b.quantity) || 1,
+                price: Number(b.price) || 0,
+                publish_year: Number(b.publish_year) || undefined,
+            }));
+            const res = await bookRequestAPI.createRequest({ books: payload, semester });
             if (res.data?.success) {
                 toast.success('Gửi yêu cầu thành công!');
-                setBooks([{ title: '', major: '', quantity: 1 }]);
+                setBooks([{ title: '', author: '', isbn: '', publisher: '', publish_year: '', price: '', quantity: 1, categoryName: '', reason: '' }]);
                 fetchMyRequests();
             }
-        } catch (error) {
-            console.error('Lỗi khi gửi:', error);
+        } catch (e) {
             toast.error('Gửi yêu cầu thất bại. Vui lòng thử lại.');
         } finally {
             setSubmitLoading(false);
         }
     };
 
-    const submitUploadRequest = async (e) => {
+    // ── Upload / Preview handlers ───────────────────────────────────────────
+    const parseFile = async (f) => {
+        if (!f) return;
+        setFile(f);
+        try {
+            const { read, utils } = await import('xlsx');
+            const buffer = await f.arrayBuffer();
+            const wb = read(buffer, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const raw = utils.sheet_to_json(ws, { defval: '' });
+
+            const rows = raw.map(row => ({
+                title: (row['Tên Sách'] || row['Ten Sach'] || row['Title'] || '').toString().trim(),
+                author: (row['Tác Giả'] || row['Tac Gia'] || row['Author'] || '').toString().trim(),
+                isbn: (row['Mã ISBN'] || row['Ma ISBN'] || row['ISBN'] || '').toString().trim(),
+                publisher: (row['Nhà Xuất Bản'] || row['Nha Xuat Ban'] || row['Publisher'] || '').toString().trim(),
+                publish_year: (row['Năm XB'] || row['Nam XB'] || row['Publish Year'] || '').toString().trim(),
+                price: (row['Giá Tiền Dự Kiến'] || row['Gia Tien Du Kien'] || row['Price'] || '').toString().trim(),
+                quantity: (row['Số Lượng'] || row['So Luong'] || row['Quantity'] || '1').toString().trim(),
+                categoryName: (row['Thể Loại'] || row['The Loai'] || row['Category'] || '').toString().trim(),
+                reason: (row['Lý do yêu cầu'] || row['Ly do yeu cau'] || row['Reason'] || '').toString().trim(),
+            }));
+
+            setPreviewRows(rows);
+        } catch (err) {
+            toast.error('Không thể đọc file Excel. Vui lòng kiểm tra lại định dạng.');
+            setPreviewRows(null);
+        }
+    };
+
+    const handleFileDrop = (e) => {
         e.preventDefault();
-        if (!file) {
-            toast.warning('Vui lòng chọn file Excel.');
+        setDragOver(false);
+        const f = e.dataTransfer.files[0];
+        if (f) parseFile(f);
+    };
+
+    const resetUpload = () => {
+        setFile(null);
+        setPreviewRows(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const submitUploadRequest = async () => {
+        if (!previewRows || previewRows.length === 0) return;
+        const hasErrors = previewRows.some(r => validateRow(r).length > 0);
+        if (hasErrors) {
+            toast.warning('Vui lòng sửa các dòng lỗi (bôi đỏ) trước khi gửi.');
             return;
         }
-
         try {
             setSubmitLoading(true);
             const formData = new FormData();
             formData.append('file', file);
             formData.append('semester', semester);
-
             const res = await bookRequestAPI.uploadExcel(formData);
             if (res.data?.success) {
-                toast.success('Tải file và tạo yêu cầu thành công!');
-                setFile(null);
+                toast.success(`Tải lên thành công ${previewRows.length} sách!`);
+                resetUpload();
                 fetchMyRequests();
             }
-        } catch (error) {
-            console.error('Lỗi upload:', error);
-            toast.error('Upload thất bại. ' + (error.response?.data?.message || ''));
+        } catch (e) {
+            toast.error('Gửi thất bại. ' + (e.response?.data?.message || ''));
         } finally {
             setSubmitLoading(false);
         }
     };
+
+    const allValid = previewRows && previewRows.length > 0 && previewRows.every(r => validateRow(r).length === 0);
 
     return (
         <div className="animate-fade-in pb-16">
@@ -116,160 +224,218 @@ const LecturerBookRequestPage = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* TRÁI: FORM YÊU CẦU */}
+                {/* LEFT: FORM */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {/* Tabs */}
                         <div className="flex border-b border-gray-100">
-                            <button
-                                className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === 'manual' ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/50' : 'text-gray-500 hover:bg-gray-50'}`}
-                                onClick={() => setActiveTab('manual')}
-                            >
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined text-lg">edit_document</span>
-                                    <span>Nhập thủ công</span>
-                                </div>
-                            </button>
-                            <button
-                                className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === 'upload' ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/50' : 'text-gray-500 hover:bg-gray-50'}`}
-                                onClick={() => setActiveTab('upload')}
-                            >
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined text-lg">upload_file</span>
-                                    <span>Tải lên Excel</span>
-                                </div>
-                            </button>
+                            {[
+                                { id: 'upload', icon: 'upload_file', label: 'Tải lên Excel' },
+                                { id: 'manual', icon: 'edit_document', label: 'Nhập thủ công' },
+                            ].map(tab => (
+                                <button key={tab.id}
+                                    className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === tab.id ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/50' : 'text-gray-500 hover:bg-gray-50'}`}
+                                    onClick={() => setActiveTab(tab.id)}>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                    </div>
+                                </button>
+                            ))}
                         </div>
 
                         <div className="p-6">
+                            {/* Semester field - shared */}
                             <div className="mb-6">
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Học kỳ / Giai đoạn</label>
-                                <input
-                                    type="text"
-                                    value={semester}
-                                    onChange={(e) => setSemester(e.target.value)}
+                                <input type="text" value={semester} onChange={e => setSemester(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
-                                    placeholder="VD: Học kỳ 1 năm 2026-2027"
-                                />
+                                    placeholder="VD: Học kỳ 1 năm 2026-2027" />
                             </div>
 
-                            {activeTab === 'manual' ? (
+                            {/* === UPLOAD TAB === */}
+                            {activeTab === 'upload' && (
+                                <div>
+                                    {!previewRows ? (
+                                        /* Step 1: Choose file */
+                                        <>
+                                            {/* Download template */}
+                                            <div className="mb-4 flex items-center justify-between">
+                                                <p className="text-sm font-semibold text-gray-700">Bước 1: Tải file mẫu, điền thông tin, rồi upload lên</p>
+                                                <button
+                                                    onClick={downloadTemplate}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm font-bold hover:bg-blue-100 transition"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg">download</span>
+                                                    Tải file mẫu (.xlsx)
+                                                </button>
+                                            </div>
+
+                                            {/* Required fields note */}
+                                            <div className="mb-4 bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-800 flex gap-2">
+                                                <span className="material-symbols-outlined text-amber-500 text-sm mt-0.5">info</span>
+                                                <div>
+                                                    <strong>Trường bắt buộc (*): </strong>
+                                                    {COLUMNS.filter(c => c.required).map(c => c.label).join(', ')}
+                                                    <br />
+                                                    <span className="opacity-70">Tên cột trong file phải khớp chính xác với file mẫu.</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Drag-drop zone */}
+                                            <div
+                                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-colors relative cursor-pointer group ${dragOver ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-gray-50 hover:border-emerald-400'}`}
+                                                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                                                onDragLeave={() => setDragOver(false)}
+                                                onDrop={handleFileDrop}
+                                                onClick={() => fileInputRef.current?.click()}
+                                            >
+                                                <input ref={fileInputRef} type="file" accept=".xlsx,.xls"
+                                                    onChange={e => parseFile(e.target.files[0])}
+                                                    className="hidden" />
+                                                <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                                    <span className="material-symbols-outlined text-4xl text-emerald-500">upload_file</span>
+                                                </div>
+                                                <p className="text-gray-900 font-bold mb-1">Kéo thả hoặc bấm để chọn file Excel</p>
+                                                <p className="text-sm text-gray-400">Hỗ trợ .xlsx, .xls</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        /* Step 2: Preview & Validate */
+                                        <>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <p className="text-sm font-black text-gray-900">Bước 2: Xem trước dữ liệu</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        <span className="font-bold text-gray-700">{file?.name}</span> — {previewRows.length} dòng
+                                                        {allValid
+                                                            ? <span className="ml-2 text-emerald-600 font-bold">✅ Tất cả hợp lệ</span>
+                                                            : <span className="ml-2 text-rose-600 font-bold">⚠️ {previewRows.filter(r => validateRow(r).length > 0).length} dòng lỗi</span>
+                                                        }
+                                                    </p>
+                                                </div>
+                                                <button onClick={resetUpload}
+                                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                                                    <span className="material-symbols-outlined text-sm">refresh</span>
+                                                    Chọn file khác
+                                                </button>
+                                            </div>
+
+                                            {/* Preview Table */}
+                                            <div className="overflow-x-auto rounded-xl border border-gray-100 mb-6">
+                                                <table className="w-full text-xs min-w-[800px]">
+                                                    <thead>
+                                                        <tr className="bg-gray-50 text-left">
+                                                            <th className="px-3 py-3 text-gray-400 font-black uppercase tracking-wider w-8">#</th>
+                                                            {COLUMNS.map(c => (
+                                                                <th key={c.key} className="px-3 py-3 text-gray-500 font-black uppercase tracking-wider whitespace-nowrap">
+                                                                    {c.label}{c.required && <span className="text-rose-500 ml-0.5">*</span>}
+                                                                </th>
+                                                            ))}
+                                                            <th className="px-3 py-3 text-gray-400 font-black uppercase tracking-wider">Trạng thái</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50">
+                                                        {previewRows.map((row, i) => {
+                                                            const errors = validateRow(row);
+                                                            const hasError = errors.length > 0;
+                                                            return (
+                                                                <tr key={i} className={hasError ? 'bg-rose-50' : 'bg-white hover:bg-gray-50/50'}>
+                                                                    <td className="px-3 py-2.5 text-gray-400 font-bold">{i + 1}</td>
+                                                                    {COLUMNS.map(c => (
+                                                                        <td key={c.key} className={`px-3 py-2.5 max-w-[120px] ${hasError && c.required && !row[c.key] ? 'text-rose-600 font-bold' : 'text-gray-700'}`}>
+                                                                            <span className="truncate block" title={row[c.key] || '—'}>{row[c.key] || <span className="text-gray-300 italic">—</span>}</span>
+                                                                        </td>
+                                                                    ))}
+                                                                    <td className="px-3 py-2.5">
+                                                                        {hasError
+                                                                            ? <span className="flex items-center gap-1 text-rose-600 font-bold whitespace-nowrap">
+                                                                                <span className="material-symbols-outlined text-sm">error</span>
+                                                                                {errors[0]}
+                                                                            </span>
+                                                                            : <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                                                                                <span className="material-symbols-outlined text-sm">check_circle</span>
+                                                                                Hợp lệ
+                                                                            </span>
+                                                                        }
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {/* Submit */}
+                                            <div className="flex justify-end">
+                                                <button
+                                                    onClick={submitUploadRequest}
+                                                    disabled={submitLoading || !allValid}
+                                                    className={`flex items-center gap-2 px-8 py-3 text-sm font-black rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed
+                                                        ${allValid
+                                                            ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200'
+                                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                                                >
+                                                    {submitLoading
+                                                        ? <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                                                        : <span className="material-symbols-outlined text-sm">rocket_launch</span>}
+                                                    {allValid ? 'Gửi Yêu Cầu Cho Thủ Thư' : `Còn ${previewRows.filter(r => validateRow(r).length > 0).length} dòng lỗi`}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* === MANUAL TAB === */}
+                            {activeTab === 'manual' && (
                                 <form onSubmit={submitManualRequest}>
-                                    <div className="space-y-4 mb-6">
-                                        <div className="grid grid-cols-12 gap-4 px-2 mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                            <div className="col-span-6">Tên sách</div>
-                                            <div className="col-span-3">Ngành</div>
-                                            <div className="col-span-2 text-center">SL</div>
-                                            <div className="col-span-1"></div>
-                                        </div>
+                                    <div className="space-y-6 mb-6">
                                         {books.map((book, index) => (
-                                            <div key={index} className="grid grid-cols-12 gap-4 items-center animate-slide-up">
-                                                <div className="col-span-6">
-                                                    <input
-                                                        type="text"
-                                                        value={book.title}
-                                                        onChange={(e) => handleBookChange(index, 'title', e.target.value)}
-                                                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
-                                                        placeholder="Nhập tên sách..."
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="col-span-3">
-                                                    <input
-                                                        type="text"
-                                                        value={book.major}
-                                                        onChange={(e) => handleBookChange(index, 'major', e.target.value)}
-                                                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
-                                                        placeholder="VD: CNTT"
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="col-span-2">
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={book.quantity}
-                                                        onChange={(e) => handleBookChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                                                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm text-center font-bold"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1 flex justify-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveRow(index)}
-                                                        className={`p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors ${books.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        disabled={books.length === 1}
-                                                    >
-                                                        <span className="material-symbols-outlined">delete</span>
+                                            <div key={index} className="relative p-5 bg-gray-50 rounded-2xl border border-gray-100 animate-fade-in">
+                                                {/* Row header */}
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Sách #{index + 1}</span>
+                                                    <button type="button" onClick={() => {
+                                                        if (books.length > 1) setBooks(books.filter((_, i) => i !== index));
+                                                    }} disabled={books.length === 1}
+                                                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition disabled:opacity-30">
+                                                        <span className="material-symbols-outlined text-sm">delete</span>
                                                     </button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    {COLUMNS.map(col => (
+                                                        <div key={col.key} className={col.key === 'reason' ? 'sm:col-span-2' : ''}>
+                                                            <label className="block text-xs font-bold text-gray-600 mb-1">
+                                                                {col.label}{col.required && <span className="text-rose-500 ml-0.5">*</span>}
+                                                            </label>
+                                                            <input
+                                                                type={['publish_year', 'price', 'quantity'].includes(col.key) ? 'number' : 'text'}
+                                                                min={col.key === 'quantity' ? 1 : undefined}
+                                                                value={book[col.key]}
+                                                                onChange={e => handleBookChange(index, col.key, e.target.value)}
+                                                                required={col.required}
+                                                                placeholder={col.required ? `${col.label} (bắt buộc)` : col.label}
+                                                                className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                                            />
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                                        <button
-                                            type="button"
-                                            onClick={handleAddRow}
-                                            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">add</span> Thêm dòng
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                        <button type="button"
+                                            onClick={() => setBooks([...books, { title: '', author: '', isbn: '', publisher: '', publish_year: '', price: '', quantity: 1, categoryName: '', reason: '' }])}
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition">
+                                            <span className="material-symbols-outlined text-sm">add</span> Thêm sách
                                         </button>
-
-                                        <button
-                                            type="submit"
-                                            disabled={submitLoading}
-                                            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 transition-all disabled:opacity-50"
-                                        >
+                                        <button type="submit" disabled={submitLoading}
+                                            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 transition-all disabled:opacity-50">
                                             {submitLoading ? <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span> : <span className="material-symbols-outlined text-sm">send</span>}
                                             Gửi Yêu Cầu
-                                        </button>
-                                    </div>
-                                </form>
-                            ) : (
-                                <form onSubmit={submitUploadRequest}>
-                                    <div className="border-2 border-dashed border-gray-200 bg-gray-50 rounded-2xl p-8 text-center hover:border-emerald-400 transition-colors mb-6 group relative">
-                                        <input
-                                            type="file"
-                                            accept=".xlsx, .xls"
-                                            onChange={(e) => setFile(e.target.files[0])}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        />
-                                        <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                            <span className="material-symbols-outlined text-4xl text-emerald-500">upload_file</span>
-                                        </div>
-                                        <p className="text-gray-900 font-bold mb-1">Kéo thả hoặc nhấn để tải lên file Excel</p>
-                                        <p className="text-sm text-gray-400">Chỉ hỗ trợ .xlsx, .xls</p>
-
-                                        {file && (
-                                            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-sm font-bold animate-fade-in border border-emerald-100">
-                                                <span className="material-symbols-outlined text-[18px]">description</span>
-                                                {file.name}
-                                                <button type="button" onClick={(e) => { e.preventDefault(); setFile(null); }} className="hover:text-rose-500 ml-2">
-                                                    <span className="material-symbols-outlined text-[18px]">close</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6 flex items-start gap-4">
-                                        <span className="material-symbols-outlined text-blue-500 mt-0.5">info</span>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-blue-900 mb-1">Hướng dẫn tệp Excel</h4>
-                                            <p className="text-xs text-blue-700 leading-relaxed">
-                                                Tệp Excel của bạn cần chứa dòng tiêu đề với các cột: <strong className="font-bold">Tên sách</strong>, <strong className="font-bold">Ngành</strong>, <strong className="font-bold">Số lượng</strong>. Hệ thống sẽ tự động quét và bóc tách dữ liệu từ các cột này.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-end pt-6 border-t border-gray-100">
-                                        <button
-                                            type="submit"
-                                            disabled={submitLoading || !file}
-                                            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 transition-all disabled:opacity-50"
-                                        >
-                                            {submitLoading ? <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span> : <span className="material-symbols-outlined text-sm">upload</span>}
-                                            Tải Lên Cập Nhật
                                         </button>
                                     </div>
                                 </form>
@@ -278,7 +444,7 @@ const LecturerBookRequestPage = () => {
                     </div>
                 </div>
 
-                {/* PHẢI: LỊCH SỬ YÊU CẦU */}
+                {/* RIGHT: HISTORY */}
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 h-full">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -293,39 +459,38 @@ const LecturerBookRequestPage = () => {
                             ) : requests.length > 0 ? (
                                 <div className="space-y-4">
                                     {requests.map(req => (
-                                        <div key={req._id} className="p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow bg-gray-50/50 relative overflow-hidden group">
-                                            {/* Status Badge */}
-                                            <div className="absolute top-4 right-4 flex items-center gap-1">
-                                                {req.status === 'Pending' && <span className="px-2.5 py-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-wider rounded-md border border-amber-100">Chờ duyệt</span>}
-                                                {req.status === 'Approved' && <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider rounded-md border border-emerald-100">Đã duyệt</span>}
-                                                {req.status === 'Rejected' && <span className="px-2.5 py-1 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-wider rounded-md border border-rose-100">Từ chối</span>}
+                                        <div key={req._id} className="p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow bg-gray-50/50 relative overflow-hidden">
+                                            <div className="absolute top-4 right-4">
+                                                <StatusBadge status={req.status} />
                                             </div>
-
-                                            <div className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">
+                                            <div className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide pr-24">
                                                 {req.semester || 'Học kỳ mới'}
                                             </div>
-
                                             <div className="text-sm font-bold text-gray-900 mb-1">
-                                                {req.books.length} sách được đề xuất
+                                                {req.books.length} sách đề xuất
                                             </div>
-
                                             <div className="text-xs text-gray-500 flex items-center gap-1 mb-3">
                                                 <span className="material-symbols-outlined text-[14px]">calendar_today</span>
                                                 {new Date(req.createdAt).toLocaleDateString('vi-VN')}
                                             </div>
-
-                                            <div className="space-y-1 mt-3 pt-3 border-t border-gray-100/50 max-h-[100px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {req.books.map((b, i) => (
-                                                    <div key={i} className="flex justify-between items-center text-xs">
-                                                        <span className="text-gray-700 truncate mr-2" title={b.title}>• {b.title}</span>
-                                                        <span className="text-gray-400 font-bold flex-shrink-0">x{b.quantity}</span>
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-1 mt-3 pt-3 border-t border-gray-100/50 max-h-[100px] overflow-y-auto pr-2">
+                                                {req.books.map((b, i) => {
+                                                    const bookCfg = {
+                                                        approved: 'text-emerald-600',
+                                                        rejected: 'text-rose-500 line-through',
+                                                        pending: 'text-gray-700',
+                                                    }[b.bookStatus] || 'text-gray-700';
+                                                    return (
+                                                        <div key={i} className="flex justify-between items-center text-xs">
+                                                            <span className={`truncate mr-2 ${bookCfg}`} title={b.title}>• {b.title}</span>
+                                                            <span className="text-gray-400 font-bold flex-shrink-0">x{b.quantity}</span>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-
                                             {req.note && (
-                                                <div className="mt-3 text-xs bg-rose-50 text-rose-700 p-2 rounded relative before:absolute before:left-0 before:top-0 before:h-full before:w-[2px] before:bg-rose-500 overflow-hidden">
-                                                    <strong className="font-bold opacity-75">Ghi chú:</strong> {req.note}
+                                                <div className="mt-3 text-xs bg-rose-50 text-rose-700 p-2 rounded pl-3 border-l-2 border-rose-400">
+                                                    <strong>Ghi chú:</strong> {req.note}
                                                 </div>
                                             )}
                                         </div>

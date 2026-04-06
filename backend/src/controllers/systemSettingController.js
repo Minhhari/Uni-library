@@ -68,7 +68,7 @@ const getSettings = async (req, res) => {
 const getPublicSettings = async (req, res) => {
     try {
         const settings = await SystemSetting.find({ key: { $in: ['maxLoanDays', 'reservationExpiryDays', 'maxBooksPerUser', 'maxReservationsPerUser'] } });
-        
+
         const publicConfig = {};
         settings.forEach(s => {
             publicConfig[s.key] = s.value;
@@ -115,6 +115,41 @@ const upsertSetting = async (req, res) => {
 // ─── GET /admin/stats ────────────────────────────────────────────────────
 const getAdminStats = async (req, res) => {
     try {
+        const { period } = req.query;
+        let dateFilter = {};
+        let fineDateFilter = {};
+
+        if (period === 'today') {
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+            dateFilter = { createdAt: { $gte: start } };
+            const mongoose = require('mongoose');
+            fineDateFilter = { _id: { $gte: mongoose.Types.ObjectId.createFromTime(Math.floor(start.getTime() / 1000)) } };
+        } else if (period === 'week') {
+            const start = new Date();
+            const day = start.getDay();
+            const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Monday
+            start.setDate(diff);
+            start.setHours(0, 0, 0, 0);
+            dateFilter = { createdAt: { $gte: start } };
+            const mongoose = require('mongoose');
+            fineDateFilter = { _id: { $gte: mongoose.Types.ObjectId.createFromTime(Math.floor(start.getTime() / 1000)) } };
+        } else if (period === 'month') {
+            const start = new Date();
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+            dateFilter = { createdAt: { $gte: start } };
+            const mongoose = require('mongoose');
+            fineDateFilter = { _id: { $gte: mongoose.Types.ObjectId.createFromTime(Math.floor(start.getTime() / 1000)) } };
+        } else if (period === 'year') {
+            const start = new Date();
+            start.setMonth(0, 1);
+            start.setHours(0, 0, 0, 0);
+            dateFilter = { createdAt: { $gte: start } };
+            const mongoose = require('mongoose');
+            fineDateFilter = { _id: { $gte: mongoose.Types.ObjectId.createFromTime(Math.floor(start.getTime() / 1000)) } };
+        }
+
         const [
             totalUsers,
             totalStudents,
@@ -129,25 +164,31 @@ const getAdminStats = async (req, res) => {
             paidFines,
             pendingFines,
         ] = await Promise.all([
-            User.countDocuments(),
-            User.countDocuments({ role: 'student' }),
-            User.countDocuments({ role: 'lecturer' }),
-            User.countDocuments({ role: 'librarian' }),
-            User.countDocuments({ isActive: true }),
-            BorrowRecord.countDocuments(),
-            BorrowRecord.countDocuments({ status: 'approved' }),
-            BorrowRecord.countDocuments({ status: 'returned' }),
+            User.countDocuments(dateFilter),
+            User.countDocuments({ role: 'student', ...dateFilter }),
+            User.countDocuments({ role: 'lecturer', ...dateFilter }),
+            User.countDocuments({ role: 'librarian', ...dateFilter }),
+            // active users usually snapshot, we'll just show active users registered in period
+            User.countDocuments({ isActive: true, ...dateFilter }),
+            BorrowRecord.countDocuments(dateFilter),
+            // statuses can be point-in-time, we'll apply filter anyway for consistency
+            BorrowRecord.countDocuments({ status: 'approved', ...dateFilter }),
+            BorrowRecord.countDocuments({ status: 'returned', ...dateFilter }),
             BorrowRecord.countDocuments({
                 status: 'approved',
                 dueDate: { $lt: new Date() },
+                ...dateFilter
             }),
-            Fine.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
             Fine.aggregate([
-                { $match: { status: 'paid' } },
+                { $match: fineDateFilter },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Fine.aggregate([
+                { $match: { status: 'paid', ...fineDateFilter } },
                 { $group: { _id: null, total: { $sum: '$amount' } } },
             ]),
             Fine.aggregate([
-                { $match: { status: 'pending' } },
+                { $match: { status: 'pending', ...fineDateFilter } },
                 { $group: { _id: null, total: { $sum: '$amount' } } },
             ]),
         ]);

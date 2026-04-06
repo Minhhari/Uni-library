@@ -138,7 +138,7 @@ export const paymentAPI = {
 
 // ─── Admin APIs ──────────────────────────────────────────
 export const adminAPI = {
-  getStats: () => api.get('/admin/stats'),
+  getStats: (params) => api.get('/admin/stats', { params }),
   getSettings: () => api.get('/admin/settings'),
   updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
 };
@@ -151,7 +151,9 @@ export const bookRequestAPI = {
   }),
   getMyRequests: () => api.get('/book-requests/my-requests'),
   getAllRequests: (params) => api.get('/book-requests', { params }),
-  updateStatus: (id, status, note) => api.put(`/book-requests/${id}/status`, { status, note })
+  updateStatus: (id, status, note) => api.put(`/book-requests/${id}/status`, { status, note }),
+  updateBookItemStatus: (requestId, bookIndex, bookStatus, rejectReason) =>
+    api.put(`/book-requests/${requestId}/books/${bookIndex}/status`, { bookStatus, rejectReason }),
 };
 
 // ─── Notification APIs ───────────────────────────────────

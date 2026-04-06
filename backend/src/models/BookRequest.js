@@ -1,5 +1,26 @@
 const mongoose = require('mongoose');
 
+const bookItemSchema = new mongoose.Schema({
+    // Core book info (mirrors Book model fields)
+    title: { type: String, required: true, trim: true },
+    author: { type: String, trim: true },
+    isbn: { type: String, trim: true },
+    publisher: { type: String, trim: true },
+    publish_year: { type: Number },
+    price: { type: Number, default: 0 },
+    quantity: { type: Number, required: true, min: 1, default: 1 },
+    categoryName: { type: String, trim: true }, // plain text, not ObjectId
+    reason: { type: String, trim: true },       // lý do đề xuất cuốn này
+
+    // Per-book review status (librarian can approve/reject each book independently)
+    bookStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending',
+    },
+    rejectReason: { type: String, trim: true }, // lý do từ chối riêng của cuốn này
+}, { _id: false });
+
 const bookRequestSchema = new mongoose.Schema(
     {
         lecturer: {
@@ -7,26 +28,7 @@ const bookRequestSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
-        books: [
-            {
-                title: {
-                    type: String,
-                    required: true,
-                    trim: true,
-                },
-                major: {
-                    type: String,
-                    required: true,
-                    trim: true,
-                },
-                quantity: {
-                    type: Number,
-                    required: true,
-                    min: 1,
-                    default: 1,
-                },
-            },
-        ],
+        books: [bookItemSchema],
         semester: {
             type: String,
             trim: true,
@@ -34,7 +36,7 @@ const bookRequestSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['Pending', 'Approved', 'Rejected'],
+            enum: ['Pending', 'Approved', 'Rejected', 'PartiallyApproved'],
             default: 'Pending',
         },
         note: {

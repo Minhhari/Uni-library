@@ -40,6 +40,9 @@ const BookDetailPage = () => {
 
     // Fetch book details from real API
     useEffect(() => {
+        // Close modal when navigating to a new book
+        setShowMapModal(false);
+
         const fetchBook = async () => {
             setLoading(true);
             setError(null);
