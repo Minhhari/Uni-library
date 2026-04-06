@@ -20,12 +20,15 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
     publishYear,
     status,
     coverImage,
+    cover_image,
     borrowCount,
     recommendationReason,
     strategy,
     semester,
     academicLevel
   } = book;
+
+  const actualCoverImage = coverImage || cover_image;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -77,12 +80,12 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 overflow-hidden group">
+    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 overflow-hidden group">
       {/* Book Cover */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {coverImage ? (
+      <div className="relative h-48 bg-gray-100 overflow-hidden shrink-0">
+        {actualCoverImage ? (
           <img
-            src={coverImage}
+            src={actualCoverImage}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
           />
@@ -110,9 +113,9 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
       </div>
 
       {/* Book Info */}
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2">
+        <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2 min-h-[3.5rem]">
           <Link
             to={`/books/${_id}`}
             className="hover:text-blue-600 transition-colors duration-200"
@@ -163,10 +166,12 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
         )}
 
         {/* Description */}
-        {description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+        {description ? (
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2 min-h-[2.5rem]">
             {description}
           </p>
+        ) : (
+          <div className="min-h-[2.5rem] mb-3"></div>
         )}
 
         {/* Recommendation Reason */}
@@ -195,7 +200,7 @@ const BookCard = ({ book, showRecommendationReason = false }) => {
         </div>
 
         {/* Action Button */}
-        <div className="mt-4">
+        <div className="mt-auto pt-4">
           <Link
             to={`/books/${_id}`}
             className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
