@@ -5,7 +5,7 @@ import { bookAPI } from '../services/api';
 import { LoadingSpinner, ErrorMessage, CreateBookModal } from '../components';
 
 const BookListPage = () => {
-    const [selectedGenre, setSelectedGenre] = useState('All');
+    const [selectedGenre, setSelectedGenre] = useState('Tất cả');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterAuthor, setFilterAuthor] = useState('');
     const [filterYear, setFilterYear] = useState('');
@@ -15,7 +15,7 @@ const BookListPage = () => {
     const [allBooks, setAllBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [categories, setCategories] = useState(['All']);
+    const [categories, setCategories] = useState(['Tất cả']);
     const [rawCategories, setRawCategories] = useState([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);

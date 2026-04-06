@@ -8,6 +8,8 @@ const {
     getAllRequests,
     updateRequestStatus,
     updateBookItemStatus,
+    importBook,
+    bulkImportBooks,
 } = bookRequestController;
 
 const multer = require('multer');
@@ -25,5 +27,9 @@ router.get('/my-requests', authorize('lecturer', 'admin', 'librarian'), getMyReq
 router.get('/', authorize('admin', 'librarian'), getAllRequests);
 router.put('/:id/status', authorize('admin', 'librarian'), updateRequestStatus);
 router.put('/:id/books/:bookIndex/status', authorize('admin', 'librarian'), updateBookItemStatus);
+router.post('/:id/books/:bookIndex/import', authorize('admin', 'librarian'), importBook);
+router.post('/bulk-import', authorize('admin', 'librarian'), bulkImportBooks);
 
 module.exports = router;
+
+

@@ -12,13 +12,27 @@ const bookItemSchema = new mongoose.Schema({
     categoryName: { type: String, trim: true }, // plain text, not ObjectId
     reason: { type: String, trim: true },       // lý do đề xuất cuốn này
 
-    // Per-book review status (librarian can approve/reject each book independently)
+    // Per-book review status
+    // pending         → chờ thủ thư duyệt
+    // pending_import  → đã duyệt, chờ sách về & nhập kho
+    // imported        → đã nhập kho thành công (Book record created/updated)
+    // rejected        → bị từ chối
     bookStatus: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['pending', 'pending_import', 'imported', 'rejected'],
         default: 'pending',
     },
-    rejectReason: { type: String, trim: true }, // lý do từ chối riêng của cuốn này
+    rejectReason: { type: String, trim: true },
+
+    // Thông tin bổ sung khi thủ thư nhập kho (điền lúc sách vật lý về)
+    importData: {
+        price: { type: Number },          // giá thực tế trên hóa đơn
+        location: { type: String, trim: true },    // vị trí kệ sách
+        cover_image: { type: String, trim: true }, // URL ảnh bìa
+        importedAt: { type: Date },       // timestamp nhập kho
+        bookId: { type: mongoose.Schema.Types.ObjectId, ref: 'Book' }, // ref đến Book được tạo/update
+        action: { type: String, enum: ['created', 'updated'] }, // nhánh A hay nhánh B
+    },
 }, { _id: false });
 
 const bookRequestSchema = new mongoose.Schema(
@@ -36,7 +50,7 @@ const bookRequestSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['Pending', 'Approved', 'Rejected', 'PartiallyApproved'],
+            enum: ['Pending', 'Approved', 'Rejected', 'PartiallyApproved', 'Completed'],
             default: 'Pending',
         },
         note: {

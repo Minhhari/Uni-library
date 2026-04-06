@@ -154,6 +154,9 @@ export const bookRequestAPI = {
   updateStatus: (id, status, note) => api.put(`/book-requests/${id}/status`, { status, note }),
   updateBookItemStatus: (requestId, bookIndex, bookStatus, rejectReason) =>
     api.put(`/book-requests/${requestId}/books/${bookIndex}/status`, { bookStatus, rejectReason }),
+  importBook: (requestId, bookIndex, data) =>
+    api.post(`/book-requests/${requestId}/books/${bookIndex}/import`, data),
+  bulkImport: (items) => api.post('/book-requests/bulk-import', { items }),
 };
 
 // ─── Notification APIs ───────────────────────────────────

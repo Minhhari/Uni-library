@@ -9,7 +9,6 @@ const COLUMNS = [
     { key: 'isbn', label: 'Mã ISBN', required: true },
     { key: 'publisher', label: 'Nhà Xuất Bản', required: true },
     { key: 'publish_year', label: 'Năm XB', required: true },
-    { key: 'price', label: 'Giá Tiền Dự Kiến', required: true },
     { key: 'quantity', label: 'Số Lượng', required: true },
     { key: 'categoryName', label: 'Thể Loại', required: true },
     { key: 'reason', label: 'Lý do yêu cầu', required: true },
@@ -27,7 +26,6 @@ const downloadTemplate = async () => {
         '978-604-1234-56-7',
         'NXB Đại học Quốc gia',
         2023,
-        250000,
         5,
         'Khoa học máy tính',
         'Môn học Lập trình Python - HK2 2025-2026',
@@ -35,7 +33,7 @@ const downloadTemplate = async () => {
     const ws = utils.aoa_to_sheet([headers, exampleRow]);
 
     // Column widths
-    ws['!cols'] = [22, 18, 16, 20, 8, 14, 8, 18, 30].map(w => ({ wch: w }));
+    ws['!cols'] = [22, 18, 16, 20, 8, 8, 18, 30].map(w => ({ wch: w }));
 
     const wb = utils.book_new();
     utils.book_append_sheet(wb, ws, 'Danh sách sách');
@@ -51,7 +49,7 @@ const validateRow = (row) => {
             if (c.key === 'quantity') {
                 const qty = Number(val);
                 if (!qty || qty < 1) errors.push(`Số lượng không hợp lệ`);
-            } else if (c.key === 'price' || c.key === 'publish_year') {
+            } else if (c.key === 'publish_year') {
                 if (val === undefined || val === null || String(val).trim() === '') errors.push(`Thiếu ${c.label}`);
             } else {
                 if (!val?.toString().trim()) errors.push(`Thiếu ${c.label}`);
@@ -130,13 +128,12 @@ const LecturerBookRequestPage = () => {
             const payload = validBooks.map(b => ({
                 ...b,
                 quantity: Number(b.quantity) || 1,
-                price: Number(b.price) || 0,
                 publish_year: Number(b.publish_year) || undefined,
             }));
             const res = await bookRequestAPI.createRequest({ books: payload, semester });
             if (res.data?.success) {
                 toast.success('Gửi yêu cầu thành công!');
-                setBooks([{ title: '', author: '', isbn: '', publisher: '', publish_year: '', price: '', quantity: 1, categoryName: '', reason: '' }]);
+                setBooks([{ title: '', author: '', isbn: '', publisher: '', publish_year: '', quantity: 1, categoryName: '', reason: '' }]);
                 fetchMyRequests();
             }
         } catch (e) {
@@ -248,9 +245,20 @@ const LecturerBookRequestPage = () => {
                             {/* Semester field - shared */}
                             <div className="mb-6">
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Học kỳ / Giai đoạn</label>
-                                <input type="text" value={semester} onChange={e => setSemester(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
-                                    placeholder="VD: Học kỳ 1 năm 2026-2027" />
+                                <div className="relative">
+                                    <select
+                                        value={semester}
+                                        onChange={e => setSemester(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium appearance-none cursor-pointer"
+                                    >
+                                        <option value="Học kỳ 1 năm 2025-2026">Học kỳ 1 năm 2025-2026</option>
+                                        <option value="Học kỳ 2 năm 2025-2026">Học kỳ 2 năm 2025-2026</option>
+                                        <option value="Học kỳ hè năm 2025-2026">Học kỳ hè năm 2025-2026</option>
+                                        <option value="Học kỳ 1 năm 2026-2027">Học kỳ 1 năm 2026-2027</option>
+                                        <option value="Học kỳ 2 năm 2026-2027">Học kỳ 2 năm 2026-2027</option>
+                                    </select>
+                                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                                </div>
                             </div>
 
                             {/* === UPLOAD TAB === */}
@@ -309,8 +317,8 @@ const LecturerBookRequestPage = () => {
                                                     <p className="text-xs text-gray-500 mt-0.5">
                                                         <span className="font-bold text-gray-700">{file?.name}</span> — {previewRows.length} dòng
                                                         {allValid
-                                                            ? <span className="ml-2 text-emerald-600 font-bold">✅ Tất cả hợp lệ</span>
-                                                            : <span className="ml-2 text-rose-600 font-bold">⚠️ {previewRows.filter(r => validateRow(r).length > 0).length} dòng lỗi</span>
+                                                            ? <span className="ml-2 text-emerald-600 font-bold"> Tất cả hợp lệ</span>
+                                                            : <span className="ml-2 text-rose-600 font-bold"> {previewRows.filter(r => validateRow(r).length > 0).length} dòng lỗi</span>
                                                         }
                                                     </p>
                                                 </div>
@@ -378,7 +386,7 @@ const LecturerBookRequestPage = () => {
                                                 >
                                                     {submitLoading
                                                         ? <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                                                        : <span className="material-symbols-outlined text-sm">rocket_launch</span>}
+                                                        : <span className="material-symbols-outlined text-sm">send</span>}
                                                     {allValid ? 'Gửi Yêu Cầu Cho Thủ Thư' : `Còn ${previewRows.filter(r => validateRow(r).length > 0).length} dòng lỗi`}
                                                 </button>
                                             </div>
@@ -411,7 +419,7 @@ const LecturerBookRequestPage = () => {
                                                                 {col.label}{col.required && <span className="text-rose-500 ml-0.5">*</span>}
                                                             </label>
                                                             <input
-                                                                type={['publish_year', 'price', 'quantity'].includes(col.key) ? 'number' : 'text'}
+                                                                type={['publish_year', 'quantity'].includes(col.key) ? 'number' : 'text'}
                                                                 min={col.key === 'quantity' ? 1 : undefined}
                                                                 value={book[col.key]}
                                                                 onChange={e => handleBookChange(index, col.key, e.target.value)}
@@ -428,7 +436,7 @@ const LecturerBookRequestPage = () => {
 
                                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                                         <button type="button"
-                                            onClick={() => setBooks([...books, { title: '', author: '', isbn: '', publisher: '', publish_year: '', price: '', quantity: 1, categoryName: '', reason: '' }])}
+                                            onClick={() => setBooks([...books, { title: '', author: '', isbn: '', publisher: '', publish_year: '', quantity: 1, categoryName: '', reason: '' }])}
                                             className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition">
                                             <span className="material-symbols-outlined text-sm">add</span> Thêm sách
                                         </button>
@@ -473,17 +481,31 @@ const LecturerBookRequestPage = () => {
                                                 <span className="material-symbols-outlined text-[14px]">calendar_today</span>
                                                 {new Date(req.createdAt).toLocaleDateString('vi-VN')}
                                             </div>
-                                            <div className="space-y-1 mt-3 pt-3 border-t border-gray-100/50 max-h-[100px] overflow-y-auto pr-2">
+                                            <div className="space-y-1 mt-3 pt-3 border-t border-gray-100/50 max-h-[250px] overflow-y-auto pr-2">
                                                 {req.books.map((b, i) => {
                                                     const bookCfg = {
-                                                        approved: 'text-emerald-600',
-                                                        rejected: 'text-rose-500 line-through',
-                                                        pending: 'text-gray-700',
+                                                        pending: 'text-amber-600',
+                                                        pending_import: 'text-orange-500',
+                                                        imported: 'text-teal-600 font-bold',
+                                                        rejected: 'text-rose-400 line-through opacity-80',
                                                     }[b.bookStatus] || 'text-gray-700';
+
+                                                    const icon = {
+                                                        pending: 'schedule',
+                                                        pending_import: 'inventory_2',
+                                                        imported: 'check_circle',
+                                                        rejected: 'cancel',
+                                                    }[b.bookStatus] || 'circle';
+
                                                     return (
-                                                        <div key={i} className="flex justify-between items-center text-xs">
-                                                            <span className={`truncate mr-2 ${bookCfg}`} title={b.title}>• {b.title}</span>
-                                                            <span className="text-gray-400 font-bold flex-shrink-0">x{b.quantity}</span>
+                                                        <div key={i} className="flex justify-between items-start gap-2 text-xs py-1">
+                                                            <div className="flex items-start gap-1.5 min-w-0">
+                                                                <span className={`material-symbols-outlined text-[14px] mt-0.5 shrink-0 ${bookCfg.split(' ')[0]}`}>{icon}</span>
+                                                                <span className={`truncate ${bookCfg}`} title={b.rejectReason ? `${b.title} (Lý do: ${b.rejectReason})` : b.title}>
+                                                                    {b.title}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-gray-400 font-bold shrink-0 pt-0.5">x{b.quantity}</span>
                                                         </div>
                                                     );
                                                 })}
