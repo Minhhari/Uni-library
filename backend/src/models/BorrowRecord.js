@@ -17,6 +17,9 @@ const borrowRecordSchema = new mongoose.Schema({
   dueDate: {
     type: Date
   },
+  requestedDueDate: {
+    type: Date
+  },
   returnDate: {
     type: Date
   },

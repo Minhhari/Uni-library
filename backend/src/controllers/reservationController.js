@@ -16,7 +16,7 @@ const {
 // ─────────────────────────────────────────────────────────────────────────────
 const createReservation = async (req, res) => {
   try {
-    const { bookId } = req.body;
+    const { bookId, requestedDueDate } = req.body;
     const userId = req.user._id;
     const userRole = req.user.role;
 
@@ -84,12 +84,38 @@ const createReservation = async (req, res) => {
 
     const queuePosition = await getNextQueuePosition(bookId);
 
+    let parsedRequestedDueDate = null;
+    if (requestedDueDate) {
+      parsedRequestedDueDate = new Date(requestedDueDate);
+      if (isNaN(parsedRequestedDueDate.getTime())) {
+        return res.status(400).json({ success: false, message: "Invalid requested date." });
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (parsedRequestedDueDate < today) {
+        return res.status(400).json({ success: false, message: "Requested due date cannot be in the past." });
+      }
+
+      const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
+      const currentMaxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 70;
+      
+      const maxAllowedDate = new Date();
+      maxAllowedDate.setDate(maxAllowedDate.getDate() + currentMaxDays);
+      maxAllowedDate.setHours(23, 59, 59, 999);
+      
+      if (parsedRequestedDueDate > maxAllowedDate) {
+        return res.status(400).json({ success: false, message: `Requested due date exceeds maximum loan duration of ${currentMaxDays} days.` });
+      }
+    }
+
     const reservation = await Reservation.create({
       userId,
       bookId,
       reservationDate: new Date(),
       status: 'pending',
       queuePosition,
+      requestedDueDate: parsedRequestedDueDate
     });
 
     await reservation.populate([
@@ -218,7 +244,7 @@ const approveReservation = async (req, res) => {
 
     // Tính thời hạn lấy sách (từ settings)
     const expireSetting = await SystemSetting.findOne({ key: 'reservationExpiryDays' });
-    const expireDays = expireSetting ? Number(expireSetting.value) : 3;
+    const expireDays = expireSetting ? Number(expireSetting.value) : 5;
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expireDays);
@@ -337,11 +363,19 @@ const handoverReservation = async (req, res) => {
     // Tạo BorrowRecord – sách đã được trừ ở bước approveReservation nên KHÔNG trừ thêm
     // Fetch loan duration from settings
     const maxDaysSetting = await SystemSetting.findOne({ key: 'maxLoanDays' });
-    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 14;
+    const maxDays = maxDaysSetting ? Number(maxDaysSetting.value) : 70;
 
     const borrowDate = new Date();
-    const dueDate = new Date();
+    let dueDate = new Date();
     dueDate.setDate(borrowDate.getDate() + maxDays);
+
+    if (reservation.requestedDueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (reservation.requestedDueDate >= today) {
+        dueDate = reservation.requestedDueDate;
+      }
+    }
 
     const borrowRecord = await BorrowRecord.create({
       userId: reservation.userId._id || reservation.userId,
@@ -349,6 +383,7 @@ const handoverReservation = async (req, res) => {
       status: 'approved',          // Đang mượn (bỏ qua pending/waiting vì reservation đã xử lý)
       borrowDate,
       dueDate,
+      requestedDueDate: reservation.requestedDueDate,
       fromReservation: true,       // Flag đánh dấu nguồn gốc từ reservation
     });
 

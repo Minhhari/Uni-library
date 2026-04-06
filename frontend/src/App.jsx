@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { AuthProvider } from './context/AuthContext';
+import { BorrowCartProvider } from './context/BorrowCartContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { ToastContainer } from 'react-toastify';
@@ -24,6 +25,7 @@ import AdminSystemSettingsPage from './pages/AdminSystemSettingsPage';
 import AdminReportsPage from './pages/AdminReportsPage';
 import LibrarianDashboard from './pages/LibrarianDashboard';
 import LibrarianMapPage from './pages/LibrarianMapPage';
+import BorrowCartPage from './pages/BorrowCartPage';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -111,48 +113,51 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        <Router>
-          <AppLayout>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <BorrowCartProvider>
+          <Router>
+            <AppLayout>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-              {/* Protected routes */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <DashboardSelector />
-                </ProtectedRoute>
-              } />
-              <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
-              <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
-              <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
+                {/* Protected routes */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <DashboardSelector />
+                  </ProtectedRoute>
+                } />
+                <Route path="/books" element={<ProtectedRoute><BookListPage /></ProtectedRoute>} />
+                <Route path="/books/:id" element={<ProtectedRoute><BookDetailPage /></ProtectedRoute>} />
+                <Route path="/recommendations" element={<ProtectedRoute><RecommendationPage /></ProtectedRoute>} />
 
-              {/* Librarian routes */}
-              <Route path="/librarian/map" element={<ProtectedRoute><LibrarianMapPage /></ProtectedRoute>} />
+                {/* Librarian routes */}
+                <Route path="/librarian/map" element={<ProtectedRoute><LibrarianMapPage /></ProtectedRoute>} />
 
-              {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
-              <Route path="/my-activity" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
-              <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                {/* ⚠️ NOTE: HomePage chưa import → cần fix nếu dùng */}
+                <Route path="/my-activity" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/transactions" element={<ProtectedRoute><TransactionPage /></ProtectedRoute>} />
+                <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/book-requests" element={<ProtectedRoute><LecturerBookRequestPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/book-requests" element={<ProtectedRoute><LecturerBookRequestPage /></ProtectedRoute>} />
+                <Route path="/cart" element={<ProtectedRoute><BorrowCartPage /></ProtectedRoute>} />
 
-              {/* Admin routes */}
-              <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute><AdminUserManagementPage /></ProtectedRoute>} />
-              <Route path="/admin/users/:id" element={<ProtectedRoute><UserDetailPage /></ProtectedRoute>} />
-              <Route path="/admin/settings" element={<ProtectedRoute><AdminSystemSettingsPage /></ProtectedRoute>} />
-              <Route path="/admin/reports" element={<ProtectedRoute><AdminReportsPage /></ProtectedRoute>} />
+                {/* Admin routes */}
+                <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute><AdminUserManagementPage /></ProtectedRoute>} />
+                <Route path="/admin/users/:id" element={<ProtectedRoute><UserDetailPage /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute><AdminSystemSettingsPage /></ProtectedRoute>} />
+                <Route path="/admin/reports" element={<ProtectedRoute><AdminReportsPage /></ProtectedRoute>} />
 
-              {/* Catch-all */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AppLayout>
-        </Router>
+                {/* Catch-all */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AppLayout>
+          </Router>
+        </BorrowCartProvider>
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </AuthProvider>
     </GoogleOAuthProvider>
